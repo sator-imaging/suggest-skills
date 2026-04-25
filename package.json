@@ -1,0 +1,53 @@
+{
+  "version": "1.0.0",
+  "name": "suggest-skills",
+  "description": "MCP server that suggests repository-specific AI agent skills.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sator-imaging/suggest-skills"
+  },
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "suggest-skills": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "bun build src/index.ts --outdir ./dist --target node --minify --drop console --drop debugger --production",
+    "start": "bun src/index.ts",
+    "server": "bun src/index.ts --server 3100",
+    "check": "bunx tsc --noEmit && bunx oxlint",
+    "test": "bun run check && bun test"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "ts-fibers": "0.5.1"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.13",
+    "typescript": "^6.0.3"
+  },
+  "packageManager": "bun@1.2.0",
+  "engines": {
+    "bun": ">=1.2.0"
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/sator-imaging"
+  },
+  "author": {
+    "name": "sator-imaging",
+    "url": "https://x.com/sator_imaging"
+  },
+  "homepage": "https://x.com/sator_imaging",
+  "keywords": [
+    "AI",
+    "agent",
+    "agents",
+    "skill",
+    "skills",
+    "SKILL.md",
+    "DESIGN.md",
+    "mcp",
+    "modelcontextprotocol"
+  ]
+}

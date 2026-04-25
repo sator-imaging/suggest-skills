@@ -1,0 +1,10 @@
+# Perry configuration
+# https://github.com/PerryTS/perry
+
+[project]
+name = "suggest-skills"
+entry = "src/index.ts"
+
+[build]
+out_dir = "bin"
+opt_level = 2

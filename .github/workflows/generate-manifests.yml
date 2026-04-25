@@ -1,0 +1,119 @@
+name: Generate Manifests
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * *"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: generate-manifests
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    name: Generate ${{ strategy.job-index }}
+    runs-on: ubuntu-latest
+    env:
+      GENERATED_DIR: ${{ runner.temp }}/generate/${{ strategy.job-index }}
+    strategy:
+      fail-fast: false
+      matrix:
+        url:
+          - https://github.com/anthropics/skills/tree/main/skills
+          - https://github.com/github/awesome-copilot/tree/main/agents
+          - https://github.com/github/awesome-copilot/tree/main/skills
+          - https://github.com/dotnet/skills/tree/main/plugins/dotnet/skills
+          - https://github.com/dotnet/skills/tree/main/plugins/dotnet-diag/agents
+          - https://github.com/dotnet/skills/tree/main/plugins/dotnet-diag/skills
+          - https://github.com/dotnet/skills/tree/main/plugins/dotnet-test/agents
+          - https://github.com/dotnet/skills/tree/main/plugins/dotnet-test/skills
+          - https://github.com/obra/superpowers/tree/main/agents
+          - https://github.com/obra/superpowers/tree/main/skills
+          - https://github.com/addyosmani/agent-skills/tree/main/agents
+          - https://github.com/addyosmani/agent-skills/tree/main/skills
+          - https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/tree/main/.claude/skills
+          - https://github.com/ComposioHQ/awesome-claude-skills
+          - https://github.com/runceel/ai-dev-template/tree/main/.github/skills
+          - https://github.com/runceel/ai-dev-template/tree/main/.github/agents
+          - https://github.com/vercel-labs/agent-skills/tree/main/skills
+          - https://github.com/VoltAgent/awesome-design-md/tree/ef729b271802ce7ed50f9e0928137b18942cde80/design-md
+          - https://github.com/kzhrknt/awesome-design-md-jp/tree/main/design-md
+          - https://github.com/google-labs-code/design.md/tree/main/examples
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+
+      - name: Generate manifest files
+        env:
+          GITHUB_PAT: ${{ secrets.GITHUB_PAT || github.token }}
+          SOURCE_URL: ${{ matrix.url }}
+          WORKDIR: ${{ env.GENERATED_DIR }}
+        run: |
+          set -euo pipefail
+          rm -rf "$WORKDIR"
+          mkdir -p "$WORKDIR"
+          cd "$WORKDIR"
+          bun "$GITHUB_WORKSPACE/src/index.ts" --generate "$SOURCE_URL"
+          ls -1
+
+      - name: actions/upload-artifact@v7
+        with:
+          name: generated-${{ github.run_id }}-${{ github.run_attempt }}-${{ strategy.job-index }}
+          path: ${{ env.GENERATED_DIR }}/*.md
+          if-no-files-found: warn
+
+  collect-and-pr:
+    name: Collect and Create PR
+    runs-on: ubuntu-latest
+    needs: generate
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v8
+        with:
+          path: ${{ runner.temp }}/generated
+          pattern: generated-*
+          merge-multiple: true
+
+      - name: Organize generated files
+        run: |
+          set -euo pipefail
+          mkdir -p agents skills designs
+          find agents skills designs -maxdepth 1 -type f -name '*.md' -delete
+          shopt -s nullglob
+          mv "$RUNNER_TEMP"/generated/*.agents.md agents/ || true
+          mv "$RUNNER_TEMP"/generated/*.skills.md skills/ || true
+          mv "$RUNNER_TEMP"/generated/*.designs.md designs/ || true
+          shopt -u nullglob
+
+      - name: Create pull request with gh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet -- agents skills designs; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          branch="bot/refresh-manifests-${{ github.run_id }}-$(date -u +%Y%m%d-%H%M%S)"
+          title="chore: [bot] Refresh Manifests"
+          body="This PR refreshes manifest files from the configured external repositories."
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$branch"
+          git add agents skills designs
+          git commit -m "$title" -m "$body"
+          git push --force-with-lease --set-upstream origin "$branch"
+          gh pr create \
+            --base main \
+            --head "$branch" \
+            --fill
