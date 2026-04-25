@@ -214,10 +214,32 @@ function resolveGenerateRootLocation(url: string): GithubDirectoryLocation | und
   }
 
   const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
-  const [owner, rawRepo, ...remainder] = pathParts;
+  const [owner, rawRepo, urlType, ...remainder] = pathParts;
   const repo = rawRepo?.endsWith(".git") ? rawRepo.slice(0, -4) : rawRepo;
 
-  if (!owner || !repo || remainder.length !== 0) {
+  if (!owner || !repo) {
+    return undefined;
+  }
+
+  if (urlType === undefined && remainder.length === 0) {
+    return {
+      owner,
+      path: "",
+      ref: "main",
+      repo,
+    };
+  }
+
+  if (urlType === "tree" && remainder.length === 1) {
+    return {
+      owner,
+      path: "",
+      ref: remainder[0] ?? "main",
+      repo,
+    };
+  }
+
+  if (urlType !== undefined || remainder.length !== 0) {
     return undefined;
   }
 

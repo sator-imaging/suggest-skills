@@ -45,6 +45,24 @@ describe("generateSkillsManifest", () => {
       globalThis.fetch = originalFetch;
     }
   });
+
+  test("accepts a GitHub repository tree URL without a path", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = mock(fetchMock) as unknown as typeof fetch;
+
+    try {
+      const manifest = await generateSkillsManifest("https://github.com/octo/demo/tree/master");
+
+      expect(manifest.outputFileName).toBe("octo.demo.skills.md");
+      expect(manifest.markdown).toBe(`| Name | Description | Bundled Assets |
+| -----|-------------|----------------|
+| [alpha](https://github.com/octo/demo/tree/master/alpha) | Alpha master skill | \`assets/example.txt\`, \`docs/usage.md\` |
+| [beta](https://github.com/octo/demo/tree/master/beta) | Beta master skill | None |
+`);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });
 
 describe("generateOutputs", () => {
@@ -177,6 +195,21 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
     ]);
   }
 
+  if (url === "https://api.github.com/repos/octo/demo/contents?ref=master") {
+    return Response.json([
+      {
+        type: "dir",
+        path: "alpha",
+        download_url: null,
+      },
+      {
+        type: "dir",
+        path: "beta",
+        download_url: null,
+      },
+    ]);
+  }
+
   if (url === "https://api.github.com/repos/octo/demo/contents/alpha?ref=main") {
     return Response.json([
       {
@@ -228,6 +261,56 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
         type: "file",
         path: "beta/SKILL.md",
         download_url: "https://raw.githubusercontent.com/octo/demo/main/beta/SKILL.md",
+      },
+    ]);
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/contents/alpha?ref=master") {
+    return Response.json([
+      {
+        type: "file",
+        path: "alpha/SKILL.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/master/alpha/SKILL.md",
+      },
+      {
+        type: "dir",
+        path: "alpha/assets",
+        download_url: null,
+      },
+      {
+        type: "dir",
+        path: "alpha/docs",
+        download_url: null,
+      },
+    ]);
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/contents/alpha/assets?ref=master") {
+    return Response.json([
+      {
+        type: "file",
+        path: "alpha/assets/example.txt",
+        download_url: "https://raw.githubusercontent.com/octo/demo/master/alpha/assets/example.txt",
+      },
+    ]);
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/contents/alpha/docs?ref=master") {
+    return Response.json([
+      {
+        type: "file",
+        path: "alpha/docs/usage.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/master/alpha/docs/usage.md",
+      },
+    ]);
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/contents/beta?ref=master") {
+    return Response.json([
+      {
+        type: "file",
+        path: "beta/SKILL.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/master/beta/SKILL.md",
       },
     ]);
   }
@@ -388,6 +471,14 @@ name: alpha-root-design
 `);
   }
 
+  if (url === "https://raw.githubusercontent.com/octo/demo/master/alpha/SKILL.md") {
+    return new Response(`---
+name: alpha
+description: Alpha master skill
+---
+`);
+  }
+
   if (url === "https://raw.githubusercontent.com/octo/demo/main/skills/beta/SKILL.md") {
     return new Response(`---
 name: beta
@@ -407,6 +498,14 @@ name: beta-design
     return new Response(`---
 name: beta
 description: Beta root skill
+---
+`);
+  }
+
+  if (url === "https://raw.githubusercontent.com/octo/demo/master/beta/SKILL.md") {
+    return new Response(`---
+name: beta
+description: Beta master skill
 ---
 `);
   }
