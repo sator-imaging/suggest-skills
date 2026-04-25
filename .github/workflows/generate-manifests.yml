@@ -36,7 +36,7 @@ jobs:
           - https://github.com/addyosmani/agent-skills/tree/main/agents
           - https://github.com/addyosmani/agent-skills/tree/main/skills
           - https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/tree/main/.claude/skills
-          - https://github.com/ComposioHQ/awesome-claude-skills
+          - https://github.com/ComposioHQ/awesome-claude-skills/tree/master
           - https://github.com/runceel/ai-dev-template/tree/main/.github/skills
           - https://github.com/runceel/ai-dev-template/tree/main/.github/agents
           - https://github.com/vercel-labs/agent-skills/tree/main/skills
