@@ -37,6 +37,7 @@ jobs:
           - https://github.com/addyosmani/agent-skills/tree/main/skills
           - https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/tree/main/.claude/skills
           - https://github.com/ComposioHQ/awesome-claude-skills/tree/master
+          - https://github.com/ComposioHQ/awesome-claude-skills/tree/master/document-skills
           - https://github.com/runceel/ai-dev-template/tree/main/.github/skills
           - https://github.com/runceel/ai-dev-template/tree/main/.github/agents
           - https://github.com/vercel-labs/agent-skills/tree/main/skills
@@ -105,7 +106,7 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -B "$branch"
-          git add agents skills designs
+          git add -f agents skills designs
           git commit -m "$title" -m "$body" || {
             echo "No changes to commit."
             exit 0
