@@ -98,11 +98,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          if git diff --quiet -- agents skills designs; then
-            echo "No changes to commit."
-            exit 0
-          fi
-
           branch="bot/refresh-manifests-${{ github.run_id }}-$(date -u +%Y%m%d-%H%M%S)"
           title="chore: [bot] Refresh Manifests"
           body="This PR refreshes manifest files from the configured external repositories."
@@ -111,7 +106,10 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -B "$branch"
           git add agents skills designs
-          git commit -m "$title" -m "$body"
+          git commit -m "$title" -m "$body" || {
+            echo "No changes to commit."
+            exit 0
+          }
           git push --force-with-lease --set-upstream origin "$branch"
           gh pr create \
             --base main \
