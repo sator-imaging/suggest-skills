@@ -18,7 +18,7 @@ jobs:
     name: Generate ${{ strategy.job-index }}
     runs-on: ubuntu-latest
     env:
-      GENERATED_DIR: ${{ runner.temp }}/generate/${{ strategy.job-index }}
+      GENERATED_DIR: generate/${{ strategy.job-index }}
     strategy:
       fail-fast: false
       matrix:
@@ -53,7 +53,7 @@ jobs:
         env:
           GITHUB_PAT: ${{ secrets.GITHUB_PAT || github.token }}
           SOURCE_URL: ${{ matrix.url }}
-          WORKDIR: ${{ env.GENERATED_DIR }}
+          WORKDIR: ${{ runner.temp }}/${{ env.GENERATED_DIR }}
         run: |
           set -euo pipefail
           rm -rf "$WORKDIR"
@@ -62,10 +62,10 @@ jobs:
           bun "$GITHUB_WORKSPACE/src/index.ts" --generate "$SOURCE_URL"
           ls -1
 
-      - name: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v7
         with:
           name: generated-${{ github.run_id }}-${{ github.run_attempt }}-${{ strategy.job-index }}
-          path: ${{ env.GENERATED_DIR }}/*.md
+          path: ${{ runner.temp }}/${{ env.GENERATED_DIR }}/*.md
           if-no-files-found: warn
 
   collect-and-pr:
