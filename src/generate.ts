@@ -63,6 +63,9 @@ type ManifestWriter = {
 
 const SKILL_DOWNLOAD_CONCURRENCY = 4;
 const GITHUB_HOSTNAME = "github.com";
+const BUNDLED_ASSETS_NONE = "None";
+const BUNDLED_ASSETS_INLINE_MAX_ITEMS = 3;
+const BUNDLED_ASSETS_ROOT_DIRECTORY = ".";
 const GENERATED_OUTPUT_KIND_SUFFIXES = {
   agents: "agents",
   design: "designs",
@@ -543,7 +546,7 @@ function formatRow(
   entry: GeneratedEntry,
   options: MarkdownBuildOptions,
 ): string {
-  const assets = entry.assets.length === 0 ? "None" : entry.assets.map((asset) => `\`${asset}\``).join(", ");
+  const assets = formatBundledAssets(entry.assets);
   const description = entry.description || options.emptyDescription;
 
   if (!options.includeAssets) {
@@ -555,6 +558,30 @@ function formatRow(
 
 function escapeTableCell(value: string): string {
   return value.replaceAll("|", "\\|").replaceAll("\n", " ");
+}
+
+function formatBundledAssets(assets: string[]): string {
+  if (assets.length === 0) {
+    return BUNDLED_ASSETS_NONE;
+  }
+
+  if (assets.length <= BUNDLED_ASSETS_INLINE_MAX_ITEMS) {
+    return assets.map((asset) => `\`${asset}\``).join(", ");
+  }
+
+  const directoryCounts = new Map<string, number>();
+
+  for (const asset of assets) {
+    const assetParts = asset.split("/").filter(Boolean);
+    const directory = assetParts.slice(0, -1).join("/");
+    const key = directory || BUNDLED_ASSETS_ROOT_DIRECTORY;
+    directoryCounts.set(key, (directoryCounts.get(key) ?? 0) + 1);
+  }
+
+  return Array.from(directoryCounts.entries())
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([directory, count]) => `\`${directory}\` (${count} ${count === 1 ? "file" : "files"})`)
+    .join(", ");
 }
 
 function formatGithubFolderUrl(location: GithubDirectoryLocation, path: string): string {

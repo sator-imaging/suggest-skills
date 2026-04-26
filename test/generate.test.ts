@@ -20,7 +20,7 @@ describe("generateSkillsManifest", () => {
       expect(manifest.outputFileName).toBe("octo.demo.skills.skills.md");
       expect(manifest.markdown).toBe(`| Name | Description | Bundled Assets |
 | -----|-------------|----------------|
-| [alpha](https://github.com/octo/demo/tree/main/skills/alpha) | Alpha skill | \`.config/settings.json\`, \`assets/example.txt\`, \`assets/templates/config.json\`, \`scripts/deploy.sh\` |
+| [alpha](https://github.com/octo/demo/tree/main/skills/alpha) | Alpha skill | \`.config\` (1 file), \`assets\` (1 file), \`assets/templates\` (1 file), \`refs\` (1 file), \`refs/sub\` (1 file), \`scripts\` (1 file) |
 | [beta](https://github.com/octo/demo/tree/main/skills/beta) | Beta skill | \`notes.txt\` |
 `);
     } finally {
@@ -100,7 +100,7 @@ describe("generateOutputs", () => {
       expect(outputs.design.outputFileName).toBe("octo.demo.skills.designs.md");
       expect(outputs.design.markdown).toBe(`| Name | Description | Bundled Assets |
 | -----|-------------|----------------|
-| [alpha-design](https://github.com/octo/demo/tree/main/skills/alpha) | Alpha design | \`.config/settings.json\`, \`assets/example.txt\`, \`assets/templates/config.json\`, \`scripts/deploy.sh\` |
+| [alpha-design](https://github.com/octo/demo/tree/main/skills/alpha) | Alpha design | \`.config\` (1 file), \`assets\` (1 file), \`assets/templates\` (1 file), \`refs\` (1 file), \`refs/sub\` (1 file), \`scripts\` (1 file) |
 | [beta-design](https://github.com/octo/demo/tree/main/skills/beta) | None | \`notes.txt\` |
 `);
     } finally {
@@ -404,6 +404,11 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
         download_url: null,
       },
       {
+        type: "dir",
+        path: "skills/alpha/refs",
+        download_url: null,
+      },
+      {
         type: "file",
         path: "skills/alpha/.secret",
         download_url: "https://raw.githubusercontent.com/octo/demo/main/skills/alpha/.secret",
@@ -456,6 +461,31 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
         type: "file",
         path: "skills/alpha/.config/settings.json",
         download_url: "https://raw.githubusercontent.com/octo/demo/main/skills/alpha/.config/settings.json",
+      },
+    ]);
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/contents/skills/alpha/refs?ref=main") {
+    return Response.json([
+      {
+        type: "file",
+        path: "skills/alpha/refs/guide.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/skills/alpha/refs/guide.md",
+      },
+      {
+        type: "dir",
+        path: "skills/alpha/refs/sub",
+        download_url: null,
+      },
+    ]);
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/contents/skills/alpha/refs/sub?ref=main") {
+    return Response.json([
+      {
+        type: "file",
+        path: "skills/alpha/refs/sub/details.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/skills/alpha/refs/sub/details.md",
       },
     ]);
   }
