@@ -47,6 +47,13 @@ type FrontMatter = {
   name: string;
 };
 
+type GeneratedOutputKey = keyof GeneratedOutputs;
+
+type MarkdownBuildOptions = {
+  emptyDescription: string;
+  includeAssets: boolean;
+};
+
 type ManifestWriter = {
   confirmOverwrite: (path: string) => Promise<boolean>;
   fileExists: (path: string) => Promise<boolean>;
@@ -56,6 +63,25 @@ type ManifestWriter = {
 
 const SKILL_DOWNLOAD_CONCURRENCY = 4;
 const GITHUB_HOSTNAME = "github.com";
+const GENERATED_OUTPUT_KIND_SUFFIXES = {
+  agents: "agents",
+  design: "designs",
+  manifest: "skills",
+} as const satisfies Record<GeneratedOutputKey, string>;
+const GENERATED_MARKDOWN_OPTIONS = {
+  agents: {
+    emptyDescription: "None",
+    includeAssets: false,
+  },
+  design: {
+    emptyDescription: "None",
+    includeAssets: true,
+  },
+  manifest: {
+    emptyDescription: "",
+    includeAssets: true,
+  },
+} as const satisfies Record<GeneratedOutputKey, MarkdownBuildOptions>;
 
 export async function generateSkillsManifest(url: string): Promise<GeneratedDocument> {
   const outputs = await generateOutputs(url);
@@ -88,25 +114,16 @@ export async function generateOutputs(url: string): Promise<GeneratedOutputs> {
 
   return {
     agents: {
-      markdown: buildMarkdown(agentEntries, {
-        emptyDescription: "None",
-        includeAssets: false,
-      }),
-      outputFileName: `${rootLocation.owner}.${rootLocation.repo}.agents.md`,
+      markdown: buildMarkdown(agentEntries, GENERATED_MARKDOWN_OPTIONS.agents),
+      outputFileName: buildGeneratedOutputFileName(rootLocation, GENERATED_OUTPUT_KIND_SUFFIXES.agents),
     },
     design: {
-      markdown: buildMarkdown(designEntries, {
-        emptyDescription: "None",
-        includeAssets: true,
-      }),
-      outputFileName: `${rootLocation.owner}.${rootLocation.repo}.designs.md`,
+      markdown: buildMarkdown(designEntries, GENERATED_MARKDOWN_OPTIONS.design),
+      outputFileName: buildGeneratedOutputFileName(rootLocation, GENERATED_OUTPUT_KIND_SUFFIXES.design),
     },
     manifest: {
-      markdown: buildMarkdown(manifestEntries, {
-        emptyDescription: "",
-        includeAssets: true,
-      }),
-      outputFileName: `${rootLocation.owner}.${rootLocation.repo}.skills.md`,
+      markdown: buildMarkdown(manifestEntries, GENERATED_MARKDOWN_OPTIONS.manifest),
+      outputFileName: buildGeneratedOutputFileName(rootLocation, GENERATED_OUTPUT_KIND_SUFFIXES.manifest),
     },
   };
 }
@@ -408,6 +425,10 @@ async function collectDirectoryFiles(
       continue;
     }
 
+    if (shouldIgnoreGeneratedAsset(relativePath)) {
+      continue;
+    }
+
     assets.push(relativePath);
   }
 
@@ -496,10 +517,7 @@ function collapseWhitespace(value: string): string {
 
 function buildMarkdown(
   entries: GeneratedEntry[],
-  options: {
-    emptyDescription: string;
-    includeAssets: boolean;
-  },
+  options: MarkdownBuildOptions,
 ): string {
   const lines = options.includeAssets
     ? [
@@ -523,10 +541,7 @@ function isEmptyGeneratedDocument(document: GeneratedDocument): boolean {
 
 function formatRow(
   entry: GeneratedEntry,
-  options: {
-    emptyDescription: string;
-    includeAssets: boolean;
-  },
+  options: MarkdownBuildOptions,
 ): string {
   const assets = entry.assets.length === 0 ? "None" : entry.assets.map((asset) => `\`${asset}\``).join(", ");
   const description = entry.description || options.emptyDescription;
@@ -550,9 +565,30 @@ function formatGithubFileUrl(location: GithubDirectoryLocation, path: string): s
   return `https://github.com/${location.owner}/${location.repo}/blob/${location.ref}/${path}`;
 }
 
+function buildGeneratedOutputFileName(
+  location: GithubDirectoryLocation,
+  kind: typeof GENERATED_OUTPUT_KIND_SUFFIXES[keyof typeof GENERATED_OUTPUT_KIND_SUFFIXES],
+): string {
+  const pathSuffix = location.path
+    .split("/")
+    .filter(Boolean)
+    .join(".");
+  const prefix = [location.owner, location.repo, pathSuffix]
+    .filter(Boolean)
+    .join(".")
+    .replace(/\.+/gu, ".")
+    .replace(/^\.|\.$/gu, "");
+
+  return `${prefix}.${kind}.md`;
+}
+
 function basename(path: string): string {
   const parts = path.split("/").filter(Boolean);
   return parts[parts.length - 1] ?? path;
+}
+
+function shouldIgnoreGeneratedAsset(path: string): boolean {
+  return basename(path).startsWith(".");
 }
 
 function toRelativePath(path: string, rootPath: string): string {

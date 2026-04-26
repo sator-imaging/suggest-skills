@@ -15,45 +15,47 @@ concurrency:
 
 jobs:
   generate:
-    name: "#${{ strategy.job-index }}: ${{ matrix.url }}"
+    name: "${{ matrix.url }}"
     runs-on: ubuntu-latest
-    timeout-minutes: 16
-    env:
-      GENERATED_DIR: generate/${{ strategy.job-index }}
+    timeout-minutes: 10
     strategy:
+      max-parallel: 2   # To avoid GitHub API rate limit
       fail-fast: true
-      max-parallel: 1   # To avoid GitHub API rate limit
       matrix:
         url:
-          - https://github.com/anthropics/skills/tree/main/skills
-          - https://github.com/github/awesome-copilot/tree/main/agents
-          - https://github.com/github/awesome-copilot/tree/main/skills
-          - https://github.com/dotnet/skills/tree/main/plugins/dotnet/skills
-          - https://github.com/dotnet/skills/tree/main/plugins/dotnet-diag/agents
-          - https://github.com/dotnet/skills/tree/main/plugins/dotnet-diag/skills
-          - https://github.com/dotnet/skills/tree/main/plugins/dotnet-test/agents
-          - https://github.com/dotnet/skills/tree/main/plugins/dotnet-test/skills
-          - https://github.com/obra/superpowers/tree/main/agents
-          - https://github.com/obra/superpowers/tree/main/skills
-          - https://github.com/addyosmani/agent-skills/tree/main/agents
-          - https://github.com/addyosmani/agent-skills/tree/main/skills
-          - https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/tree/main/.claude/skills
-          - https://github.com/ComposioHQ/awesome-claude-skills/tree/master
-          - https://github.com/runceel/ai-dev-template/tree/main/.github/skills
-          - https://github.com/runceel/ai-dev-template/tree/main/.github/agents
-          - https://github.com/vercel-labs/agent-skills/tree/main/skills
-          - https://github.com/openai/skills/tree/main/skills/.curated
-          - https://github.com/Kotlin/kotlin-agent-skills/tree/main/skills
-          - https://github.com/google-gemini/gemini-cli/tree/main/.gemini/skills
-          - https://github.com/figma/mcp-server-guide/tree/main/skills
-          - https://github.com/cloudflare/skills/tree/main/skills
-          - https://github.com/browser-use/browser-use/tree/main/skills
-          - https://github.com/firebase/agent-skills/tree/main/skills
-          - https://github.com/facebook/react/tree/main/.claude/skills
-          - https://github.com/google-labs-code/stitch-skills/tree/main/skills
-          - https://github.com/VoltAgent/awesome-design-md/tree/ef729b271802ce7ed50f9e0928137b18942cde80/design-md
-          - https://github.com/kzhrknt/awesome-design-md-jp/tree/main/design-md
-          - https://github.com/google-labs-code/design.md/tree/main/examples
+          - anthropics/skills/tree/main/skills
+          - github/awesome-copilot/tree/main/agents
+          - github/awesome-copilot/tree/main/skills
+          - dotnet/skills/tree/main/plugins/dotnet/skills
+          - dotnet/skills/tree/main/plugins/dotnet-diag/agents
+          - dotnet/skills/tree/main/plugins/dotnet-diag/skills
+          - dotnet/skills/tree/main/plugins/dotnet-test/agents
+          - dotnet/skills/tree/main/plugins/dotnet-test/skills
+          - obra/superpowers/tree/main/agents
+          - obra/superpowers/tree/main/skills
+          - addyosmani/agent-skills/tree/main/agents
+          - addyosmani/agent-skills/tree/main/skills
+          - nextlevelbuilder/ui-ux-pro-max-skill/tree/main/.claude/skills
+          - ComposioHQ/awesome-claude-skills/tree/master
+          - ComposioHQ/awesome-claude-skills/tree/master/document-skills
+          - runceel/ai-dev-template/tree/main/.github/skills
+          - runceel/ai-dev-template/tree/main/.github/agents
+          - vercel-labs/agent-skills/tree/main/skills
+          - openai/skills/tree/main/skills/.curated
+          - Kotlin/kotlin-agent-skills/tree/main/skills
+          - google-gemini/gemini-cli/tree/main/.gemini/skills
+          - figma/mcp-server-guide/tree/main/skills
+          - cloudflare/skills/tree/main/skills
+          - browser-use/browser-use/tree/main/skills
+          - firebase/agent-skills/tree/main/skills
+          - facebook/react/tree/main/.claude/skills
+          - google-labs-code/stitch-skills/tree/main/skills
+          - VoltAgent/awesome-design-md/tree/ef729b271802ce7ed50f9e0928137b18942cde80/design-md
+          - kzhrknt/awesome-design-md-jp/tree/main/design-md
+          - google-labs-code/design.md/tree/main/examples
+
+    env:
+      GENERATED_DIR: generate/${{ strategy.job-index }}
 
     steps:
       - uses: actions/checkout@v6
@@ -70,8 +72,10 @@ jobs:
           rm -rf "$WORKDIR"
           mkdir -p "$WORKDIR"
           cd "$WORKDIR"
+          if [[ "$SOURCE_URL" != https://* ]]; then
+            SOURCE_URL="https://github.com/$SOURCE_URL"
+          fi
           bun "$GITHUB_WORKSPACE/src/index.ts" --generate "$SOURCE_URL"
-          ls -1
 
       - uses: actions/upload-artifact@v7
         with:

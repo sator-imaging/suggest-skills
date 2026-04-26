@@ -47,9 +47,9 @@ npx suggest-skills --generate \
 
 This may write the following files in the current working directory:
 
-- `<owner>.<repo>.skills.md`: entries collected from skill directories that contain `SKILL.md`
-- `<owner>.<repo>.designs.md`: entries collected from skill directories that contain `DESIGN.md`
-- `<owner>.<repo>.agents.md`: entries collected from flat top-level markdown files, with `Name` and `Description` columns only
+- `<owner>.<repo>[.<path>].skills.md`: entries collected from skill directories that contain `SKILL.md`
+- `<owner>.<repo>[.<path>].designs.md`: entries collected from skill directories that contain `DESIGN.md`
+- `<owner>.<repo>[.<path>].agents.md`: entries collected from flat top-level markdown files, with `Name` and `Description` columns only
 - Accepts plain GitHub repository URLs in generate mode by assuming repo root on `main`
 
 Generate mode uses these rules:

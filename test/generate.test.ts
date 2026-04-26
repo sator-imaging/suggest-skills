@@ -17,10 +17,10 @@ describe("generateSkillsManifest", () => {
         "https://github.com/octo/demo/tree/main/skills",
       );
 
-      expect(manifest.outputFileName).toBe("octo.demo.skills.md");
+      expect(manifest.outputFileName).toBe("octo.demo.skills.skills.md");
       expect(manifest.markdown).toBe(`| Name | Description | Bundled Assets |
 | -----|-------------|----------------|
-| [alpha](https://github.com/octo/demo/tree/main/skills/alpha) | Alpha skill | \`assets/example.txt\`, \`assets/templates/config.json\`, \`scripts/deploy.sh\` |
+| [alpha](https://github.com/octo/demo/tree/main/skills/alpha) | Alpha skill | \`.config/settings.json\`, \`assets/example.txt\`, \`assets/templates/config.json\`, \`scripts/deploy.sh\` |
 | [beta](https://github.com/octo/demo/tree/main/skills/beta) | Beta skill | \`notes.txt\` |
 `);
     } finally {
@@ -73,7 +73,7 @@ describe("generateOutputs", () => {
     try {
       const outputs = await generateOutputs("https://github.com/octo/demo/tree/main/skills");
 
-      expect(outputs.agents.outputFileName).toBe("octo.demo.agents.md");
+      expect(outputs.agents.outputFileName).toBe("octo.demo.skills.agents.md");
       expect(outputs.agents.markdown).toBe(`| Name | Description |
 | -----|-------------|
 | [fold-clip-agent](https://github.com/octo/demo/blob/main/skills/fold-clip-agent.md) | Fold clip first line. Fold clip second line. |
@@ -97,10 +97,10 @@ describe("generateOutputs", () => {
     try {
       const outputs = await generateOutputs("https://github.com/octo/demo/tree/main/skills");
 
-      expect(outputs.design.outputFileName).toBe("octo.demo.designs.md");
+      expect(outputs.design.outputFileName).toBe("octo.demo.skills.designs.md");
       expect(outputs.design.markdown).toBe(`| Name | Description | Bundled Assets |
 | -----|-------------|----------------|
-| [alpha-design](https://github.com/octo/demo/tree/main/skills/alpha) | Alpha design | \`assets/example.txt\`, \`assets/templates/config.json\`, \`scripts/deploy.sh\` |
+| [alpha-design](https://github.com/octo/demo/tree/main/skills/alpha) | Alpha design | \`.config/settings.json\`, \`assets/example.txt\`, \`assets/templates/config.json\`, \`scripts/deploy.sh\` |
 | [beta-design](https://github.com/octo/demo/tree/main/skills/beta) | None | \`notes.txt\` |
 `);
     } finally {
@@ -116,7 +116,7 @@ describe("writeGeneratedManifest", () => {
     const writes: Array<{ content: string; path: string }> = [];
     const manifest: GeneratedDocument = {
       markdown: "manifest-body\n",
-      outputFileName: "octo.demo.skills.md",
+      outputFileName: "octo.demo.skills.skills.md",
     };
 
     await expect(
@@ -128,7 +128,7 @@ describe("writeGeneratedManifest", () => {
           writes.push({ content, path });
         },
       }),
-    ).rejects.toThrow('Refusing to overwrite "octo.demo.skills.md".');
+    ).rejects.toThrow('Refusing to overwrite "octo.demo.skills.skills.md".');
 
     expect(writes).toEqual([]);
   });
@@ -137,7 +137,7 @@ describe("writeGeneratedManifest", () => {
     const writes: Array<{ content: string; path: string }> = [];
     const manifest: GeneratedDocument = {
       markdown: "manifest-body\n",
-      outputFileName: "octo.demo.skills.md",
+      outputFileName: "octo.demo.skills.skills.md",
     };
 
     const outputPath = await writeGeneratedManifest(manifest, {
@@ -149,11 +149,11 @@ describe("writeGeneratedManifest", () => {
       },
     });
 
-    expect(outputPath).toBe(join(workingDirectory, "octo.demo.skills.md"));
+    expect(outputPath).toBe(join(workingDirectory, "octo.demo.skills.skills.md"));
     expect(writes).toEqual([
       {
         content: "manifest-body\n",
-        path: join(workingDirectory, "octo.demo.skills.md"),
+        path: join(workingDirectory, "octo.demo.skills.skills.md"),
       },
     ]);
   });
@@ -162,7 +162,7 @@ describe("writeGeneratedManifest", () => {
     const writes: Array<{ content: string; path: string }> = [];
     const manifest: GeneratedDocument = {
       markdown: "| Name | Description |\n| -----|-------------|\n",
-      outputFileName: "octo.demo.agents.md",
+      outputFileName: "octo.demo.skills.agents.md",
     };
 
     const outputPath = await writeGeneratedManifest(manifest, {
@@ -398,6 +398,16 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
         path: "skills/alpha/scripts",
         download_url: null,
       },
+      {
+        type: "dir",
+        path: "skills/alpha/.config",
+        download_url: null,
+      },
+      {
+        type: "file",
+        path: "skills/alpha/.secret",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/skills/alpha/.secret",
+      },
     ]);
   }
 
@@ -436,6 +446,16 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
         type: "file",
         path: "skills/alpha/scripts/deploy.sh",
         download_url: "https://raw.githubusercontent.com/octo/demo/main/skills/alpha/scripts/deploy.sh",
+      },
+    ]);
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/contents/skills/alpha/.config?ref=main") {
+    return Response.json([
+      {
+        type: "file",
+        path: "skills/alpha/.config/settings.json",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/skills/alpha/.config/settings.json",
       },
     ]);
   }
