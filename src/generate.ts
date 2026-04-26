@@ -26,6 +26,8 @@ export type GeneratedOutputs = {
 
 type GeneratedEntry = {
   assets: string[];
+  assetBlobBaseUrl: string;
+  assetTreeBaseUrl: string;
   description: string;
   name: string;
   url: string;
@@ -52,6 +54,7 @@ type GeneratedOutputKey = keyof GeneratedOutputs;
 type MarkdownBuildOptions = {
   emptyDescription: string;
   includeAssets: boolean;
+  linkAssets: boolean;
 };
 
 type ManifestWriter = {
@@ -74,14 +77,17 @@ const GENERATED_MARKDOWN_OPTIONS = {
   agents: {
     emptyDescription: "None",
     includeAssets: false,
+    linkAssets: false,
   },
   design: {
     emptyDescription: "None",
     includeAssets: true,
+    linkAssets: true,
   },
   manifest: {
     emptyDescription: "",
     includeAssets: true,
+    linkAssets: false,
   },
 } as const satisfies Record<GeneratedOutputKey, MarkdownBuildOptions>;
 
@@ -290,6 +296,8 @@ async function summarizeAgentFile(
 
   const entry = {
     assets: [],
+    assetBlobBaseUrl: summary.url,
+    assetTreeBaseUrl: summary.url,
     description: frontMatter.description || "None",
     name: frontMatter.name || basenameValue,
     url: summary.url,
@@ -380,6 +388,8 @@ async function buildEntry({
 
   return {
     assets: summary.assets.slice().sort((left, right) => left.localeCompare(right)),
+    assetBlobBaseUrl: formatGithubFileUrl(rootLocation, sourcePath),
+    assetTreeBaseUrl: formatGithubFolderUrl(rootLocation, sourcePath),
     description: frontMatter.description || descriptionFallback,
     name: frontMatter.name || fallbackName,
     url: formatGithubFolderUrl(rootLocation, sourcePath),
@@ -545,7 +555,7 @@ function formatRow(
   entry: GeneratedEntry,
   options: MarkdownBuildOptions,
 ): string {
-  const assets = formatBundledAssets(entry.assets);
+  const assets = formatBundledAssets(entry, options);
   const description = entry.description || options.emptyDescription;
 
   if (!options.includeAssets) {
@@ -559,19 +569,19 @@ function escapeTableCell(value: string): string {
   return value.replaceAll("|", "\\|").replaceAll("\n", " ");
 }
 
-function formatBundledAssets(assets: string[]): string {
-  if (assets.length === 0) {
+function formatBundledAssets(entry: GeneratedEntry, options: MarkdownBuildOptions): string {
+  if (entry.assets.length === 0) {
     return BUNDLED_ASSETS_NONE;
   }
 
-  if (assets.length <= BUNDLED_ASSETS_INLINE_MAX_ITEMS) {
-    return assets.map((asset) => `\`${asset}\``).join(", ");
+  if (entry.assets.length <= BUNDLED_ASSETS_INLINE_MAX_ITEMS) {
+    return entry.assets.map((asset) => formatAssetItem(asset, entry, options)).join(", ");
   }
 
   const rootFiles: string[] = [];
   const directoryFiles = new Map<string, string[]>();
 
-  for (const asset of assets) {
+  for (const asset of entry.assets) {
     const assetParts = asset.split("/").filter(Boolean);
     const directory = assetParts.slice(0, -1).join("/");
 
@@ -587,14 +597,39 @@ function formatBundledAssets(assets: string[]): string {
     .sort(([left], [right]) => left.localeCompare(right))
     .flatMap(([directory, files]) =>
       files.length === 1
-        ? files.map((file) => `\`${file}\``)
-        : [`\`${directory}\` (${files.length} files)`]
+        ? files.map((file) => formatAssetItem(file, entry, options))
+        : [formatCollapsedAssetDirectory(directory, files.length, entry, options)]
     );
   const listedRootFiles = rootFiles
     .sort((left, right) => left.localeCompare(right))
-    .map((asset) => `\`${asset}\``);
+    .map((asset) => formatAssetItem(asset, entry, options));
 
   return [...listedRootFiles, ...listedDirectories].join(", ");
+}
+
+function formatAssetItem(
+  asset: string,
+  entry: GeneratedEntry,
+  options: MarkdownBuildOptions,
+): string {
+  if (!options.linkAssets) {
+    return `\`${asset}\``;
+  }
+
+  return `[${asset}](${entry.assetBlobBaseUrl}/${asset})`;
+}
+
+function formatCollapsedAssetDirectory(
+  directory: string,
+  count: number,
+  entry: GeneratedEntry,
+  options: MarkdownBuildOptions,
+): string {
+  const label = options.linkAssets
+    ? `[${directory}](${entry.assetTreeBaseUrl}/${directory})`
+    : `\`${directory}\``;
+
+  return `${label} (${count} files)`;
 }
 
 function formatGithubFolderUrl(location: GithubDirectoryLocation, path: string): string {
