@@ -569,7 +569,7 @@ function formatBundledAssets(assets: string[]): string {
   }
 
   const rootFiles: string[] = [];
-  const directoryCounts = new Map<string, number>();
+  const directoryFiles = new Map<string, string[]>();
 
   for (const asset of assets) {
     const assetParts = asset.split("/").filter(Boolean);
@@ -580,17 +580,21 @@ function formatBundledAssets(assets: string[]): string {
       continue;
     }
 
-    directoryCounts.set(directory, (directoryCounts.get(directory) ?? 0) + 1);
+    directoryFiles.set(directory, [...(directoryFiles.get(directory) ?? []), asset]);
   }
 
-  const collapsedDirectories = Array.from(directoryCounts.entries())
+  const listedDirectories = Array.from(directoryFiles.entries())
     .sort(([left], [right]) => left.localeCompare(right))
-    .map(([directory, count]) => `\`${directory}\` (${count} ${count === 1 ? "file" : "files"})`)
+    .flatMap(([directory, files]) =>
+      files.length === 1
+        ? files.map((file) => `\`${file}\``)
+        : [`\`${directory}\` (${files.length} files)`]
+    );
   const listedRootFiles = rootFiles
     .sort((left, right) => left.localeCompare(right))
     .map((asset) => `\`${asset}\``);
 
-  return [...listedRootFiles, ...collapsedDirectories].join(", ");
+  return [...listedRootFiles, ...listedDirectories].join(", ");
 }
 
 function formatGithubFolderUrl(location: GithubDirectoryLocation, path: string): string {
