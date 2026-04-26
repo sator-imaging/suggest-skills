@@ -279,12 +279,12 @@ async function summarizeAgentFile(
 
   const basenameValue = basename(summary.path);
 
-  logInfo(`Starting summarize agent: ${summary.path}`);
+  logInfo(`Fetching: ${summary.path}`);
   const fileText = await fetchTextContent(summary.url, `Agent file "${summary.path}"`);
   const frontMatter = parseFrontMatter(fileText);
 
   if (!frontMatter.name && !frontMatter.description) {
-    logInfo(`Finished summarize agent: ${summary.path} (skipped)`);
+    logInfo(`Skipped agent: ${summary.path}`);
     return undefined;
   }
 
@@ -294,7 +294,7 @@ async function summarizeAgentFile(
     name: frontMatter.name || basenameValue,
     url: summary.url,
   };
-  logInfo(`Finished summarize agent: ${entry.name}`);
+  logInfo(`Agent summarized: ${entry.name}`);
 
   return entry;
 }
@@ -334,9 +334,9 @@ async function summarizeDirectory(
   });
 
   if (manifest || design) {
-    logInfo(`Finished summarize skill: ${fallbackName}`);
+    logInfo(`Skill summarized: ${fallbackName}`);
   } else {
-    logInfo(`Finished summarize skill: ${directoryPath} (skipped)`);
+    logInfo(`Skipped skill: ${directoryPath}`);
   }
 
   const result: { design?: GeneratedEntry; manifest?: GeneratedEntry } = {};
