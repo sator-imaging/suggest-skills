@@ -87,6 +87,8 @@ jobs:
     name: Collect and Create PR
     runs-on: ubuntu-latest
     needs: generate
+    env:
+      CURATED_DIR: curated
 
     steps:
       - uses: actions/checkout@v6
@@ -99,12 +101,16 @@ jobs:
       - name: Organize generated files
         run: |
           set -euo pipefail
-          mkdir -p agents skills designs
-          find agents skills designs -maxdepth 1 -type f -name '*.md' -delete
+          mkdir -p "$CURATED_DIR"/agents
+          mkdir -p "$CURATED_DIR"/skills
+          mkdir -p "$CURATED_DIR"/designs
+          find "$CURATED_DIR"/agents -maxdepth 1 -type f -name '*.md' -delete
+          find "$CURATED_DIR"/skills -maxdepth 1 -type f -name '*.md' -delete
+          find "$CURATED_DIR"/designs -maxdepth 1 -type f -name '*.md' -delete
           shopt -s nullglob
-          mv "$RUNNER_TEMP"/generated/*.agents.md agents/ || true
-          mv "$RUNNER_TEMP"/generated/*.skills.md skills/ || true
-          mv "$RUNNER_TEMP"/generated/*.designs.md designs/ || true
+          mv "$RUNNER_TEMP"/generated/*.agents.md "$CURATED_DIR"/agents/ || true
+          mv "$RUNNER_TEMP"/generated/*.skills.md "$CURATED_DIR"/skills/ || true
+          mv "$RUNNER_TEMP"/generated/*.designs.md "$CURATED_DIR"/designs/ || true
           shopt -u nullglob
 
       - name: Create pull request with gh
@@ -120,7 +126,9 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -B "$branch"
-          git add -f agents skills designs
+          git add -f "$CURATED_DIR"/agents
+          git add -f "$CURATED_DIR"/skills
+          git add -f "$CURATED_DIR"/designs
           git commit -m "$title" -m "$body" || {
             echo "No changes to commit."
             exit 0
