@@ -1,4 +1,5 @@
 [![npm](https://img.shields.io/npm/v/suggest-skills)](https://www.npmjs.com/package/suggest-skills)
+[![test](https://github.com/sator-imaging/suggest-skills/actions/workflows/test.yml/badge.svg)](https://github.com/sator-imaging/suggest-skills/actions/workflows/test.yml)
 
 
 
