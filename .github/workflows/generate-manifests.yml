@@ -11,17 +11,18 @@ permissions:
 
 concurrency:
   group: generate-manifests
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   generate:
-    name: Generate ${{ strategy.job-index }}
+    name: "#${{ strategy.job-index }}: ${{ matrix.url }}"
     runs-on: ubuntu-latest
+    timeout-minutes: 16
     env:
       GENERATED_DIR: generate/${{ strategy.job-index }}
     strategy:
-      fail-fast: false
-      max-parallel: 1   # To avoid rate limit
+      fail-fast: true
+      max-parallel: 1   # To avoid GitHub API rate limit
       matrix:
         url:
           - https://github.com/anthropics/skills/tree/main/skills
@@ -41,6 +42,15 @@ jobs:
           - https://github.com/runceel/ai-dev-template/tree/main/.github/skills
           - https://github.com/runceel/ai-dev-template/tree/main/.github/agents
           - https://github.com/vercel-labs/agent-skills/tree/main/skills
+          - https://github.com/openai/skills/tree/main/skills/.curated
+          - https://github.com/Kotlin/kotlin-agent-skills/tree/main/skills
+          - https://github.com/google-gemini/gemini-cli/tree/main/.gemini/skills
+          - https://github.com/figma/mcp-server-guide/tree/main/skills
+          - https://github.com/cloudflare/skills/tree/main/skills
+          - https://github.com/browser-use/browser-use/tree/main/skills
+          - https://github.com/firebase/agent-skills/tree/main/skills
+          - https://github.com/facebook/react/tree/main/.claude/skills
+          - https://github.com/google-labs-code/stitch-skills/tree/main/skills
           - https://github.com/VoltAgent/awesome-design-md/tree/ef729b271802ce7ed50f9e0928137b18942cde80/design-md
           - https://github.com/kzhrknt/awesome-design-md-jp/tree/main/design-md
           - https://github.com/google-labs-code/design.md/tree/main/examples
@@ -100,7 +110,7 @@ jobs:
           set -euo pipefail
 
           branch="bot/refresh-manifests-${{ github.run_id }}-$(date -u +%Y%m%d-%H%M%S)"
-          title="chore: [bot] Refresh Manifests"
+          title="bot: Refresh Manifests"
           body="This PR refreshes manifest files from the configured external repositories."
 
           git config user.name  "github-actions[bot]"

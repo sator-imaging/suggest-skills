@@ -76,7 +76,13 @@ describe("generateOutputs", () => {
       expect(outputs.agents.outputFileName).toBe("octo.demo.agents.md");
       expect(outputs.agents.markdown).toBe(`| Name | Description |
 | -----|-------------|
-| [release-agent](https://github.com/octo/demo/blob/main/skills/release-agent.md) | Release workflows |
+| [fold-clip-agent](https://github.com/octo/demo/blob/main/skills/fold-clip-agent.md) | Fold clip first line. Fold clip second line. |
+| [fold-keep-agent](https://github.com/octo/demo/blob/main/skills/fold-keep-agent.md) | Fold keep first line. Fold keep second line. |
+| [fold-strip-agent](https://github.com/octo/demo/blob/main/skills/fold-strip-agent.md) | Fold strip first line. Fold strip second line. |
+| [literal-clip-agent](https://github.com/octo/demo/blob/main/skills/literal-clip-agent.md) | Literal clip first line. Literal clip second line. |
+| [literal-keep-agent](https://github.com/octo/demo/blob/main/skills/literal-keep-agent.md) | Literal keep first line. Literal keep second line. |
+| [literal-strip-agent](https://github.com/octo/demo/blob/main/skills/literal-strip-agent.md) | Literal strip first line. Literal strip second line. |
+| [release-agent](https://github.com/octo/demo/blob/main/skills/release-agent.md) | Release workflows with multiline description. Use when: publishing releases, preparing notes. |
 | [root-skill-agent](https://github.com/octo/demo/blob/main/skills/SKILL.md) | Root skill as agent |
 `);
     } finally {
@@ -319,6 +325,36 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
     return Response.json([
       {
         type: "file",
+        path: "skills/fold-clip-agent.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/skills/fold-clip-agent.md",
+      },
+      {
+        type: "file",
+        path: "skills/fold-keep-agent.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/skills/fold-keep-agent.md",
+      },
+      {
+        type: "file",
+        path: "skills/fold-strip-agent.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/skills/fold-strip-agent.md",
+      },
+      {
+        type: "file",
+        path: "skills/literal-clip-agent.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/skills/literal-clip-agent.md",
+      },
+      {
+        type: "file",
+        path: "skills/literal-keep-agent.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/skills/literal-keep-agent.md",
+      },
+      {
+        type: "file",
+        path: "skills/literal-strip-agent.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/skills/literal-strip-agent.md",
+      },
+      {
+        type: "file",
         path: "skills/SKILL.md",
         download_url: "https://raw.githubusercontent.com/octo/demo/main/skills/SKILL.md",
       },
@@ -442,8 +478,71 @@ description: Root skill as agent
 
   if (url === "https://raw.githubusercontent.com/octo/demo/main/skills/release-agent.md") {
     return new Response(`---
+description: >-
+  Release workflows with multiline description.
+
+  Use when: publishing releases, preparing notes.
 name: release-agent
-description: Release workflows
+---
+`);
+  }
+
+  if (url === "https://raw.githubusercontent.com/octo/demo/main/skills/fold-clip-agent.md") {
+    return new Response(`---
+description: >
+  Fold clip first line.
+  Fold clip second line.
+name: fold-clip-agent
+---
+`);
+  }
+
+  if (url === "https://raw.githubusercontent.com/octo/demo/main/skills/fold-keep-agent.md") {
+    return new Response(`---
+description: >+
+  Fold keep first line.
+  Fold keep second line.
+name: fold-keep-agent
+---
+`);
+  }
+
+  if (url === "https://raw.githubusercontent.com/octo/demo/main/skills/fold-strip-agent.md") {
+    return new Response(`---
+description: >-
+  Fold strip first line.
+  Fold strip second line.
+name: fold-strip-agent
+---
+`);
+  }
+
+  if (url === "https://raw.githubusercontent.com/octo/demo/main/skills/literal-clip-agent.md") {
+    return new Response(`---
+description: |
+  Literal clip first line.
+  Literal clip second line.
+name: literal-clip-agent
+---
+`);
+  }
+
+  if (url === "https://raw.githubusercontent.com/octo/demo/main/skills/literal-keep-agent.md") {
+    return new Response(`---
+description: |+
+  Literal keep first line.
+  Literal keep second line.
+name: literal-keep-agent
+---
+`);
+  }
+
+  if (url === "https://raw.githubusercontent.com/octo/demo/main/skills/literal-strip-agent.md") {
+    return new Response(`---
+description: |-
+  Literal strip first line.
+  Literal strip second line.
+name: literal-strip-agent
 ---
 `);
   }

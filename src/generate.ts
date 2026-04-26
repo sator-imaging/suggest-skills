@@ -440,20 +440,43 @@ function parseFrontMatter(content: string): FrontMatter {
 }
 
 function parseFrontMatterField(frontMatter: string, fieldName: string): string {
-  const pattern = new RegExp(`^${fieldName}:\\s*(.+)$`, "mu");
-  const match = pattern.exec(frontMatter);
+  const lines = frontMatter.split(/\r?\n/u);
+  const fieldPrefix = `${fieldName}:`;
 
-  if (!match) {
-    return "";
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index] ?? "";
+
+    if (!line.startsWith(fieldPrefix)) {
+      continue;
+    }
+
+    const rawValue = line.slice(fieldPrefix.length).trim();
+
+    if (/^[>|][+-]?$/u.test(rawValue)) {
+      const blockLines: string[] = [];
+
+      for (let blockIndex = index + 1; blockIndex < lines.length; blockIndex += 1) {
+        const blockLine = lines[blockIndex] ?? "";
+
+        if (blockLine === "") {
+          blockLines.push("");
+          continue;
+        }
+
+        if (!/^[ \t]+/u.test(blockLine)) {
+          break;
+        }
+
+        blockLines.push(blockLine.trim());
+      }
+
+      return collapseWhitespace(blockLines.join(" "));
+    }
+
+    return stripQuotes(rawValue);
   }
 
-  const value = match[1];
-
-  if (value === undefined) {
-    return "";
-  }
-
-  return stripQuotes(value.trim());
+  return "";
 }
 
 function stripQuotes(value: string): string {
@@ -465,6 +488,10 @@ function stripQuotes(value: string): string {
   }
 
   return value;
+}
+
+function collapseWhitespace(value: string): string {
+  return value.replace(/\s+/gu, " ").trim();
 }
 
 function buildMarkdown(
