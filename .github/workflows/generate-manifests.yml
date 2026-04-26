@@ -13,6 +13,10 @@ concurrency:
   group: generate-manifests
   cancel-in-progress: true
 
+env:
+  CURATED_DIR: curated
+  OFFICIAL_DIR: official
+
 jobs:
   generate:
     name: "${{ matrix.url }}"
@@ -21,6 +25,9 @@ jobs:
     strategy:
       max-parallel: 2   # To avoid GitHub API rate limit
       fail-fast: true
+
+      # DO NOT forget to update offical url prefixes
+      # NOTE: 'https://github.com/' is prepended if not starting with 'https://'
       matrix:
         url:
           - anthropics/skills/tree/main/skills
@@ -31,6 +38,7 @@ jobs:
           - dotnet/skills/tree/main/plugins/dotnet-diag/skills
           - dotnet/skills/tree/main/plugins/dotnet-test/agents
           - dotnet/skills/tree/main/plugins/dotnet-test/skills
+          - mattpocock/skills
           - obra/superpowers/tree/main/agents
           - obra/superpowers/tree/main/skills
           - addyosmani/agent-skills/tree/main/agents
@@ -43,18 +51,32 @@ jobs:
           - vercel-labs/agent-skills/tree/main/skills
           - openai/skills/tree/main/skills/.curated
           - Kotlin/kotlin-agent-skills/tree/main/skills
-          - google-gemini/gemini-cli/tree/main/.gemini/skills
           - figma/mcp-server-guide/tree/main/skills
           - cloudflare/skills/tree/main/skills
           - browser-use/browser-use/tree/main/skills
           - firebase/agent-skills/tree/main/skills
           - facebook/react/tree/main/.claude/skills
+          - google-gemini/gemini-cli/tree/main/.gemini/skills
           - google-labs-code/stitch-skills/tree/main/skills
+          - google-labs-code/design.md/tree/main/examples
           - VoltAgent/awesome-design-md/tree/ef729b271802ce7ed50f9e0928137b18942cde80/design-md
           - kzhrknt/awesome-design-md-jp/tree/main/design-md
-          - google-labs-code/design.md/tree/main/examples
-
     env:
+      # DO NOT forget add '/' at the end
+      OFFICIAL_URL_PREFIXES: |
+        anthropics/
+        github/
+        dotnet/
+        vercel-labs/
+        openai/
+        Kotlin/
+        figma/
+        cloudflare/
+        browser-use/
+        firebase/
+        facebook/
+        google-gemini/
+        google-labs-code/
       GENERATED_DIR: generate/${{ strategy.job-index }}
 
     steps:
@@ -77,18 +99,49 @@ jobs:
           fi
           bun "$GITHUB_WORKSPACE/src/index.ts" --generate "$SOURCE_URL"
 
+      - name: Classify generated files
+        env:
+          SOURCE_URL: ${{ matrix.url }}
+          WORKDIR: ${{ runner.temp }}/${{ env.GENERATED_DIR }}
+        run: |
+          set -euo pipefail
+
+          raw_source_url="$SOURCE_URL"
+          
+          if [[ "$SOURCE_URL" != https://* ]]; then
+            SOURCE_URL="https://github.com/$SOURCE_URL"
+          fi
+
+          output_root="$CURATED_DIR"
+          while IFS= read -r prefix; do
+            [[ -n "$prefix" ]] || continue
+            if [[ "$raw_source_url" == "$prefix"* ]]; then
+              output_root="$OFFICIAL_DIR"
+              break
+            fi
+          done <<< "$OFFICIAL_URL_PREFIXES"
+
+          mkdir -p "$WORKDIR"/"$output_root"/agents
+          mkdir -p "$WORKDIR"/"$output_root"/skills
+          mkdir -p "$WORKDIR"/"$output_root"/designs
+          shopt -s nullglob
+          mv "$WORKDIR"/*.agents.md "$WORKDIR"/"$output_root"/agents/ || true
+          mv "$WORKDIR"/*.skills.md "$WORKDIR"/"$output_root"/skills/ || true
+          mv "$WORKDIR"/*.designs.md "$WORKDIR"/"$output_root"/designs/ || true
+          shopt -u nullglob
+
       - uses: actions/upload-artifact@v7
         with:
           name: manifests-${{ github.run_id }}-${{ github.run_attempt }}-${{ strategy.job-index }}
-          path: ${{ runner.temp }}/${{ env.GENERATED_DIR }}/*.md
+          path: |
+            ${{ runner.temp }}/${{ env.GENERATED_DIR }}/${{ env.CURATED_DIR }}/**/*.md
+            ${{ runner.temp }}/${{ env.GENERATED_DIR }}/${{ env.OFFICIAL_DIR }}/**/*.md
           if-no-files-found: warn
 
   collect-and-pr:
     name: Collect and Create PR
     runs-on: ubuntu-latest
     needs: generate
-    env:
-      CURATED_DIR: curated
 
     steps:
       - uses: actions/checkout@v6
@@ -104,14 +157,17 @@ jobs:
           mkdir -p "$CURATED_DIR"/agents
           mkdir -p "$CURATED_DIR"/skills
           mkdir -p "$CURATED_DIR"/designs
+          mkdir -p "$OFFICIAL_DIR"/agents
+          mkdir -p "$OFFICIAL_DIR"/skills
+          mkdir -p "$OFFICIAL_DIR"/designs
           find "$CURATED_DIR"/agents -maxdepth 1 -type f -name '*.md' -delete
           find "$CURATED_DIR"/skills -maxdepth 1 -type f -name '*.md' -delete
           find "$CURATED_DIR"/designs -maxdepth 1 -type f -name '*.md' -delete
-          shopt -s nullglob
-          mv "$RUNNER_TEMP"/generated/*.agents.md "$CURATED_DIR"/agents/ || true
-          mv "$RUNNER_TEMP"/generated/*.skills.md "$CURATED_DIR"/skills/ || true
-          mv "$RUNNER_TEMP"/generated/*.designs.md "$CURATED_DIR"/designs/ || true
-          shopt -u nullglob
+          find "$OFFICIAL_DIR"/agents -maxdepth 1 -type f -name '*.md' -delete
+          find "$OFFICIAL_DIR"/skills -maxdepth 1 -type f -name '*.md' -delete
+          find "$OFFICIAL_DIR"/designs -maxdepth 1 -type f -name '*.md' -delete
+          cp -R "$RUNNER_TEMP"/generated/"$CURATED_DIR"/. "$CURATED_DIR"/ 2>/dev/null || true
+          cp -R "$RUNNER_TEMP"/generated/"$OFFICIAL_DIR"/. "$OFFICIAL_DIR"/ 2>/dev/null || true
 
       - name: Create pull request with gh
         env:
@@ -129,6 +185,9 @@ jobs:
           git add -f "$CURATED_DIR"/agents
           git add -f "$CURATED_DIR"/skills
           git add -f "$CURATED_DIR"/designs
+          git add -f "$OFFICIAL_DIR"/agents
+          git add -f "$OFFICIAL_DIR"/skills
+          git add -f "$OFFICIAL_DIR"/designs
           git commit -m "$title" -m "$body" || {
             echo "No changes to commit."
             exit 0
