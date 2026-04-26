@@ -79,7 +79,7 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: generated-${{ github.run_id }}-${{ github.run_attempt }}-${{ strategy.job-index }}
+          name: manifests-${{ github.run_id }}-${{ github.run_attempt }}-${{ strategy.job-index }}
           path: ${{ runner.temp }}/${{ env.GENERATED_DIR }}/*.md
           if-no-files-found: warn
 
@@ -93,7 +93,7 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           path: ${{ runner.temp }}/generated
-          pattern: generated-*
+          pattern: manifests-*
           merge-multiple: true
 
       - name: Organize generated files

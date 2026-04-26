@@ -65,7 +65,6 @@ const SKILL_DOWNLOAD_CONCURRENCY = 4;
 const GITHUB_HOSTNAME = "github.com";
 const BUNDLED_ASSETS_NONE = "None";
 const BUNDLED_ASSETS_INLINE_MAX_ITEMS = 3;
-const BUNDLED_ASSETS_ROOT_DIRECTORY = ".";
 const GENERATED_OUTPUT_KIND_SUFFIXES = {
   agents: "agents",
   design: "designs",
@@ -304,7 +303,7 @@ async function summarizeDirectory(
   rootLocation: GithubDirectoryLocation,
   directoryPath: string,
 ): Promise<{ design?: GeneratedEntry; manifest?: GeneratedEntry }> {
-  logInfo(`Starting summarize skill: ${directoryPath}`);
+  logInfo(`Fetching: ${directoryPath}`);
   const summary = await collectDirectoryFiles(
     {
       ...rootLocation,
@@ -569,19 +568,29 @@ function formatBundledAssets(assets: string[]): string {
     return assets.map((asset) => `\`${asset}\``).join(", ");
   }
 
+  const rootFiles: string[] = [];
   const directoryCounts = new Map<string, number>();
 
   for (const asset of assets) {
     const assetParts = asset.split("/").filter(Boolean);
     const directory = assetParts.slice(0, -1).join("/");
-    const key = directory || BUNDLED_ASSETS_ROOT_DIRECTORY;
-    directoryCounts.set(key, (directoryCounts.get(key) ?? 0) + 1);
+
+    if (directory === "") {
+      rootFiles.push(asset);
+      continue;
+    }
+
+    directoryCounts.set(directory, (directoryCounts.get(directory) ?? 0) + 1);
   }
 
-  return Array.from(directoryCounts.entries())
+  const collapsedDirectories = Array.from(directoryCounts.entries())
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([directory, count]) => `\`${directory}\` (${count} ${count === 1 ? "file" : "files"})`)
-    .join(", ");
+  const listedRootFiles = rootFiles
+    .sort((left, right) => left.localeCompare(right))
+    .map((asset) => `\`${asset}\``);
+
+  return [...listedRootFiles, ...collapsedDirectories].join(", ");
 }
 
 function formatGithubFolderUrl(location: GithubDirectoryLocation, path: string): string {

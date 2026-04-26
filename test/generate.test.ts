@@ -20,7 +20,7 @@ describe("generateSkillsManifest", () => {
       expect(manifest.outputFileName).toBe("octo.demo.skills.skills.md");
       expect(manifest.markdown).toBe(`| Name | Description | Bundled Assets |
 | -----|-------------|----------------|
-| [alpha](https://github.com/octo/demo/tree/main/skills/alpha) | Alpha skill | \`.config\` (1 file), \`assets\` (1 file), \`assets/templates\` (1 file), \`refs\` (1 file), \`refs/sub\` (1 file), \`scripts\` (1 file) |
+| [alpha](https://github.com/octo/demo/tree/main/skills/alpha) | Alpha skill | \`examples.md\`, \`frameworks.md\`, \`refinement-criteria.md\`, \`.config\` (1 file), \`assets\` (1 file), \`assets/templates\` (1 file), \`refs\` (1 file), \`refs/sub\` (1 file), \`scripts\` (1 file) |
 | [beta](https://github.com/octo/demo/tree/main/skills/beta) | Beta skill | \`notes.txt\` |
 `);
     } finally {
@@ -100,7 +100,7 @@ describe("generateOutputs", () => {
       expect(outputs.design.outputFileName).toBe("octo.demo.skills.designs.md");
       expect(outputs.design.markdown).toBe(`| Name | Description | Bundled Assets |
 | -----|-------------|----------------|
-| [alpha-design](https://github.com/octo/demo/tree/main/skills/alpha) | Alpha design | \`.config\` (1 file), \`assets\` (1 file), \`assets/templates\` (1 file), \`refs\` (1 file), \`refs/sub\` (1 file), \`scripts\` (1 file) |
+| [alpha-design](https://github.com/octo/demo/tree/main/skills/alpha) | Alpha design | \`examples.md\`, \`frameworks.md\`, \`refinement-criteria.md\`, \`.config\` (1 file), \`assets\` (1 file), \`assets/templates\` (1 file), \`refs\` (1 file), \`refs/sub\` (1 file), \`scripts\` (1 file) |
 | [beta-design](https://github.com/octo/demo/tree/main/skills/beta) | None | \`notes.txt\` |
 `);
     } finally {
@@ -402,6 +402,21 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
         type: "dir",
         path: "skills/alpha/.config",
         download_url: null,
+      },
+      {
+        type: "file",
+        path: "skills/alpha/examples.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/skills/alpha/examples.md",
+      },
+      {
+        type: "file",
+        path: "skills/alpha/frameworks.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/skills/alpha/frameworks.md",
+      },
+      {
+        type: "file",
+        path: "skills/alpha/refinement-criteria.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/skills/alpha/refinement-criteria.md",
       },
       {
         type: "dir",
