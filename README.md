@@ -156,7 +156,7 @@ Returns every file in that folder with:
 
 # Technology Stack
 
-- Bun `>=1.2.0`
+- Bun
 - TypeScript
 - `@modelcontextprotocol/sdk`
 - Hono
