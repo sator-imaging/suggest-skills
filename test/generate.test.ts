@@ -83,6 +83,21 @@ describe("generateSkillsManifest", () => {
       globalThis.fetch = originalFetch;
     }
   });
+
+  test("preserves hidden-directory dots in output file names", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = mock(fetchMock) as unknown as typeof fetch;
+
+    try {
+      const outputs = await generateOutputs("https://github.com/octo/demo/tree/main/.github/agents");
+
+      expect(outputs.agents.outputFileName).toBe("octo.demo..github.agents.agents.md");
+      expect(outputs.manifest.outputFileName).toBe("octo.demo..github.agents.skills.md");
+      expect(outputs.design.outputFileName).toBe("octo.demo..github.agents.designs.md");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });
 
 describe("generateOutputs", () => {
@@ -192,6 +207,32 @@ describe("generateOutputs", () => {
 | [alpha-design](https://github.com/octo/demo/tree/main/catalog/group/alpha) | Alpha recursive design | [assets/guide.md](https://github.com/octo/demo/blob/main/catalog/group/alpha/assets/guide.md) |
 | [beta-design](https://github.com/octo/demo/tree/main/catalog/group/beta) | None | [docs/overview.md](https://github.com/octo/demo/blob/main/catalog/group/beta/docs/overview.md) |
 `);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  test("keeps nested skill and design subfolders as bundled assets in recursive mode", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = mock(fetchMock) as unknown as typeof fetch;
+
+    try {
+      const outputs = await generateOutputs("https://github.com/octo/demo/tree/main/library", {
+        recursive: true,
+      });
+
+      expect(outputs.manifest.markdown).toContain(
+        "| [parent](https://github.com/octo/demo/tree/main/library/parent) | Parent skill |",
+      );
+      expect(outputs.manifest.markdown).toContain("`child/DESIGN.md`");
+      expect(outputs.manifest.markdown).toContain("`child/SKILL.md`");
+      expect(outputs.manifest.markdown).toContain("`child/guide.md`");
+      expect(outputs.manifest.markdown).toContain(
+        "| [child](https://github.com/octo/demo/tree/main/library/parent/child) | Child skill | `guide.md` |",
+      );
+      expect(outputs.design.markdown).toContain(
+        "| [child-design](https://github.com/octo/demo/tree/main/library/parent/child) | Child design | [guide.md](https://github.com/octo/demo/blob/main/library/parent/child/guide.md) |",
+      );
     } finally {
       globalThis.fetch = originalFetch;
     }
@@ -354,6 +395,29 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
     });
   }
 
+  if (url === "https://api.github.com/repos/octo/demo/git/trees/github-agents-main-tree?recursive=1") {
+    return Response.json({
+      truncated: false,
+      tree: [
+        { path: "release-agent.md", type: "blob" },
+      ],
+    });
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/git/trees/library-main-tree?recursive=1") {
+    return Response.json({
+      truncated: false,
+      tree: [
+        { path: "parent", type: "tree" },
+        { path: "parent/SKILL.md", type: "blob" },
+        { path: "parent/child", type: "tree" },
+        { path: "parent/child/SKILL.md", type: "blob" },
+        { path: "parent/child/DESIGN.md", type: "blob" },
+        { path: "parent/child/guide.md", type: "blob" },
+      ],
+    });
+  }
+
   if (url === "https://api.github.com/repos/octo/demo/git/trees/root-main-tree?recursive=1") {
     return Response.json({
       truncated: false,
@@ -482,6 +546,18 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
         download_url: null,
         sha: "catalog-main-tree",
       },
+      {
+        type: "dir",
+        path: ".github",
+        download_url: null,
+        sha: "github-root-tree",
+      },
+      {
+        type: "dir",
+        path: "library",
+        download_url: null,
+        sha: "library-main-tree",
+      },
     ]);
   }
 
@@ -525,6 +601,38 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
         path: "catalog/group",
         download_url: null,
         sha: "catalog-group-main-tree",
+      },
+    ]);
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/contents/.github/agents?ref=main") {
+    return Response.json([
+      {
+        type: "file",
+        path: ".github/agents/release-agent.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/.github/agents/release-agent.md",
+      },
+    ]);
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/contents/.github?ref=main") {
+    return Response.json([
+      {
+        type: "dir",
+        path: ".github/agents",
+        download_url: null,
+        sha: "github-agents-main-tree",
+      },
+    ]);
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/contents/library?ref=main") {
+    return Response.json([
+      {
+        type: "dir",
+        path: "library/parent",
+        download_url: null,
+        sha: "library-main-tree",
       },
     ]);
   }
@@ -1120,6 +1228,38 @@ description: Beta recursive skill
   if (url === "https://raw.githubusercontent.com/octo/demo/main/catalog/group/beta/DESIGN.md") {
     return new Response(`---
 name: beta-design
+---
+`);
+  }
+
+  if (url === "https://raw.githubusercontent.com/octo/demo/main/.github/agents/release-agent.md") {
+    return new Response(`---
+name: release-agent
+description: Release hidden agent
+---
+`);
+  }
+
+  if (url === "https://raw.githubusercontent.com/octo/demo/main/library/parent/SKILL.md") {
+    return new Response(`---
+name: parent
+description: Parent skill
+---
+`);
+  }
+
+  if (url === "https://raw.githubusercontent.com/octo/demo/main/library/parent/child/SKILL.md") {
+    return new Response(`---
+name: child
+description: Child skill
+---
+`);
+  }
+
+  if (url === "https://raw.githubusercontent.com/octo/demo/main/library/parent/child/DESIGN.md") {
+    return new Response(`---
+name: child-design
+description: Child design
 ---
 `);
   }

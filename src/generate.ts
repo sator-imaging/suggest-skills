@@ -755,8 +755,12 @@ function normalizePathToDotted(path: string): string {
       continue;
     }
 
+    if (char === "." && previousWasDot) {
+      continue;
+    }
+
     result += char;
-    previousWasDot = false;
+    previousWasDot = char === ".";
   }
 
   return result.endsWith(".") ? result.slice(0, -1) : result;
@@ -851,33 +855,33 @@ function analyzeTreeEntries(rootPath: string, treeEntries: GithubContentEntry[])
       continue;
     }
 
-    const fileName = basename(entry.path);
-
-    if (
-      fileName === "SKILL.md"
-      || fileName === "DESIGN.md"
-      || shouldIgnoreGeneratedAsset(fileName)
-    ) {
-      continue;
-    }
-
     let ownerDirectory = dirname(entry.path);
 
-    while (ownerDirectory !== "" && !nestedCandidateDirectories.has(ownerDirectory)) {
+    while (ownerDirectory !== "") {
+      if (!nestedCandidateDirectories.has(ownerDirectory)) {
+        ownerDirectory = dirname(ownerDirectory);
+        continue;
+      }
+
+      const ownerSummary = summariesByDirectory.get(ownerDirectory);
+
+      if (!ownerSummary) {
+        ownerDirectory = dirname(ownerDirectory);
+        continue;
+      }
+
+      const relativePath = toRelativePath(entry.path, ownerDirectory);
+
+      if (
+        relativePath !== "SKILL.md"
+        && relativePath !== "DESIGN.md"
+        && !shouldIgnoreGeneratedAsset(relativePath)
+      ) {
+        ownerSummary.assets.push(relativePath);
+      }
+
       ownerDirectory = dirname(ownerDirectory);
     }
-
-    if (ownerDirectory === "" || !nestedCandidateDirectories.has(ownerDirectory)) {
-      continue;
-    }
-
-    const ownerSummary = summariesByDirectory.get(ownerDirectory);
-
-    if (!ownerSummary) {
-      continue;
-    }
-
-    ownerSummary.assets.push(toRelativePath(entry.path, ownerDirectory));
   }
 
   for (const candidateDirectory of recursiveCandidateDirectories) {
