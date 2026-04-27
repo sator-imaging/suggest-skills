@@ -17,3 +17,7 @@
 !README*.md
 !LICENSE.md
 !CHANGELOG.md
+
+!Unity
+Unity/*
+!Unity/unity-yaml-format
