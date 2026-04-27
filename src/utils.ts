@@ -100,9 +100,10 @@ export function parseMarkdownFrontMatterFields(markdown: string): MarkdownFrontM
   }
 
   let parsed: unknown;
+  const normalizedFrontMatter = stripTrailingCommas(frontMatter);
 
   try {
-    parsed = Bun.YAML.parse(frontMatter);
+    parsed = Bun.YAML.parse(normalizedFrontMatter);
   } catch (error) {
     return {
       description: null,
@@ -164,4 +165,8 @@ function normalizeFrontMatterField(value: unknown): string | null {
 
 function collapseWhitespace(value: string): string {
   return value.replace(/\s+/gu, " ").trim();
+}
+
+function stripTrailingCommas(value: string): string {
+  return value.replace(/,(\s*[\]}])/gu, "$1");
 }

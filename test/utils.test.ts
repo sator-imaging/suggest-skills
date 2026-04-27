@@ -74,6 +74,54 @@ description: >-
     });
   });
 
+  test("accepts trailing commas in flow collections after preprocessing", () => {
+    expect(
+      parseMarkdownFrontMatterFields(`---
+name: DiffblueCover
+description: Expert agent for creating unit tests for java applications using Diffblue Cover.
+tools: [ 'DiffblueCover/*', ]
+mcp-servers:
+  DiffblueCover:
+    type: 'local'
+    command: 'uv'
+    args: [
+      'run',
+      '--with',
+      'fastmcp',
+      'fastmcp',
+      'run',
+      '/placeholder/path/to/cover-mcp/main.py',
+    ]
+    env:
+      DIFFBLUE_COVER_CLI: "/placeholder/path/to/dcover"
+    tools: [ "*", ]
+---
+`),
+    ).toEqual({
+      description: "Expert agent for creating unit tests for java applications using Diffblue Cover.",
+      name: "DiffblueCover",
+      parseError: null,
+      source: `name: DiffblueCover
+description: Expert agent for creating unit tests for java applications using Diffblue Cover.
+tools: [ 'DiffblueCover/*', ]
+mcp-servers:
+  DiffblueCover:
+    type: 'local'
+    command: 'uv'
+    args: [
+      'run',
+      '--with',
+      'fastmcp',
+      'fastmcp',
+      'run',
+      '/placeholder/path/to/cover-mcp/main.py',
+    ]
+    env:
+      DIFFBLUE_COVER_CLI: "/placeholder/path/to/dcover"
+    tools: [ "*", ]`,
+    });
+  });
+
   test("returns null for missing or non-string fields", () => {
     expect(
       parseMarkdownFrontMatterFields(`---

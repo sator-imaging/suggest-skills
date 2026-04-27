@@ -283,15 +283,20 @@ async function summarizeAgentFile(
   const frontMatter = parseMarkdownFrontMatterFields(fileText);
 
   if (frontMatter.parseError) {
-    logInfo(
-      `Warning: skipped agent "${summary.path}" because front matter YAML could not be parsed: ${frontMatter.parseError}`,
+    throw new Error(
+      `Front matter YAML could not be parsed for agent "${summary.path}": ${frontMatter.parseError}\n${formatFrontMatterWarningBlock(frontMatter.source)}`,
     );
-    logInfo(formatFrontMatterWarningBlock(frontMatter.source));
-    logInfo(`Skipped agent: ${summary.path}`);
-    return undefined;
   }
 
-  if (!frontMatter.name) {
+  const expectedName = expectedAgentName(summary.path);
+  const resolvedName = resolveFrontMatterName({
+    currentName: frontMatter.name,
+    expectedName,
+    frontMatterSource: frontMatter.source,
+    targetLabel: `agent "${summary.path}"`,
+  });
+
+  if (!resolvedName) {
     logInfo(`Warning: skipped agent "${summary.path}" because front matter is missing required "name".`);
     logInfo(`Skipped agent: ${summary.path}`);
     return undefined;
@@ -302,7 +307,7 @@ async function summarizeAgentFile(
     assetBlobBaseUrl: summary.url,
     assetTreeBaseUrl: summary.url,
     description: frontMatter.description || "None",
-    name: frontMatter.name,
+    name: resolvedName,
     url: summary.url,
   };
   logInfo(`Agent summarized: ${entry.name}`);
@@ -386,14 +391,32 @@ async function buildEntry({
   const frontMatter = parseMarkdownFrontMatterFields(fileText);
 
   if (frontMatter.parseError) {
-    logInfo(
-      `Warning: skipped ${fileLabel.toLowerCase()} "${sourcePath}/${fileName}" because front matter YAML could not be parsed: ${frontMatter.parseError}`,
+    throw new Error(
+      `Front matter YAML could not be parsed for ${fileLabel.toLowerCase()} "${sourcePath}/${fileName}": ${frontMatter.parseError}\n${formatFrontMatterWarningBlock(frontMatter.source)}`,
     );
-    logInfo(formatFrontMatterWarningBlock(frontMatter.source));
-    return undefined;
   }
 
-  if (!frontMatter.name) {
+  const expectedName = basename(sourcePath);
+
+  if (fileName === "DESIGN.md" && frontMatter.source === null) {
+    return {
+      assets: summary.assets.slice().sort((left, right) => left.localeCompare(right)),
+      assetBlobBaseUrl: formatGithubFileUrl(rootLocation, sourcePath),
+      assetTreeBaseUrl: formatGithubFolderUrl(rootLocation, sourcePath),
+      description: descriptionFallback,
+      name: expectedName,
+      url: formatGithubFolderUrl(rootLocation, sourcePath),
+    };
+  }
+
+  const resolvedName = resolveFrontMatterName({
+    currentName: frontMatter.name,
+    expectedName,
+    frontMatterSource: frontMatter.source,
+    targetLabel: `${fileLabel.toLowerCase()} "${sourcePath}/${fileName}"`,
+  });
+
+  if (!resolvedName) {
     logInfo(
       `Warning: skipped ${fileLabel.toLowerCase()} "${sourcePath}/${fileName}" because front matter is missing required "name".`,
     );
@@ -405,7 +428,7 @@ async function buildEntry({
     assetBlobBaseUrl: formatGithubFileUrl(rootLocation, sourcePath),
     assetTreeBaseUrl: formatGithubFolderUrl(rootLocation, sourcePath),
     description: frontMatter.description || descriptionFallback,
-    name: frontMatter.name,
+    name: resolvedName,
     url: formatGithubFolderUrl(rootLocation, sourcePath),
   };
 }
@@ -604,6 +627,62 @@ function buildGeneratedOutputFileName(
 function basename(path: string): string {
   const parts = path.split("/").filter(Boolean);
   return parts[parts.length - 1] ?? path;
+}
+
+function dirname(path: string): string {
+  const parts = path.split("/").filter(Boolean);
+  return parts.slice(0, -1).join("/");
+}
+
+function withoutMarkdownExtension(path: string): string {
+  return path.endsWith(".md") ? path.slice(0, -3) : path;
+}
+
+function expectedAgentName(path: string): string {
+  const fileName = basename(path);
+
+  if (fileName === "SKILL.md" || fileName === "DESIGN.md") {
+    return basename(dirname(path));
+  }
+
+  return withoutMarkdownExtension(fileName);
+}
+
+function resolveFrontMatterName({
+  currentName,
+  expectedName,
+  frontMatterSource,
+  targetLabel,
+}: {
+  currentName: string | null;
+  expectedName: string;
+  frontMatterSource: string | null;
+  targetLabel: string;
+}): string | undefined {
+  if (currentName === expectedName) {
+    return currentName;
+  }
+
+  if (frontMatterSource === null) {
+    return undefined;
+  }
+
+  const filledFrontMatter = fillFrontMatterName(frontMatterSource, expectedName);
+
+  if (currentName === null) {
+    logInfo(`Warning: filled missing "name" in ${targetLabel} with "${expectedName}".`);
+  } else {
+    logInfo(`Warning: corrected mismatched "name" in ${targetLabel} from "${currentName}" to "${expectedName}".`);
+  }
+
+  logInfo(formatFrontMatterWarningBlock(filledFrontMatter));
+  return expectedName;
+}
+
+function fillFrontMatterName(frontMatter: string, expectedName: string): string {
+  const lines = frontMatter.split(/\r?\n/u).filter((line, index) => !(index === 0 && line === ""));
+  const filteredLines = lines.filter((line) => !line.startsWith("name:"));
+  return [`name: ${expectedName}`, ...filteredLines].join("\n");
 }
 
 function formatFrontMatterWarningBlock(frontMatter: string | null): string {
