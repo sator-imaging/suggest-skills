@@ -43,6 +43,12 @@ type DirectorySummary = {
   skillFileUrl?: string;
 };
 
+type TreeAnalysis = {
+  immediateEntries: GithubContentEntry[];
+  recursiveCandidateDirectories: string[];
+  summariesByDirectory: Map<string, DirectorySummary>;
+};
+
 type AgentFileSummary = {
   path: string;
   url: string;
@@ -105,23 +111,22 @@ export async function generateOutputs(
   const rootLocation = resolveGenerateRootLocation(url)
     ?? await resolveGithubFolderUrl(url);
   const treeEntries = await listGithubDirectoryRecursive(rootLocation);
-  const rootEntries = listImmediateEntries(rootLocation.path, treeEntries);
+  const analysis = analyzeTreeEntries(rootLocation.path, treeEntries);
+  const rootEntries = analysis.immediateEntries;
   const agentFiles = rootEntries
     .filter((entry) => entry.type === "file")
     .sort((left, right) => left.path.localeCompare(right.path));
   const candidateDirectories = options.recursive
-    ? findRecursiveCandidateDirectories(treeEntries)
+    ? analysis.recursiveCandidateDirectories
     : rootEntries
       .filter((entry) => entry.type === "dir")
       .map((entry) => entry.path)
       .sort((left, right) => left.localeCompare(right));
   const agentEntries = await summarizeAgentFiles(rootLocation, agentFiles);
-  const nestedCandidateDirectories = new Set(candidateDirectories);
   const summaries = await summarizeDirectories(
     rootLocation,
     candidateDirectories,
-    nestedCandidateDirectories,
-    treeEntries,
+    analysis.summariesByDirectory,
   );
 
   const manifestEntries = summaries
@@ -227,8 +232,7 @@ async function summarizeAgentFiles(
 async function summarizeDirectories(
   rootLocation: GithubDirectoryLocation,
   candidateDirectories: string[],
-  nestedCandidateDirectories: ReadonlySet<string>,
-  treeEntries: GithubContentEntry[],
+  summariesByDirectory: ReadonlyMap<string, DirectorySummary>,
 ): Promise<Array<{ design?: GeneratedEntry; manifest?: GeneratedEntry }>> {
   const results = Array.from<{ design?: GeneratedEntry; manifest?: GeneratedEntry } | undefined>({
     length: candidateDirectories.length,
@@ -238,7 +242,7 @@ async function summarizeDirectories(
     candidateDirectories.map((path, index) => ({ index, path })),
     async ({ index, path }) => ({
       index,
-      summary: await summarizeDirectory(rootLocation, path, nestedCandidateDirectories, treeEntries),
+      summary: await summarizeDirectory(rootLocation, path, summariesByDirectory),
     }),
   );
 
@@ -342,15 +346,10 @@ async function summarizeAgentFile(
 async function summarizeDirectory(
   rootLocation: GithubDirectoryLocation,
   directoryPath: string,
-  nestedCandidateDirectories: ReadonlySet<string>,
-  treeEntries: GithubContentEntry[],
+  summariesByDirectory: ReadonlyMap<string, DirectorySummary>,
 ): Promise<{ design?: GeneratedEntry; manifest?: GeneratedEntry }> {
   logInfo(`Fetching: ${directoryPath}`);
-  const summary = collectDirectoryFiles(
-    directoryPath,
-    nestedCandidateDirectories,
-    treeEntries,
-  );
+  const summary = summariesByDirectory.get(directoryPath) ?? EMPTY_DIRECTORY_SUMMARY;
   const fallbackName = resolveDirectoryName(rootLocation, directoryPath);
   const manifest = await buildEntry({
     descriptionFallback: "",
@@ -417,6 +416,20 @@ async function buildEntry({
   const frontMatter = parseMarkdownFrontMatterFields(fileText);
 
   if (frontMatter.parseError) {
+    if (fileName === "DESIGN.md") {
+      logWarning(
+        `Treating design "${sourcePath}/${fileName}" as markdown-only because front matter YAML could not be parsed.`,
+      );
+      return {
+        assets: summary.assets,
+        assetBlobBaseUrl: formatGithubFileUrl(rootLocation, sourcePath),
+        assetTreeBaseUrl: formatGithubFolderUrl(rootLocation, sourcePath),
+        description: descriptionFallback,
+        name: resolveDirectoryName(rootLocation, sourcePath),
+        url: formatGithubFolderUrl(rootLocation, sourcePath),
+      };
+    }
+
     throw new Error(
       `Front matter YAML could not be parsed for ${fileLabel.toLowerCase()} "${sourcePath}/${fileName}": ${frontMatter.parseError}\n${formatFrontMatterWarningBlock(frontMatter.source)}`,
     );
@@ -424,7 +437,7 @@ async function buildEntry({
 
   if (fileName === "DESIGN.md" && frontMatter.source === null) {
     return {
-      assets: summary.assets.slice().sort((left, right) => left.localeCompare(right)),
+      assets: summary.assets,
       assetBlobBaseUrl: formatGithubFileUrl(rootLocation, sourcePath),
       assetTreeBaseUrl: formatGithubFolderUrl(rootLocation, sourcePath),
       description: descriptionFallback,
@@ -447,7 +460,7 @@ async function buildEntry({
   }
 
   return {
-    assets: summary.assets.slice().sort((left, right) => left.localeCompare(right)),
+    assets: summary.assets,
     assetBlobBaseUrl: formatGithubFileUrl(rootLocation, sourcePath),
     assetTreeBaseUrl: formatGithubFolderUrl(rootLocation, sourcePath),
     description: frontMatter.description || descriptionFallback,
@@ -456,59 +469,7 @@ async function buildEntry({
   };
 }
 
-function collectDirectoryFiles(
-  rootPath: string,
-  nestedCandidateDirectories: ReadonlySet<string>,
-  treeEntries: GithubContentEntry[],
-): DirectorySummary {
-  const assets: string[] = [];
-  let designFileUrl: string | undefined;
-  let skillFileUrl: string | undefined;
-
-  for (const entry of treeEntries) {
-    if (!isDescendantPath(entry.path, rootPath)) {
-      continue;
-    }
-
-    if (entry.type !== "file") {
-      continue;
-    }
-
-    const relativePath = toRelativePath(entry.path, rootPath);
-
-    if (relativePath === "SKILL.md") {
-      skillFileUrl = entry.download_url ?? undefined;
-      continue;
-    }
-
-    if (relativePath === "DESIGN.md") {
-      designFileUrl = entry.download_url ?? undefined;
-      continue;
-    }
-
-    if (shouldIgnoreGeneratedAsset(relativePath)) {
-      continue;
-    }
-
-    if (isNestedCandidateAsset(rootPath, relativePath, nestedCandidateDirectories)) {
-      continue;
-    }
-
-    assets.push(relativePath);
-  }
-
-  const summary: DirectorySummary = { assets };
-
-  if (designFileUrl !== undefined) {
-    summary.designFileUrl = designFileUrl;
-  }
-
-  if (skillFileUrl !== undefined) {
-    summary.skillFileUrl = skillFileUrl;
-  }
-
-  return summary;
-}
+const EMPTY_DIRECTORY_SUMMARY: DirectorySummary = { assets: [] };
 
 function buildMarkdown(
   entries: GeneratedEntry[],
@@ -518,13 +479,15 @@ function buildMarkdown(
     ? [
       "| Name | Description | Bundled Assets |",
       "| -----|-------------|----------------|",
-      ...entries.map((entry) => formatRow(entry, options)),
     ]
     : [
       "| Name | Description |",
       "| -----|-------------|",
-      ...entries.map((entry) => formatRow(entry, options)),
     ];
+
+  for (const entry of entries) {
+    lines.push(formatRow(entry, options));
+  }
 
   return `${lines.join("\n")}\n`;
 }
@@ -558,36 +521,56 @@ function formatBundledAssets(entry: GeneratedEntry, options: MarkdownBuildOption
   }
 
   if (entry.assets.length <= BUNDLED_ASSETS_INLINE_MAX_ITEMS) {
-    return entry.assets.map((asset) => formatAssetItem(asset, entry, options)).join(", ");
+    const items = Array.from({ length: entry.assets.length }, () => "");
+
+    for (let index = 0; index < entry.assets.length; index += 1) {
+      items[index] = formatAssetItem(entry.assets[index] ?? "", entry, options);
+    }
+
+    return items.join(", ");
   }
 
   const rootFiles: string[] = [];
   const directoryFiles = new Map<string, string[]>();
 
   for (const asset of entry.assets) {
-    const assetParts = asset.split("/").filter(Boolean);
-    const directory = assetParts.slice(0, -1).join("/");
+    const directory = dirname(asset);
 
     if (directory === "") {
       rootFiles.push(asset);
       continue;
     }
 
-    directoryFiles.set(directory, [...(directoryFiles.get(directory) ?? []), asset]);
+    const files = directoryFiles.get(directory);
+
+    if (files) {
+      files.push(asset);
+      continue;
+    }
+
+    directoryFiles.set(directory, [asset]);
   }
 
-  const listedDirectories = Array.from(directoryFiles.entries())
-    .sort(([left], [right]) => left.localeCompare(right))
-    .flatMap(([directory, files]) =>
-      files.length === 1
-        ? files.map((file) => formatAssetItem(file, entry, options))
-        : [formatCollapsedAssetDirectory(directory, files.length, entry, options)]
-    );
-  const listedRootFiles = rootFiles
-    .sort((left, right) => left.localeCompare(right))
-    .map((asset) => formatAssetItem(asset, entry, options));
+  rootFiles.sort((left, right) => left.localeCompare(right));
 
-  return [...listedRootFiles, ...listedDirectories].join(", ");
+  const directoryEntries = Array.from(directoryFiles.entries())
+    .sort(([left], [right]) => left.localeCompare(right));
+  const items: string[] = [];
+
+  for (const asset of rootFiles) {
+    items.push(formatAssetItem(asset, entry, options));
+  }
+
+  for (const [directory, files] of directoryEntries) {
+    if (files.length === 1) {
+      items.push(formatAssetItem(files[0] ?? "", entry, options));
+      continue;
+    }
+
+    items.push(formatCollapsedAssetDirectory(directory, files.length, entry, options));
+  }
+
+  return items.join(", ");
 }
 
 function formatAssetItem(
@@ -629,22 +612,23 @@ function buildGeneratedOutputFileName(
   location: GithubDirectoryLocation,
   kind: typeof GENERATED_OUTPUT_KIND_SUFFIXES[keyof typeof GENERATED_OUTPUT_KIND_SUFFIXES],
 ): string {
-  const pathSuffix = location.path
-    .split("/")
-    .filter(Boolean)
-    .join(".");
-  const prefix = [location.owner, location.repo, pathSuffix]
-    .filter(Boolean)
-    .join(".")
-    .replace(/\.+/gu, ".")
-    .replace(/^\.|\.$/gu, "");
+  const pathSuffix = normalizePathToDotted(location.path);
+  const prefix = pathSuffix === ""
+    ? `${location.owner}.${location.repo}`
+    : `${location.owner}.${location.repo}.${pathSuffix}`;
 
   return `${prefix}.${kind}.md`;
 }
 
 function basename(path: string): string {
-  const parts = path.split("/").filter(Boolean);
-  return parts[parts.length - 1] ?? path;
+  const end = trimTrailingSlashes(path);
+
+  if (end === 0) {
+    return "";
+  }
+
+  const start = path.lastIndexOf("/", end - 1);
+  return path.slice(start + 1, end);
 }
 
 function resolveDirectoryName(location: GithubDirectoryLocation, path: string): string {
@@ -660,8 +644,19 @@ function resolveDirectoryName(location: GithubDirectoryLocation, path: string): 
 }
 
 function dirname(path: string): string {
-  const parts = path.split("/").filter(Boolean);
-  return parts.slice(0, -1).join("/");
+  const end = trimTrailingSlashes(path);
+
+  if (end === 0) {
+    return "";
+  }
+
+  const slashIndex = path.lastIndexOf("/", end - 1);
+
+  if (slashIndex === -1) {
+    return "";
+  }
+
+  return path.slice(0, slashIndex);
 }
 
 function withoutMarkdownExtension(path: string): string {
@@ -704,9 +699,24 @@ function resolveFrontMatterName({
 }
 
 function fillFrontMatterName(frontMatter: string, expectedName: string): string {
-  const lines = frontMatter.split(/\r?\n/u).filter((line, index) => !(index === 0 && line === ""));
-  const filteredLines = lines.filter((line) => !line.startsWith("name:"));
-  return [`name: ${expectedName}`, ...filteredLines].join("\n");
+  const lines = frontMatter.split(/\r?\n/u);
+  const filteredLines = [`name: ${expectedName}`];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index] ?? "";
+
+    if (index === 0 && line === "") {
+      continue;
+    }
+
+    if (line.startsWith("name:")) {
+      continue;
+    }
+
+    filteredLines.push(line);
+  }
+
+  return filteredLines.join("\n");
 }
 
 function formatFrontMatterWarningBlock(frontMatter: string | null): string {
@@ -718,32 +728,54 @@ function shouldIgnoreGeneratedAsset(path: string): boolean {
 }
 
 function toRelativePath(path: string, rootPath: string): string {
+  if (path === rootPath) {
+    return "";
+  }
+
+  if (rootPath === "") {
+    return path;
+  }
+
   const prefix = `${rootPath}/`;
   return path.startsWith(prefix) ? path.slice(prefix.length) : path;
 }
 
-function findRecursiveCandidateDirectories(entries: GithubContentEntry[]): string[] {
-  const discovered = new Set<string>();
+function normalizePathToDotted(path: string): string {
+  let result = "";
+  let previousWasDot = false;
 
-  for (const entry of entries) {
-    if (entry.type !== "file") {
+  for (let index = 0; index < path.length; index += 1) {
+    const char = path[index];
+
+    if (char === "/") {
+      if (!previousWasDot && result !== "") {
+        result += ".";
+        previousWasDot = true;
+      }
       continue;
     }
 
-    const fileName = basename(entry.path);
-
-    if (fileName !== "SKILL.md" && fileName !== "DESIGN.md") {
-      continue;
-    }
-
-    discovered.add(dirname(entry.path));
+    result += char;
+    previousWasDot = false;
   }
 
-  return Array.from(discovered).sort((left, right) => left.localeCompare(right));
+  return result.endsWith(".") ? result.slice(0, -1) : result;
 }
 
-function listImmediateEntries(rootPath: string, treeEntries: GithubContentEntry[]): GithubContentEntry[] {
-  const discovered = new Map<string, GithubContentEntry>();
+function trimTrailingSlashes(path: string): number {
+  let end = path.length;
+
+  while (end > 0 && path.charCodeAt(end - 1) === 47) {
+    end -= 1;
+  }
+
+  return end;
+}
+
+function analyzeTreeEntries(rootPath: string, treeEntries: GithubContentEntry[]): TreeAnalysis {
+  const immediateEntries = new Map<string, GithubContentEntry>();
+  const nestedCandidateDirectories = new Set<string>();
+  const summariesByDirectory = new Map<string, DirectorySummary>();
 
   for (const entry of treeEntries) {
     const relativePath = toRelativePath(entry.path, rootPath);
@@ -752,59 +784,127 @@ function listImmediateEntries(rootPath: string, treeEntries: GithubContentEntry[
       continue;
     }
 
-    const [firstSegment] = relativePath.split("/");
+    const firstSlashIndex = relativePath.indexOf("/");
+    const firstSegment = firstSlashIndex === -1 ? relativePath : relativePath.slice(0, firstSlashIndex);
 
-    if (!firstSegment) {
+    if (firstSegment !== "") {
+      const immediatePath = rootPath ? `${rootPath}/${firstSegment}` : firstSegment;
+
+      if (firstSlashIndex === -1) {
+        immediateEntries.set(immediatePath, entry);
+      } else if (!immediateEntries.has(immediatePath)) {
+        immediateEntries.set(immediatePath, {
+          path: immediatePath,
+          download_url: null,
+          type: "dir",
+        });
+      }
+    }
+
+    if (entry.type !== "file") {
       continue;
     }
 
-    const resolvedPath = rootPath ? `${rootPath}/${firstSegment}` : firstSegment;
+    const fileName = basename(entry.path);
+    const directoryPath = dirname(entry.path);
+    let summary = summariesByDirectory.get(directoryPath);
 
-    if (!relativePath.includes("/")) {
-      discovered.set(resolvedPath, entry);
+    if (!summary) {
+      summary = { assets: [] };
+      summariesByDirectory.set(directoryPath, summary);
+    }
+
+    if (fileName === "SKILL.md") {
+      if (entry.download_url !== null) {
+        summary.skillFileUrl = entry.download_url;
+      }
+      nestedCandidateDirectories.add(directoryPath);
       continue;
     }
 
-    if (!discovered.has(resolvedPath)) {
-      discovered.set(resolvedPath, {
-        path: resolvedPath,
-        download_url: null,
-        type: "dir",
-      });
+    if (fileName === "DESIGN.md") {
+      if (entry.download_url !== null) {
+        summary.designFileUrl = entry.download_url;
+      }
+      nestedCandidateDirectories.add(directoryPath);
+      continue;
+    }
+
+    if (shouldIgnoreGeneratedAsset(fileName)) {
+      continue;
     }
   }
 
-  return Array.from(discovered.values()).sort((left, right) => left.path.localeCompare(right.path));
-}
+  const recursiveCandidateDirectories = Array.from(nestedCandidateDirectories)
+    .sort((left, right) => left.localeCompare(right));
 
-function isDescendantPath(path: string, rootPath: string): boolean {
-  if (rootPath === "") {
-    return true;
-  }
+  for (const candidateDirectory of recursiveCandidateDirectories) {
+    const summary = summariesByDirectory.get(candidateDirectory);
 
-  if (path === rootPath) {
-    return true;
-  }
-
-  return path.startsWith(`${rootPath}/`);
-}
-
-function isNestedCandidateAsset(
-  rootPath: string,
-  relativePath: string,
-  nestedCandidateDirectories: ReadonlySet<string>,
-): boolean {
-  const parts = relativePath.split("/").filter(Boolean);
-
-  for (let index = 1; index < parts.length - 1; index += 1) {
-    const nestedPath = `${rootPath}/${parts.slice(0, index).join("/")}`;
-
-    if (nestedCandidateDirectories.has(nestedPath)) {
-      return true;
+    if (!summary) {
+      summariesByDirectory.set(candidateDirectory, { assets: [] });
     }
   }
 
-  return false;
+  for (const entry of treeEntries) {
+    if (entry.type !== "file") {
+      continue;
+    }
+
+    const fileName = basename(entry.path);
+
+    if (
+      fileName === "SKILL.md"
+      || fileName === "DESIGN.md"
+      || shouldIgnoreGeneratedAsset(fileName)
+    ) {
+      continue;
+    }
+
+    let ownerDirectory = dirname(entry.path);
+
+    while (ownerDirectory !== "" && !nestedCandidateDirectories.has(ownerDirectory)) {
+      ownerDirectory = dirname(ownerDirectory);
+    }
+
+    if (ownerDirectory === "" || !nestedCandidateDirectories.has(ownerDirectory)) {
+      continue;
+    }
+
+    const ownerSummary = summariesByDirectory.get(ownerDirectory);
+
+    if (!ownerSummary) {
+      continue;
+    }
+
+    ownerSummary.assets.push(toRelativePath(entry.path, ownerDirectory));
+  }
+
+  for (const candidateDirectory of recursiveCandidateDirectories) {
+    const candidateSummary = summariesByDirectory.get(candidateDirectory);
+
+    if (!candidateSummary || candidateSummary.assets.length === 0) {
+      continue;
+    }
+
+    candidateSummary.assets.sort((left, right) => left.localeCompare(right));
+  }
+
+  for (const [path, entry] of immediateEntries) {
+    if (entry.type !== "dir") {
+      continue;
+    }
+
+    if (!nestedCandidateDirectories.has(path)) {
+      immediateEntries.delete(path);
+    }
+  }
+
+  return {
+    immediateEntries: Array.from(immediateEntries.values()).sort((left, right) => left.path.localeCompare(right.path)),
+    recursiveCandidateDirectories,
+    summariesByDirectory,
+  };
 }
 
 function createDefaultManifestWriter(): ManifestWriter {

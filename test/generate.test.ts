@@ -64,6 +64,25 @@ describe("generateSkillsManifest", () => {
       globalThis.fetch = originalFetch;
     }
   });
+
+  test("accepts a GitHub directory URL whose branch name contains slashes", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = mock(fetchMock) as unknown as typeof fetch;
+
+    try {
+      const manifest = await generateSkillsManifest(
+        "https://github.com/octo/demo/tree/feature/skills/skills",
+      );
+
+      expect(manifest.outputFileName).toBe("octo.demo.skills.skills.md");
+      expect(manifest.markdown).toBe(`| Name | Description | Bundled Assets |
+| -----|-------------|----------------|
+| [branch-alpha](https://github.com/octo/demo/tree/feature/skills/skills/branch-alpha) | Branch alpha skill | \`notes.md\` |
+`);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });
 
 describe("generateOutputs", () => {
@@ -177,6 +196,54 @@ describe("generateOutputs", () => {
       globalThis.fetch = originalFetch;
     }
   });
+
+  test("treats a DESIGN.md with non-YAML fenced markdown as markdown-only", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = mock(fetchMock) as unknown as typeof fetch;
+
+    try {
+      const outputs = await generateOutputs("https://github.com/octo/demo/tree/main/skills", {
+        recursive: true,
+      });
+
+      expect(outputs.design.markdown).toContain(
+        "| [examples](https://github.com/octo/demo/tree/main/skills/stitch-design/examples) | None | None |",
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  test("avoids extra contents API calls while generating from recursive tree data", async () => {
+    const originalFetch = globalThis.fetch;
+    const calls: string[] = [];
+    globalThis.fetch = mock((input: string | URL | Request) => {
+      const url = String(input);
+      calls.push(url);
+      return fetchMock(input);
+    }) as unknown as typeof fetch;
+
+    try {
+      await generateOutputs("https://github.com/octo/demo/tree/main/catalog", {
+        recursive: true,
+      });
+
+      expect(calls.slice(0, 3)).toEqual([
+        "https://api.github.com/repos/octo/demo/contents/catalog?ref=main",
+        "https://api.github.com/repos/octo/demo/contents?ref=main",
+        "https://api.github.com/repos/octo/demo/git/trees/catalog-main-tree?recursive=1",
+      ]);
+      expect(calls.slice(3).sort()).toEqual([
+        "https://raw.githubusercontent.com/octo/demo/main/catalog/group/alpha/DESIGN.md",
+        "https://raw.githubusercontent.com/octo/demo/main/catalog/group/alpha/SKILL.md",
+        "https://raw.githubusercontent.com/octo/demo/main/catalog/group/beta/DESIGN.md",
+        "https://raw.githubusercontent.com/octo/demo/main/catalog/group/beta/SKILL.md",
+        "https://raw.githubusercontent.com/octo/demo/main/catalog/root-agent.md",
+      ]);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });
 
 describe("writeGeneratedManifest", () => {
@@ -276,6 +343,17 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
     });
   }
 
+  if (url === "https://api.github.com/repos/octo/demo/git/trees/branch-skills-tree?recursive=1") {
+    return Response.json({
+      truncated: false,
+      tree: [
+        { path: "branch-alpha", type: "tree" },
+        { path: "branch-alpha/SKILL.md", type: "blob" },
+        { path: "branch-alpha/notes.md", type: "blob" },
+      ],
+    });
+  }
+
   if (url === "https://api.github.com/repos/octo/demo/git/trees/root-main-tree?recursive=1") {
     return Response.json({
       truncated: false,
@@ -351,6 +429,9 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
         { path: "nameless", type: "tree" },
         { path: "nameless/SKILL.md", type: "blob" },
         { path: "nameless/DESIGN.md", type: "blob" },
+        { path: "stitch-design", type: "tree" },
+        { path: "stitch-design/examples", type: "tree" },
+        { path: "stitch-design/examples/DESIGN.md", type: "blob" },
       ],
     });
   }
@@ -421,6 +502,17 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
     ]);
   }
 
+  if (url === "https://api.github.com/repos/octo/demo/contents?ref=feature%2Fskills") {
+    return Response.json([
+      {
+        type: "dir",
+        path: "skills",
+        download_url: null,
+        sha: "branch-skills-tree",
+      },
+    ]);
+  }
+
   if (url === "https://api.github.com/repos/octo/demo/contents/catalog?ref=main") {
     return Response.json([
       {
@@ -433,6 +525,31 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
         path: "catalog/group",
         download_url: null,
         sha: "catalog-group-main-tree",
+      },
+    ]);
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/contents/skills/skills?ref=feature") {
+    return new Response(
+      JSON.stringify({
+        message: "Not Found",
+      }),
+      {
+        status: 404,
+        headers: {
+          "content-type": "application/json",
+        },
+      },
+    );
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/contents/skills?ref=feature%2Fskills") {
+    return Response.json([
+      {
+        type: "dir",
+        path: "skills/branch-alpha",
+        download_url: null,
+        sha: "branch-skills-tree",
       },
     ]);
   }
@@ -1007,6 +1124,14 @@ name: beta-design
 `);
   }
 
+  if (url === "https://raw.githubusercontent.com/octo/demo/feature/skills/skills/branch-alpha/SKILL.md") {
+    return new Response(`---
+name: branch-alpha
+description: Branch alpha skill
+---
+`);
+  }
+
   if (url === "https://raw.githubusercontent.com/octo/demo/main/alpha/SKILL.md") {
     return new Response(`---
 name: alpha
@@ -1054,6 +1179,17 @@ description: Missing skill name
 
   if (url === "https://raw.githubusercontent.com/octo/demo/main/skills/nameless/DESIGN.md") {
     return new Response("# No front matter here\n");
+  }
+
+  if (url === "https://raw.githubusercontent.com/octo/demo/main/skills/stitch-design/examples/DESIGN.md") {
+    return new Response(`---
+# The "Solace" Design System
+This is a comprehensive design language for a mindfulness and wellness application.
+
+## Typography
+- Body: Inter
+---
+`);
   }
 
   if (url === "https://raw.githubusercontent.com/octo/demo/main/beta/SKILL.md") {
