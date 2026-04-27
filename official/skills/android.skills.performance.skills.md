@@ -1,0 +1,3 @@
+| Name | Description | Bundled Assets |
+| -----|-------------|----------------|
+| [r8-analyzer](https://github.com/android/skills/tree/main/performance/r8-analyzer) | Analyzes Android build files and R8 keep rules to identify redundancies, broad package-wide rules, and rules that subsume library consumer keep rules. Use when developers want to optimize their app's size, remove redundant or overly broad keep rules, or troubleshoot Proguard configurations. | `references` (4 files), `references/android/topic/performance/app-optimization/enable-app-optimization.md`, `references/android/training/testing/other-components/ui-automator.md` |
