@@ -61,6 +61,13 @@ jobs:
           - google-labs-code/design.md/tree/main/examples
           - VoltAgent/awesome-design-md/tree/ef729b271802ce7ed50f9e0928137b18942cde80/design-md
           - kzhrknt/awesome-design-md-jp/tree/main/design-md
+          - android/skills/tree/main/build/agp
+          - android/skills/tree/main/jetpack-compose/migration
+          - android/skills/tree/main/navigation
+          - android/skills/tree/main/performance
+          - android/skills/tree/main/play
+          - android/skills/tree/main/system
+          - android/skills/tree/main/xr
     env:
       # DO NOT forget add '/' at the end
       OFFICIAL_URL_PREFIXES: |
@@ -77,6 +84,7 @@ jobs:
         facebook/
         google-gemini/
         google-labs-code/
+        android/
       GENERATED_DIR: generate/${{ strategy.job-index }}
 
     steps:
