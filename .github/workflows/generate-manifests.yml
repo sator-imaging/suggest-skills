@@ -26,7 +26,7 @@ jobs:
       max-parallel: 2   # To avoid GitHub API rate limit
       fail-fast: true
 
-      # DO NOT forget to update offical url prefixes
+      # DO NOT forget to update url prefixes list
       # NOTE: 'https://github.com/' is prepended if not starting with 'https://'
       matrix:
         url:
@@ -79,6 +79,8 @@ jobs:
         google-gemini/
         google-labs-code/
         android/
+      RECURSIVE_URL_PREFIXES: |
+        android/
       GENERATED_DIR: generate/${{ strategy.job-index }}
 
     steps:
@@ -86,33 +88,38 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
 
-      - name: Generate manifest files
+      - name: Generate and classify manifest files
         env:
+          CURATED_DIR: ${{ env.CURATED_DIR }}
           GITHUB_PAT: ${{ secrets.GITHUB_PAT || github.token }}
+          OFFICIAL_DIR: ${{ env.OFFICIAL_DIR }}
+          OFFICIAL_URL_PREFIXES: ${{ env.OFFICIAL_URL_PREFIXES }}
+          RECURSIVE_URL_PREFIXES: ${{ env.RECURSIVE_URL_PREFIXES }}
           SOURCE_URL: ${{ matrix.url }}
           WORKDIR: ${{ runner.temp }}/${{ env.GENERATED_DIR }}
         run: |
           set -euo pipefail
+
           rm -rf "$WORKDIR"
           mkdir -p "$WORKDIR"
           cd "$WORKDIR"
-          if [[ "$SOURCE_URL" != https://* ]]; then
-            SOURCE_URL="https://github.com/$SOURCE_URL"
-          fi
-          bun "$GITHUB_WORKSPACE/src/index.ts" --recursive --generate "$SOURCE_URL"
-
-      - name: Classify generated files
-        env:
-          SOURCE_URL: ${{ matrix.url }}
-          WORKDIR: ${{ runner.temp }}/${{ env.GENERATED_DIR }}
-        run: |
-          set -euo pipefail
 
           raw_source_url="$SOURCE_URL"
-          
+
           if [[ "$SOURCE_URL" != https://* ]]; then
             SOURCE_URL="https://github.com/$SOURCE_URL"
           fi
+
+          generate_args=(--generate "$SOURCE_URL")
+          while IFS= read -r prefix; do
+            [[ -n "$prefix" ]] || continue
+            if [[ "$raw_source_url" == "$prefix"* ]]; then
+              generate_args=(--recursive "${generate_args[@]}")
+              break
+            fi
+          done <<< "$RECURSIVE_URL_PREFIXES"
+
+          bun "$GITHUB_WORKSPACE/src/index.ts" "${generate_args[@]}"
 
           output_root="$CURATED_DIR"
           while IFS= read -r prefix; do
@@ -123,13 +130,13 @@ jobs:
             fi
           done <<< "$OFFICIAL_URL_PREFIXES"
 
-          mkdir -p "$WORKDIR"/"$output_root"/agents
-          mkdir -p "$WORKDIR"/"$output_root"/skills
-          mkdir -p "$WORKDIR"/"$output_root"/designs
+          mkdir -p "$output_root"/agents
+          mkdir -p "$output_root"/skills
+          mkdir -p "$output_root"/designs
           shopt -s nullglob
-          mv "$WORKDIR"/*.agents.md "$WORKDIR"/"$output_root"/agents/ || true
-          mv "$WORKDIR"/*.skills.md "$WORKDIR"/"$output_root"/skills/ || true
-          mv "$WORKDIR"/*.designs.md "$WORKDIR"/"$output_root"/designs/ || true
+          mv ./*.agents.md "$output_root"/agents/ || true
+          mv ./*.skills.md "$output_root"/skills/ || true
+          mv ./*.designs.md "$output_root"/designs/ || true
           shopt -u nullglob
 
       - uses: actions/upload-artifact@v7
