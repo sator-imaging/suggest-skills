@@ -8,6 +8,8 @@ export type GithubDirectoryLocation = {
 export type MarkdownFrontMatterFields = {
   description: string | null;
   name: string | null;
+  parseError: string | null;
+  source: string | null;
 };
 
 const GITHUB_HOSTNAME = "github.com";
@@ -92,21 +94,38 @@ export function parseMarkdownFrontMatterFields(markdown: string): MarkdownFrontM
     return {
       description: null,
       name: null,
+      parseError: null,
+      source: null,
     };
   }
 
-  const parsed = Bun.YAML.parse(frontMatter);
+  let parsed: unknown;
+
+  try {
+    parsed = Bun.YAML.parse(frontMatter);
+  } catch (error) {
+    return {
+      description: null,
+      name: null,
+      parseError: error instanceof Error ? error.message : String(error),
+      source: frontMatter,
+    };
+  }
 
   if (!isRecord(parsed)) {
     return {
       description: null,
       name: null,
+      parseError: null,
+      source: frontMatter,
     };
   }
 
   return {
     description: normalizeFrontMatterField(parsed["description"]),
     name: normalizeFrontMatterField(parsed["name"]),
+    parseError: null,
+    source: frontMatter,
   };
 }
 

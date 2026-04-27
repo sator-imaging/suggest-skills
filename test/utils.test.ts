@@ -34,6 +34,9 @@ description: Alpha skill
     ).toEqual({
       description: "Alpha skill",
       name: "alpha",
+      parseError: null,
+      source: `name: alpha
+description: Alpha skill`,
     });
   });
 
@@ -46,6 +49,8 @@ name: alpha
     ).toEqual({
       description: null,
       name: "alpha",
+      parseError: null,
+      source: "name: alpha",
     });
   });
 
@@ -61,6 +66,11 @@ description: >-
     ).toEqual({
       description: "Release workflows with multiline description. Use when: publishing releases, preparing notes.",
       name: "release-agent",
+      parseError: null,
+      source: `name: release-agent
+description: >-
+  Release workflows with multiline description.
+  Use when: publishing releases, preparing notes.`,
     });
   });
 
@@ -74,6 +84,9 @@ description:
     ).toEqual({
       description: null,
       name: null,
+      parseError: null,
+      source: `name:
+description:`,
     });
 
     expect(
@@ -86,6 +99,10 @@ description: 42
     ).toEqual({
       description: null,
       name: null,
+      parseError: null,
+      source: `name:
+  nested: true
+description: 42`,
     });
   });
 
@@ -93,6 +110,20 @@ description: 42
     expect(parseMarkdownFrontMatterFields("# Title\n")).toEqual({
       description: null,
       name: null,
+      parseError: null,
+      source: null,
+    });
+  });
+
+  test("returns parse error for invalid yaml", () => {
+    expect(parseMarkdownFrontMatterFields(`---
+name: "alpha
+---
+`)).toEqual({
+      description: null,
+      name: null,
+      parseError: expect.stringContaining("YAML Parse error"),
+      source: 'name: "alpha',
     });
   });
 });

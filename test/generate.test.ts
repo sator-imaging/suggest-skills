@@ -104,11 +104,19 @@ describe("generateOutputs", () => {
       const outputs = await generateOutputs("https://github.com/octo/demo/tree/main/skills");
 
       expect(outputs.agents.markdown).not.toContain("unnamed-agent.md");
+      expect(outputs.agents.markdown).not.toContain("broken-agent.md");
       expect(outputs.manifest.markdown).not.toContain("skills/nameless");
       expect(outputs.design.markdown).not.toContain("skills/nameless");
       expect(writes.join("")).toContain(
         'Warning: skipped agent "skills/unnamed-agent.md" because front matter is missing required "name".',
       );
+      expect(writes.join("")).toContain(
+        'Warning: skipped agent "skills/broken-agent.md" because front matter YAML could not be parsed:',
+      );
+      expect(writes.join("")).toContain(`---
+name: "broken-agent
+description: Broken YAML
+---`);
       expect(writes.join("")).toContain(
         'Warning: skipped skill "skills/nameless/SKILL.md" because front matter is missing required "name".',
       );
@@ -396,6 +404,11 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
       },
       {
         type: "file",
+        path: "skills/broken-agent.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/skills/broken-agent.md",
+      },
+      {
+        type: "file",
         path: "skills/unnamed-agent.md",
         download_url: "https://raw.githubusercontent.com/octo/demo/main/skills/unnamed-agent.md",
       },
@@ -609,6 +622,14 @@ description: >-
 
   Use when: publishing releases, preparing notes.
 name: release-agent
+---
+`);
+  }
+
+  if (url === "https://raw.githubusercontent.com/octo/demo/main/skills/broken-agent.md") {
+    return new Response(`---
+name: "broken-agent
+description: Broken YAML
 ---
 `);
   }

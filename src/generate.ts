@@ -282,6 +282,15 @@ async function summarizeAgentFile(
   const fileText = await fetchTextContent(summary.url, `Agent file "${summary.path}"`);
   const frontMatter = parseMarkdownFrontMatterFields(fileText);
 
+  if (frontMatter.parseError) {
+    logInfo(
+      `Warning: skipped agent "${summary.path}" because front matter YAML could not be parsed: ${frontMatter.parseError}`,
+    );
+    logInfo(formatFrontMatterWarningBlock(frontMatter.source));
+    logInfo(`Skipped agent: ${summary.path}`);
+    return undefined;
+  }
+
   if (!frontMatter.name) {
     logInfo(`Warning: skipped agent "${summary.path}" because front matter is missing required "name".`);
     logInfo(`Skipped agent: ${summary.path}`);
@@ -375,6 +384,14 @@ async function buildEntry({
 
   const fileText = await fetchTextContent(fileUrl, `${fileLabel} file "${sourcePath}/${fileName}"`);
   const frontMatter = parseMarkdownFrontMatterFields(fileText);
+
+  if (frontMatter.parseError) {
+    logInfo(
+      `Warning: skipped ${fileLabel.toLowerCase()} "${sourcePath}/${fileName}" because front matter YAML could not be parsed: ${frontMatter.parseError}`,
+    );
+    logInfo(formatFrontMatterWarningBlock(frontMatter.source));
+    return undefined;
+  }
 
   if (!frontMatter.name) {
     logInfo(
@@ -587,6 +604,10 @@ function buildGeneratedOutputFileName(
 function basename(path: string): string {
   const parts = path.split("/").filter(Boolean);
   return parts[parts.length - 1] ?? path;
+}
+
+function formatFrontMatterWarningBlock(frontMatter: string | null): string {
+  return `---\n${frontMatter ?? ""}\n---`;
 }
 
 function shouldIgnoreGeneratedAsset(path: string): boolean {
