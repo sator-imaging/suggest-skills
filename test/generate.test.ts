@@ -90,6 +90,37 @@ describe("generateOutputs", () => {
     }
   });
 
+  test("skips entries that do not define front matter name and emits warnings", async () => {
+    const originalFetch = globalThis.fetch;
+    const originalWrite = process.stdout.write;
+    const writes: string[] = [];
+    globalThis.fetch = mock(fetchMock) as unknown as typeof fetch;
+    process.stdout.write = mock((chunk: string | Uint8Array) => {
+      writes.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    try {
+      const outputs = await generateOutputs("https://github.com/octo/demo/tree/main/skills");
+
+      expect(outputs.agents.markdown).not.toContain("unnamed-agent.md");
+      expect(outputs.manifest.markdown).not.toContain("skills/nameless");
+      expect(outputs.design.markdown).not.toContain("skills/nameless");
+      expect(writes.join("")).toContain(
+        'Warning: skipped agent "skills/unnamed-agent.md" because front matter is missing required "name".',
+      );
+      expect(writes.join("")).toContain(
+        'Warning: skipped skill "skills/nameless/SKILL.md" because front matter is missing required "name".',
+      );
+      expect(writes.join("")).toContain(
+        'Warning: skipped design "skills/nameless/DESIGN.md" because front matter is missing required "name".',
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+      process.stdout.write = originalWrite;
+    }
+  });
+
   test("builds a design markdown file from DESIGN.md front matter", async () => {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = mock(fetchMock) as unknown as typeof fetch;
@@ -364,6 +395,11 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
         download_url: "https://raw.githubusercontent.com/octo/demo/main/skills/release-agent.md",
       },
       {
+        type: "file",
+        path: "skills/unnamed-agent.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/skills/unnamed-agent.md",
+      },
+      {
         type: "dir",
         path: "skills/alpha",
         download_url: null,
@@ -371,6 +407,11 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
       {
         type: "dir",
         path: "skills/beta",
+        download_url: null,
+      },
+      {
+        type: "dir",
+        path: "skills/nameless",
         download_url: null,
       },
     ]);
@@ -530,6 +571,21 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
     ]);
   }
 
+  if (url === "https://api.github.com/repos/octo/demo/contents/skills/nameless?ref=main") {
+    return Response.json([
+      {
+        type: "file",
+        path: "skills/nameless/SKILL.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/skills/nameless/SKILL.md",
+      },
+      {
+        type: "file",
+        path: "skills/nameless/DESIGN.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/skills/nameless/DESIGN.md",
+      },
+    ]);
+  }
+
   if (url === "https://raw.githubusercontent.com/octo/demo/main/skills/alpha/SKILL.md") {
     return new Response(`---
 name: alpha
@@ -553,6 +609,13 @@ description: >-
 
   Use when: publishing releases, preparing notes.
 name: release-agent
+---
+`);
+  }
+
+  if (url === "https://raw.githubusercontent.com/octo/demo/main/skills/unnamed-agent.md") {
+    return new Response(`---
+description: Missing required name
 ---
 `);
   }
@@ -659,6 +722,20 @@ description: Beta skill
   if (url === "https://raw.githubusercontent.com/octo/demo/main/skills/beta/DESIGN.md") {
     return new Response(`---
 name: beta-design
+---
+`);
+  }
+
+  if (url === "https://raw.githubusercontent.com/octo/demo/main/skills/nameless/SKILL.md") {
+    return new Response(`---
+description: Missing skill name
+---
+`);
+  }
+
+  if (url === "https://raw.githubusercontent.com/octo/demo/main/skills/nameless/DESIGN.md") {
+    return new Response(`---
+description: Missing design name
 ---
 `);
   }

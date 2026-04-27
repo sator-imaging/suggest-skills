@@ -5,6 +5,11 @@ export type GithubDirectoryLocation = {
   path: string;
 };
 
+export type MarkdownFrontMatterFields = {
+  description: string | null;
+  name: string | null;
+};
+
 const GITHUB_HOSTNAME = "github.com";
 const GITHUB_RAW_HOSTNAME = "raw.githubusercontent.com";
 
@@ -75,6 +80,36 @@ export function parseGithubDirectoryUrl(sourceUrl: string): GithubDirectoryLocat
   };
 }
 
+export function extractMarkdownFrontMatter(markdown: string): string | null {
+  const match = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/u.exec(markdown);
+  return match?.[1] ?? null;
+}
+
+export function parseMarkdownFrontMatterFields(markdown: string): MarkdownFrontMatterFields {
+  const frontMatter = extractMarkdownFrontMatter(markdown);
+
+  if (frontMatter === null) {
+    return {
+      description: null,
+      name: null,
+    };
+  }
+
+  const parsed = Bun.YAML.parse(frontMatter);
+
+  if (!isRecord(parsed)) {
+    return {
+      description: null,
+      name: null,
+    };
+  }
+
+  return {
+    description: normalizeFrontMatterField(parsed["description"]),
+    name: normalizeFrontMatterField(parsed["name"]),
+  };
+}
+
 export function parseUrl(value: string): URL | undefined {
   try {
     return new URL(value);
@@ -93,4 +128,21 @@ function normalizeGithubRepo(repo: string | undefined): string | undefined {
   }
 
   return repo.endsWith(".git") ? repo.slice(0, -4) : repo;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function normalizeFrontMatterField(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = collapseWhitespace(value);
+  return normalized === "" ? null : normalized;
+}
+
+function collapseWhitespace(value: string): string {
+  return value.replace(/\s+/gu, " ").trim();
 }

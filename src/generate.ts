@@ -5,7 +5,7 @@ import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { Fibers } from "ts-fibers";
 import type { GithubDirectoryLocation } from "./utils.js";
-import { logInfo, parseUrl } from "./utils.js";
+import { logInfo, parseMarkdownFrontMatterFields, parseUrl } from "./utils.js";
 import {
   fetchTextContent,
   listGithubDirectory,
@@ -42,11 +42,6 @@ type DirectorySummary = {
 type AgentFileSummary = {
   path: string;
   url: string;
-};
-
-type FrontMatter = {
-  description: string;
-  name: string;
 };
 
 type GeneratedOutputKey = keyof GeneratedOutputs;
@@ -283,13 +278,12 @@ async function summarizeAgentFile(
     return undefined;
   }
 
-  const basenameValue = basename(summary.path);
-
   logInfo(`Fetching: ${summary.path}`);
   const fileText = await fetchTextContent(summary.url, `Agent file "${summary.path}"`);
-  const frontMatter = parseFrontMatter(fileText);
+  const frontMatter = parseMarkdownFrontMatterFields(fileText);
 
-  if (!frontMatter.name && !frontMatter.description) {
+  if (!frontMatter.name) {
+    logInfo(`Warning: skipped agent "${summary.path}" because front matter is missing required "name".`);
     logInfo(`Skipped agent: ${summary.path}`);
     return undefined;
   }
@@ -299,7 +293,7 @@ async function summarizeAgentFile(
     assetBlobBaseUrl: summary.url,
     assetTreeBaseUrl: summary.url,
     description: frontMatter.description || "None",
-    name: frontMatter.name || basenameValue,
+    name: frontMatter.name,
     url: summary.url,
   };
   logInfo(`Agent summarized: ${entry.name}`);
@@ -322,7 +316,6 @@ async function summarizeDirectory(
   const fallbackName = basename(directoryPath);
   const manifest = await buildEntry({
     descriptionFallback: "",
-    fallbackName,
     fileLabel: "Skill",
     fileName: "SKILL.md",
     fileUrl: summary.skillFileUrl,
@@ -332,7 +325,6 @@ async function summarizeDirectory(
   });
   const design = await buildEntry({
     descriptionFallback: "None",
-    fallbackName,
     fileLabel: "Design",
     fileName: "DESIGN.md",
     fileUrl: summary.designFileUrl,
@@ -362,7 +354,6 @@ async function summarizeDirectory(
 
 async function buildEntry({
   descriptionFallback,
-  fallbackName,
   fileLabel,
   fileName,
   fileUrl,
@@ -371,7 +362,6 @@ async function buildEntry({
   summary,
 }: {
   descriptionFallback: string;
-  fallbackName: string;
   fileLabel: string;
   fileName: "DESIGN.md" | "SKILL.md";
   fileUrl: string | undefined;
@@ -384,14 +374,21 @@ async function buildEntry({
   }
 
   const fileText = await fetchTextContent(fileUrl, `${fileLabel} file "${sourcePath}/${fileName}"`);
-  const frontMatter = parseFrontMatter(fileText);
+  const frontMatter = parseMarkdownFrontMatterFields(fileText);
+
+  if (!frontMatter.name) {
+    logInfo(
+      `Warning: skipped ${fileLabel.toLowerCase()} "${sourcePath}/${fileName}" because front matter is missing required "name".`,
+    );
+    return undefined;
+  }
 
   return {
     assets: summary.assets.slice().sort((left, right) => left.localeCompare(right)),
     assetBlobBaseUrl: formatGithubFileUrl(rootLocation, sourcePath),
     assetTreeBaseUrl: formatGithubFolderUrl(rootLocation, sourcePath),
     description: frontMatter.description || descriptionFallback,
-    name: frontMatter.name || fallbackName,
+    name: frontMatter.name,
     url: formatGithubFolderUrl(rootLocation, sourcePath),
   };
 }
@@ -455,76 +452,6 @@ async function collectDirectoryFiles(
   }
 
   return summary;
-}
-
-function parseFrontMatter(content: string): FrontMatter {
-  const match = /^---\r?\n([\s\S]*?)\r?\n---/u.exec(content);
-
-  if (!match) {
-    return { description: "", name: "" };
-  }
-
-  const frontMatter = match[1] ?? "";
-
-  return {
-    description: parseFrontMatterField(frontMatter, "description"),
-    name: parseFrontMatterField(frontMatter, "name"),
-  };
-}
-
-function parseFrontMatterField(frontMatter: string, fieldName: string): string {
-  const lines = frontMatter.split(/\r?\n/u);
-  const fieldPrefix = `${fieldName}:`;
-
-  for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index] ?? "";
-
-    if (!line.startsWith(fieldPrefix)) {
-      continue;
-    }
-
-    const rawValue = line.slice(fieldPrefix.length).trim();
-
-    if (/^[>|][+-]?$/u.test(rawValue)) {
-      const blockLines: string[] = [];
-
-      for (let blockIndex = index + 1; blockIndex < lines.length; blockIndex += 1) {
-        const blockLine = lines[blockIndex] ?? "";
-
-        if (blockLine === "") {
-          blockLines.push("");
-          continue;
-        }
-
-        if (!/^[ \t]+/u.test(blockLine)) {
-          break;
-        }
-
-        blockLines.push(blockLine.trim());
-      }
-
-      return collapseWhitespace(blockLines.join(" "));
-    }
-
-    return stripQuotes(rawValue);
-  }
-
-  return "";
-}
-
-function stripQuotes(value: string): string {
-  if (
-    (value.startsWith("'") && value.endsWith("'")) ||
-    (value.startsWith('"') && value.endsWith('"'))
-  ) {
-    return value.slice(1, -1);
-  }
-
-  return value;
-}
-
-function collapseWhitespace(value: string): string {
-  return value.replace(/\s+/gu, " ").trim();
 }
 
 function buildMarkdown(
