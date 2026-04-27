@@ -68,6 +68,7 @@ jobs:
           - android/skills/tree/main/play
           - android/skills/tree/main/system
           - android/skills/tree/main/xr
+          - sator-imaging/suggest-skills/tree/main/Unity
     env:
       # DO NOT forget add '/' at the end
       OFFICIAL_URL_PREFIXES: |
