@@ -84,7 +84,7 @@ describe("generateOutputs", () => {
 | [literal-keep-agent](https://github.com/octo/demo/blob/main/skills/literal-keep-agent.md) | Literal keep first line. Literal keep second line. |
 | [literal-strip-agent](https://github.com/octo/demo/blob/main/skills/literal-strip-agent.md) | Literal strip first line. Literal strip second line. |
 | [release-agent](https://github.com/octo/demo/blob/main/skills/release-agent.md) | Release workflows with multiline description. Use when: publishing releases, preparing notes. |
-| [skills](https://github.com/octo/demo/blob/main/skills/SKILL.md) | Root skill as agent |
+| [root-skill-agent](https://github.com/octo/demo/blob/main/skills/SKILL.md) | Root skill as agent |
 | [unnamed-agent](https://github.com/octo/demo/blob/main/skills/unnamed-agent.md) | Missing required name |
 `);
     } finally {
@@ -115,20 +115,12 @@ describe("generateOutputs", () => {
         "| [nameless](https://github.com/octo/demo/tree/main/skills/nameless) | None | None |",
       );
       expect(writes.join("")).toContain(
-        'Warning: corrected mismatched "name" in agent "skills/SKILL.md" from "root-skill-agent" to "skills".',
+        '[WARN] Filled missing "name" in agent "skills/unnamed-agent.md" with "unnamed-agent".',
       );
       expect(writes.join("")).toContain(
-        'Warning: filled missing "name" in agent "skills/unnamed-agent.md" with "unnamed-agent".',
+        '[WARN] Filled missing "name" in skill "skills/nameless/SKILL.md" with "nameless".',
       );
-      expect(writes.join("")).toContain(
-        'Warning: filled missing "name" in skill "skills/nameless/SKILL.md" with "nameless".',
-      );
-      expect(writes.join("")).toContain(
-        'Warning: corrected mismatched "name" in design "skills/alpha/DESIGN.md" from "alpha-design" to "alpha".',
-      );
-      expect(writes.join("")).toContain(
-        'Warning: corrected mismatched "name" in design "skills/beta/DESIGN.md" from "beta-design" to "beta".',
-      );
+      expect(writes.join("")).not.toContain('[WARN] corrected mismatched "name"');
       expect(writes.join("")).not.toContain('skills/nameless/DESIGN.md');
     } finally {
       globalThis.fetch = originalFetch;
@@ -146,8 +138,8 @@ describe("generateOutputs", () => {
       expect(outputs.design.outputFileName).toBe("octo.demo.skills.designs.md");
       expect(outputs.design.markdown).toBe(`| Name | Description | Bundled Assets |
 | -----|-------------|----------------|
-| [alpha](https://github.com/octo/demo/tree/main/skills/alpha) | Alpha design | [examples.md](https://github.com/octo/demo/blob/main/skills/alpha/examples.md), [frameworks.md](https://github.com/octo/demo/blob/main/skills/alpha/frameworks.md), [refinement-criteria.md](https://github.com/octo/demo/blob/main/skills/alpha/refinement-criteria.md), [.config/settings.json](https://github.com/octo/demo/blob/main/skills/alpha/.config/settings.json), [assets/example.txt](https://github.com/octo/demo/blob/main/skills/alpha/assets/example.txt), [assets/templates/config.json](https://github.com/octo/demo/blob/main/skills/alpha/assets/templates/config.json), [refs](https://github.com/octo/demo/tree/main/skills/alpha/refs) (2 files), [refs/sub/details.md](https://github.com/octo/demo/blob/main/skills/alpha/refs/sub/details.md), [scripts/deploy.sh](https://github.com/octo/demo/blob/main/skills/alpha/scripts/deploy.sh) |
-| [beta](https://github.com/octo/demo/tree/main/skills/beta) | None | [notes.txt](https://github.com/octo/demo/blob/main/skills/beta/notes.txt) |
+| [alpha-design](https://github.com/octo/demo/tree/main/skills/alpha) | Alpha design | [examples.md](https://github.com/octo/demo/blob/main/skills/alpha/examples.md), [frameworks.md](https://github.com/octo/demo/blob/main/skills/alpha/frameworks.md), [refinement-criteria.md](https://github.com/octo/demo/blob/main/skills/alpha/refinement-criteria.md), [.config/settings.json](https://github.com/octo/demo/blob/main/skills/alpha/.config/settings.json), [assets/example.txt](https://github.com/octo/demo/blob/main/skills/alpha/assets/example.txt), [assets/templates/config.json](https://github.com/octo/demo/blob/main/skills/alpha/assets/templates/config.json), [refs](https://github.com/octo/demo/tree/main/skills/alpha/refs) (2 files), [refs/sub/details.md](https://github.com/octo/demo/blob/main/skills/alpha/refs/sub/details.md), [scripts/deploy.sh](https://github.com/octo/demo/blob/main/skills/alpha/scripts/deploy.sh) |
+| [beta-design](https://github.com/octo/demo/tree/main/skills/beta) | None | [notes.txt](https://github.com/octo/demo/blob/main/skills/beta/notes.txt) |
 | [nameless](https://github.com/octo/demo/tree/main/skills/nameless) | None | None |
 `);
     } finally {

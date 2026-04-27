@@ -5,7 +5,7 @@ import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { Fibers } from "ts-fibers";
 import type { GithubDirectoryLocation } from "./utils.js";
-import { logInfo, parseMarkdownFrontMatterFields, parseUrl } from "./utils.js";
+import { logInfo, logWarning, parseMarkdownFrontMatterFields, parseUrl } from "./utils.js";
 import {
   fetchTextContent,
   listGithubDirectory,
@@ -297,8 +297,7 @@ async function summarizeAgentFile(
   });
 
   if (!resolvedName) {
-    logInfo(`Warning: skipped agent "${summary.path}" because front matter is missing required "name".`);
-    logInfo(`Skipped agent: ${summary.path}`);
+    logWarning(`Skipped agent "${summary.path}" because front matter is missing required "name".`);
     return undefined;
   }
 
@@ -347,8 +346,10 @@ async function summarizeDirectory(
     summary,
   });
 
-  if (manifest || design) {
+  if (manifest) {
     logInfo(`Skill summarized: ${fallbackName}`);
+  } else if (design) {
+    logInfo(`Design summarized: ${fallbackName}`);
   } else {
     logInfo(`Skipped skill: ${directoryPath}`);
   }
@@ -417,9 +418,7 @@ async function buildEntry({
   });
 
   if (!resolvedName) {
-    logInfo(
-      `Warning: skipped ${fileLabel.toLowerCase()} "${sourcePath}/${fileName}" because front matter is missing required "name".`,
-    );
+    logWarning(`Skipped ${fileLabel.toLowerCase()} "${sourcePath}/${fileName}" because front matter is missing required "name".`);
     return undefined;
   }
 
@@ -659,7 +658,7 @@ function resolveFrontMatterName({
   frontMatterSource: string | null;
   targetLabel: string;
 }): string | undefined {
-  if (currentName === expectedName) {
+  if (currentName !== null) {
     return currentName;
   }
 
@@ -668,13 +667,7 @@ function resolveFrontMatterName({
   }
 
   const filledFrontMatter = fillFrontMatterName(frontMatterSource, expectedName);
-
-  if (currentName === null) {
-    logInfo(`Warning: filled missing "name" in ${targetLabel} with "${expectedName}".`);
-  } else {
-    logInfo(`Warning: corrected mismatched "name" in ${targetLabel} from "${currentName}" to "${expectedName}".`);
-  }
-
+  logWarning(`Filled missing "name" in ${targetLabel} with "${expectedName}".`);
   logInfo(formatFrontMatterWarningBlock(filledFrontMatter));
   return expectedName;
 }

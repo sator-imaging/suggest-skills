@@ -142,6 +142,10 @@ export function logInfo(message: string): void {
   process.stdout.write(`${message}\n`);
 }
 
+export function logWarning(message: string): void {
+  process.stdout.write(`[WARN] ${message}\n`);
+}
+
 function normalizeGithubRepo(repo: string | undefined): string | undefined {
   if (!repo) {
     return undefined;
