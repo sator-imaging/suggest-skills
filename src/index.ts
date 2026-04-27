@@ -5,7 +5,7 @@ import { startStdioServer } from "./stdio.js";
 
 type RuntimeMode =
   | { kind: "stdio" }
-  | { kind: "generate"; url: string }
+  | { kind: "generate"; recursive: boolean; url: string }
   | { kind: "server"; port: number };
 
 async function main(): Promise<void> {
@@ -13,7 +13,7 @@ async function main(): Promise<void> {
     const runtimeMode = parseRuntimeMode(process.argv);
 
     if (runtimeMode.kind === "generate") {
-      await runGenerateCommand(runtimeMode.url);
+      await runGenerateCommand(runtimeMode.url, { recursive: runtimeMode.recursive });
       return;
     }
 
@@ -41,9 +41,17 @@ async function main(): Promise<void> {
 
 function parseRuntimeMode(argv: readonly string[]): RuntimeMode {
   const args = argv.slice(2);
+  let generateUrl: string | undefined;
+  let recursive = false;
+  let serverPort: number | undefined;
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index] ?? "";
+
+    if (arg === "--recursive") {
+      recursive = true;
+      continue;
+    }
 
     if (arg === "--generate") {
       const value = args[index + 1];
@@ -52,10 +60,9 @@ function parseRuntimeMode(argv: readonly string[]): RuntimeMode {
         throw new ConfigError("--generate requires a GitHub skills directory URL.");
       }
 
-      return {
-        kind: "generate",
-        url: value,
-      };
+      generateUrl = value;
+      index += 1;
+      continue;
     }
 
     if (arg.startsWith("--generate=")) {
@@ -65,10 +72,8 @@ function parseRuntimeMode(argv: readonly string[]): RuntimeMode {
         throw new ConfigError("--generate requires a GitHub skills directory URL.");
       }
 
-      return {
-        kind: "generate",
-        url: value,
-      };
+      generateUrl = value;
+      continue;
     }
 
     if (arg === "--server") {
@@ -78,10 +83,9 @@ function parseRuntimeMode(argv: readonly string[]): RuntimeMode {
         throw new ConfigError("--server requires a port number.");
       }
 
-      return {
-        kind: "server",
-        port: parsePort(value),
-      };
+      serverPort = parsePort(value);
+      index += 1;
+      continue;
     }
 
     if (arg.startsWith("--server=")) {
@@ -91,11 +95,27 @@ function parseRuntimeMode(argv: readonly string[]): RuntimeMode {
         throw new ConfigError("--server requires a port number.");
       }
 
-      return {
-        kind: "server",
-        port: parsePort(value),
-      };
+      serverPort = parsePort(value);
     }
+  }
+
+  if (recursive && generateUrl === undefined) {
+    throw new ConfigError("--recursive can only be used with --generate.");
+  }
+
+  if (generateUrl !== undefined) {
+    return {
+      kind: "generate",
+      recursive,
+      url: generateUrl,
+    };
+  }
+
+  if (serverPort !== undefined) {
+    return {
+      kind: "server",
+      port: serverPort,
+    };
   }
 
   return { kind: "stdio" };

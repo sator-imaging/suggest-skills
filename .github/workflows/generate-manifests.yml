@@ -99,7 +99,7 @@ jobs:
           if [[ "$SOURCE_URL" != https://* ]]; then
             SOURCE_URL="https://github.com/$SOURCE_URL"
           fi
-          bun "$GITHUB_WORKSPACE/src/index.ts" --generate --recursive "$SOURCE_URL"
+          bun "$GITHUB_WORKSPACE/src/index.ts" --recursive --generate "$SOURCE_URL"
 
       - name: Classify generated files
         env:

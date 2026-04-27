@@ -146,6 +146,37 @@ describe("generateOutputs", () => {
       globalThis.fetch = originalFetch;
     }
   });
+
+  test("supports recursive generate for nested skill and design directories", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = mock(fetchMock) as unknown as typeof fetch;
+
+    try {
+      const outputs = await generateOutputs("https://github.com/octo/demo/tree/main/catalog", {
+        recursive: true,
+      });
+
+      expect(outputs.agents.outputFileName).toBe("octo.demo.catalog.agents.md");
+      expect(outputs.agents.markdown).toBe(`| Name | Description |
+| -----|-------------|
+| [root-agent](https://github.com/octo/demo/blob/main/catalog/root-agent.md) | Root recursive agent |
+`);
+      expect(outputs.manifest.outputFileName).toBe("octo.demo.catalog.skills.md");
+      expect(outputs.manifest.markdown).toBe(`| Name | Description | Bundled Assets |
+| -----|-------------|----------------|
+| [alpha](https://github.com/octo/demo/tree/main/catalog/group/alpha) | Alpha recursive skill | \`assets/guide.md\` |
+| [beta](https://github.com/octo/demo/tree/main/catalog/group/beta) | Beta recursive skill | \`docs/overview.md\` |
+`);
+      expect(outputs.design.outputFileName).toBe("octo.demo.catalog.designs.md");
+      expect(outputs.design.markdown).toBe(`| Name | Description | Bundled Assets |
+| -----|-------------|----------------|
+| [alpha-design](https://github.com/octo/demo/tree/main/catalog/group/alpha) | Alpha recursive design | [assets/guide.md](https://github.com/octo/demo/blob/main/catalog/group/alpha/assets/guide.md) |
+| [beta-design](https://github.com/octo/demo/tree/main/catalog/group/beta) | None | [docs/overview.md](https://github.com/octo/demo/blob/main/catalog/group/beta/docs/overview.md) |
+`);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });
 
 describe("writeGeneratedManifest", () => {
@@ -225,17 +256,150 @@ describe("writeGeneratedManifest", () => {
 async function fetchMock(input: string | URL | Request): Promise<Response> {
   const url = String(input);
 
+  if (url === "https://api.github.com/repos/octo/demo/commits/main") {
+    return Response.json({
+      commit: {
+        tree: {
+          sha: "root-main-tree",
+        },
+      },
+    });
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/commits/master") {
+    return Response.json({
+      commit: {
+        tree: {
+          sha: "root-master-tree",
+        },
+      },
+    });
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/git/trees/root-main-tree?recursive=1") {
+    return Response.json({
+      truncated: false,
+      tree: [
+        { path: "alpha", type: "tree" },
+        { path: "alpha/SKILL.md", type: "blob" },
+        { path: "alpha/DESIGN.md", type: "blob" },
+        { path: "alpha/assets", type: "tree" },
+        { path: "alpha/assets/example.txt", type: "blob" },
+        { path: "alpha/docs", type: "tree" },
+        { path: "alpha/docs/usage.md", type: "blob" },
+        { path: "beta", type: "tree" },
+        { path: "beta/SKILL.md", type: "blob" },
+        { path: "skills", type: "tree" },
+        { path: "catalog", type: "tree" },
+      ],
+    });
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/git/trees/root-master-tree?recursive=1") {
+    return Response.json({
+      truncated: false,
+      tree: [
+        { path: "alpha", type: "tree" },
+        { path: "alpha/SKILL.md", type: "blob" },
+        { path: "alpha/assets", type: "tree" },
+        { path: "alpha/assets/example.txt", type: "blob" },
+        { path: "alpha/docs", type: "tree" },
+        { path: "alpha/docs/usage.md", type: "blob" },
+        { path: "beta", type: "tree" },
+        { path: "beta/SKILL.md", type: "blob" },
+      ],
+    });
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/git/trees/skills-main-tree?recursive=1") {
+    return Response.json({
+      truncated: false,
+      tree: [
+        { path: "fold-clip-agent.md", type: "blob" },
+        { path: "fold-keep-agent.md", type: "blob" },
+        { path: "fold-strip-agent.md", type: "blob" },
+        { path: "literal-clip-agent.md", type: "blob" },
+        { path: "literal-keep-agent.md", type: "blob" },
+        { path: "literal-strip-agent.md", type: "blob" },
+        { path: "SKILL.md", type: "blob" },
+        { path: "release-agent.md", type: "blob" },
+        { path: "unnamed-agent.md", type: "blob" },
+        { path: "alpha", type: "tree" },
+        { path: "alpha/SKILL.md", type: "blob" },
+        { path: "alpha/DESIGN.md", type: "blob" },
+        { path: "alpha/assets", type: "tree" },
+        { path: "alpha/assets/example.txt", type: "blob" },
+        { path: "alpha/assets/templates", type: "tree" },
+        { path: "alpha/assets/templates/config.json", type: "blob" },
+        { path: "alpha/scripts", type: "tree" },
+        { path: "alpha/scripts/deploy.sh", type: "blob" },
+        { path: "alpha/.config", type: "tree" },
+        { path: "alpha/.config/settings.json", type: "blob" },
+        { path: "alpha/examples.md", type: "blob" },
+        { path: "alpha/frameworks.md", type: "blob" },
+        { path: "alpha/refinement-criteria.md", type: "blob" },
+        { path: "alpha/refs", type: "tree" },
+        { path: "alpha/refs/guide.md", type: "blob" },
+        { path: "alpha/refs/checklist.md", type: "blob" },
+        { path: "alpha/refs/sub", type: "tree" },
+        { path: "alpha/refs/sub/details.md", type: "blob" },
+        { path: "alpha/.secret", type: "blob" },
+        { path: "beta", type: "tree" },
+        { path: "beta/SKILL.md", type: "blob" },
+        { path: "beta/DESIGN.md", type: "blob" },
+        { path: "beta/notes.txt", type: "blob" },
+        { path: "nameless", type: "tree" },
+        { path: "nameless/SKILL.md", type: "blob" },
+        { path: "nameless/DESIGN.md", type: "blob" },
+      ],
+    });
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/git/trees/catalog-main-tree?recursive=1") {
+    return Response.json({
+      truncated: false,
+      tree: [
+        { path: "root-agent.md", type: "blob" },
+        { path: "group", type: "tree" },
+        { path: "group/alpha", type: "tree" },
+        { path: "group/alpha/SKILL.md", type: "blob" },
+        { path: "group/alpha/DESIGN.md", type: "blob" },
+        { path: "group/alpha/assets", type: "tree" },
+        { path: "group/alpha/assets/guide.md", type: "blob" },
+        { path: "group/beta", type: "tree" },
+        { path: "group/beta/SKILL.md", type: "blob" },
+        { path: "group/beta/DESIGN.md", type: "blob" },
+        { path: "group/beta/docs", type: "tree" },
+        { path: "group/beta/docs/overview.md", type: "blob" },
+      ],
+    });
+  }
+
   if (url === "https://api.github.com/repos/octo/demo/contents?ref=main") {
     return Response.json([
       {
         type: "dir",
         path: "alpha",
         download_url: null,
+        sha: "alpha-main-tree",
       },
       {
         type: "dir",
         path: "beta",
         download_url: null,
+        sha: "beta-main-tree",
+      },
+      {
+        type: "dir",
+        path: "skills",
+        download_url: null,
+        sha: "skills-main-tree",
+      },
+      {
+        type: "dir",
+        path: "catalog",
+        download_url: null,
+        sha: "catalog-main-tree",
       },
     ]);
   }
@@ -246,11 +410,29 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
         type: "dir",
         path: "alpha",
         download_url: null,
+        sha: "alpha-master-tree",
       },
       {
         type: "dir",
         path: "beta",
         download_url: null,
+        sha: "beta-master-tree",
+      },
+    ]);
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/contents/catalog?ref=main") {
+    return Response.json([
+      {
+        type: "file",
+        path: "catalog/root-agent.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/catalog/root-agent.md",
+      },
+      {
+        type: "dir",
+        path: "catalog/group",
+        download_url: null,
+        sha: "catalog-group-main-tree",
       },
     ]);
   }
@@ -421,6 +603,96 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
         type: "dir",
         path: "skills/nameless",
         download_url: null,
+      },
+    ]);
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/contents/catalog?ref=main") {
+    return Response.json([
+      {
+        type: "file",
+        path: "catalog/root-agent.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/catalog/root-agent.md",
+      },
+      {
+        type: "dir",
+        path: "catalog/group",
+        download_url: null,
+      },
+    ]);
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/contents/catalog/group?ref=main") {
+    return Response.json([
+      {
+        type: "dir",
+        path: "catalog/group/alpha",
+        download_url: null,
+      },
+      {
+        type: "dir",
+        path: "catalog/group/beta",
+        download_url: null,
+      },
+    ]);
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/contents/catalog/group/alpha?ref=main") {
+    return Response.json([
+      {
+        type: "file",
+        path: "catalog/group/alpha/SKILL.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/catalog/group/alpha/SKILL.md",
+      },
+      {
+        type: "file",
+        path: "catalog/group/alpha/DESIGN.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/catalog/group/alpha/DESIGN.md",
+      },
+      {
+        type: "dir",
+        path: "catalog/group/alpha/assets",
+        download_url: null,
+      },
+    ]);
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/contents/catalog/group/alpha/assets?ref=main") {
+    return Response.json([
+      {
+        type: "file",
+        path: "catalog/group/alpha/assets/guide.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/catalog/group/alpha/assets/guide.md",
+      },
+    ]);
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/contents/catalog/group/beta?ref=main") {
+    return Response.json([
+      {
+        type: "file",
+        path: "catalog/group/beta/SKILL.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/catalog/group/beta/SKILL.md",
+      },
+      {
+        type: "file",
+        path: "catalog/group/beta/DESIGN.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/catalog/group/beta/DESIGN.md",
+      },
+      {
+        type: "dir",
+        path: "catalog/group/beta/docs",
+        download_url: null,
+      },
+    ]);
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/contents/catalog/group/beta/docs?ref=main") {
+    return Response.json([
+      {
+        type: "file",
+        path: "catalog/group/beta/docs/overview.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/catalog/group/beta/docs/overview.md",
       },
     ]);
   }
@@ -692,6 +964,45 @@ name: literal-strip-agent
     return new Response(`---
 name: alpha-design
 description: Alpha design
+---
+`);
+  }
+
+  if (url === "https://raw.githubusercontent.com/octo/demo/main/catalog/group/alpha/SKILL.md") {
+    return new Response(`---
+name: alpha
+description: Alpha recursive skill
+---
+`);
+  }
+
+  if (url === "https://raw.githubusercontent.com/octo/demo/main/catalog/root-agent.md") {
+    return new Response(`---
+name: root-agent
+description: Root recursive agent
+---
+`);
+  }
+
+  if (url === "https://raw.githubusercontent.com/octo/demo/main/catalog/group/alpha/DESIGN.md") {
+    return new Response(`---
+name: alpha-design
+description: Alpha recursive design
+---
+`);
+  }
+
+  if (url === "https://raw.githubusercontent.com/octo/demo/main/catalog/group/beta/SKILL.md") {
+    return new Response(`---
+name: beta
+description: Beta recursive skill
+---
+`);
+  }
+
+  if (url === "https://raw.githubusercontent.com/octo/demo/main/catalog/group/beta/DESIGN.md") {
+    return new Response(`---
+name: beta-design
 ---
 `);
   }

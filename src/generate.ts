@@ -8,7 +8,7 @@ import type { GithubDirectoryLocation } from "./utils.js";
 import { logInfo, logWarning, parseMarkdownFrontMatterFields, parseUrl } from "./utils.js";
 import {
   fetchTextContent,
-  listGithubDirectory,
+  listGithubDirectoryRecursive,
   resolveGithubFolderUrl,
   type GithubContentEntry,
 } from "./download.js";
@@ -22,6 +22,10 @@ export type GeneratedOutputs = {
   agents: GeneratedDocument;
   design: GeneratedDocument;
   manifest: GeneratedDocument;
+};
+
+export type GenerateOptions = {
+  recursive?: boolean;
 };
 
 type GeneratedEntry = {
@@ -86,23 +90,39 @@ const GENERATED_MARKDOWN_OPTIONS = {
   },
 } as const satisfies Record<GeneratedOutputKey, MarkdownBuildOptions>;
 
-export async function generateSkillsManifest(url: string): Promise<GeneratedDocument> {
-  const outputs = await generateOutputs(url);
+export async function generateSkillsManifest(
+  url: string,
+  options: GenerateOptions = {},
+): Promise<GeneratedDocument> {
+  const outputs = await generateOutputs(url, options);
   return outputs.manifest;
 }
 
-export async function generateOutputs(url: string): Promise<GeneratedOutputs> {
+export async function generateOutputs(
+  url: string,
+  options: GenerateOptions = {},
+): Promise<GeneratedOutputs> {
   const rootLocation = resolveGenerateRootLocation(url)
     ?? await resolveGithubFolderUrl(url);
-  const rootEntries = await listGithubDirectory(rootLocation);
+  const treeEntries = await listGithubDirectoryRecursive(rootLocation);
+  const rootEntries = listImmediateEntries(rootLocation.path, treeEntries);
   const agentFiles = rootEntries
     .filter((entry) => entry.type === "file")
     .sort((left, right) => left.path.localeCompare(right.path));
-  const candidateDirectories = rootEntries
-    .filter((entry) => entry.type === "dir")
-    .sort((left, right) => left.path.localeCompare(right.path));
+  const candidateDirectories = options.recursive
+    ? findRecursiveCandidateDirectories(treeEntries)
+    : rootEntries
+      .filter((entry) => entry.type === "dir")
+      .map((entry) => entry.path)
+      .sort((left, right) => left.localeCompare(right));
   const agentEntries = await summarizeAgentFiles(rootLocation, agentFiles);
-  const summaries = await summarizeDirectories(rootLocation, candidateDirectories);
+  const nestedCandidateDirectories = new Set(candidateDirectories);
+  const summaries = await summarizeDirectories(
+    rootLocation,
+    candidateDirectories,
+    nestedCandidateDirectories,
+    treeEntries,
+  );
 
   const manifestEntries = summaries
     .map((summary) => summary.manifest)
@@ -155,8 +175,11 @@ export async function writeGeneratedManifest(
   return outputPath;
 }
 
-export async function runGenerateCommand(url: string): Promise<void> {
-  const outputs = await generateOutputs(url);
+export async function runGenerateCommand(
+  url: string,
+  options: GenerateOptions = {},
+): Promise<void> {
+  const outputs = await generateOutputs(url, options);
   const agentsPath = await writeGeneratedManifest(outputs.agents);
   const manifestPath = await writeGeneratedManifest(outputs.manifest);
   const designPath = await writeGeneratedManifest(outputs.design);
@@ -203,17 +226,19 @@ async function summarizeAgentFiles(
 
 async function summarizeDirectories(
   rootLocation: GithubDirectoryLocation,
-  candidateDirectories: GithubContentEntry[],
+  candidateDirectories: string[],
+  nestedCandidateDirectories: ReadonlySet<string>,
+  treeEntries: GithubContentEntry[],
 ): Promise<Array<{ design?: GeneratedEntry; manifest?: GeneratedEntry }>> {
   const results = Array.from<{ design?: GeneratedEntry; manifest?: GeneratedEntry } | undefined>({
     length: candidateDirectories.length,
   });
   const fibers = Fibers.forEach(
     SKILL_DOWNLOAD_CONCURRENCY,
-    candidateDirectories.map((entry, index) => ({ index, path: entry.path })),
+    candidateDirectories.map((path, index) => ({ index, path })),
     async ({ index, path }) => ({
       index,
-      summary: await summarizeDirectory(rootLocation, path),
+      summary: await summarizeDirectory(rootLocation, path, nestedCandidateDirectories, treeEntries),
     }),
   );
 
@@ -317,16 +342,16 @@ async function summarizeAgentFile(
 async function summarizeDirectory(
   rootLocation: GithubDirectoryLocation,
   directoryPath: string,
+  nestedCandidateDirectories: ReadonlySet<string>,
+  treeEntries: GithubContentEntry[],
 ): Promise<{ design?: GeneratedEntry; manifest?: GeneratedEntry }> {
   logInfo(`Fetching: ${directoryPath}`);
-  const summary = await collectDirectoryFiles(
-    {
-      ...rootLocation,
-      path: directoryPath,
-    },
+  const summary = collectDirectoryFiles(
     directoryPath,
+    nestedCandidateDirectories,
+    treeEntries,
   );
-  const fallbackName = basename(directoryPath);
+  const fallbackName = resolveDirectoryName(rootLocation, directoryPath);
   const manifest = await buildEntry({
     descriptionFallback: "",
     fileLabel: "Skill",
@@ -397,19 +422,18 @@ async function buildEntry({
     );
   }
 
-  const expectedName = basename(sourcePath);
-
   if (fileName === "DESIGN.md" && frontMatter.source === null) {
     return {
       assets: summary.assets.slice().sort((left, right) => left.localeCompare(right)),
       assetBlobBaseUrl: formatGithubFileUrl(rootLocation, sourcePath),
       assetTreeBaseUrl: formatGithubFolderUrl(rootLocation, sourcePath),
       description: descriptionFallback,
-      name: expectedName,
+      name: resolveDirectoryName(rootLocation, sourcePath),
       url: formatGithubFolderUrl(rootLocation, sourcePath),
     };
   }
 
+  const expectedName = resolveDirectoryName(rootLocation, sourcePath);
   const resolvedName = resolveFrontMatterName({
     currentName: frontMatter.name,
     expectedName,
@@ -432,28 +456,17 @@ async function buildEntry({
   };
 }
 
-async function collectDirectoryFiles(
-  location: GithubDirectoryLocation,
+function collectDirectoryFiles(
   rootPath: string,
-): Promise<DirectorySummary> {
-  const entries = await listGithubDirectory(location);
+  nestedCandidateDirectories: ReadonlySet<string>,
+  treeEntries: GithubContentEntry[],
+): DirectorySummary {
   const assets: string[] = [];
   let designFileUrl: string | undefined;
   let skillFileUrl: string | undefined;
 
-  for (const entry of entries) {
-    if (entry.type === "dir") {
-      const nested = await collectDirectoryFiles(
-        {
-          ...location,
-          path: entry.path,
-        },
-        rootPath,
-      );
-
-      assets.push(...nested.assets);
-      designFileUrl ??= nested.designFileUrl;
-      skillFileUrl ??= nested.skillFileUrl;
+  for (const entry of treeEntries) {
+    if (!isDescendantPath(entry.path, rootPath)) {
       continue;
     }
 
@@ -474,6 +487,10 @@ async function collectDirectoryFiles(
     }
 
     if (shouldIgnoreGeneratedAsset(relativePath)) {
+      continue;
+    }
+
+    if (isNestedCandidateAsset(rootPath, relativePath, nestedCandidateDirectories)) {
       continue;
     }
 
@@ -599,11 +616,13 @@ function formatCollapsedAssetDirectory(
 }
 
 function formatGithubFolderUrl(location: GithubDirectoryLocation, path: string): string {
-  return `https://github.com/${location.owner}/${location.repo}/tree/${location.ref}/${path}`;
+  const suffix = path ? `/${path}` : "";
+  return `https://github.com/${location.owner}/${location.repo}/tree/${location.ref}${suffix}`;
 }
 
 function formatGithubFileUrl(location: GithubDirectoryLocation, path: string): string {
-  return `https://github.com/${location.owner}/${location.repo}/blob/${location.ref}/${path}`;
+  const suffix = path ? `/${path}` : "";
+  return `https://github.com/${location.owner}/${location.repo}/blob/${location.ref}${suffix}`;
 }
 
 function buildGeneratedOutputFileName(
@@ -626,6 +645,18 @@ function buildGeneratedOutputFileName(
 function basename(path: string): string {
   const parts = path.split("/").filter(Boolean);
   return parts[parts.length - 1] ?? path;
+}
+
+function resolveDirectoryName(location: GithubDirectoryLocation, path: string): string {
+  if (path !== "") {
+    return basename(path);
+  }
+
+  if (location.path !== "") {
+    return basename(location.path);
+  }
+
+  return location.repo;
 }
 
 function dirname(path: string): string {
@@ -689,6 +720,91 @@ function shouldIgnoreGeneratedAsset(path: string): boolean {
 function toRelativePath(path: string, rootPath: string): string {
   const prefix = `${rootPath}/`;
   return path.startsWith(prefix) ? path.slice(prefix.length) : path;
+}
+
+function findRecursiveCandidateDirectories(entries: GithubContentEntry[]): string[] {
+  const discovered = new Set<string>();
+
+  for (const entry of entries) {
+    if (entry.type !== "file") {
+      continue;
+    }
+
+    const fileName = basename(entry.path);
+
+    if (fileName !== "SKILL.md" && fileName !== "DESIGN.md") {
+      continue;
+    }
+
+    discovered.add(dirname(entry.path));
+  }
+
+  return Array.from(discovered).sort((left, right) => left.localeCompare(right));
+}
+
+function listImmediateEntries(rootPath: string, treeEntries: GithubContentEntry[]): GithubContentEntry[] {
+  const discovered = new Map<string, GithubContentEntry>();
+
+  for (const entry of treeEntries) {
+    const relativePath = toRelativePath(entry.path, rootPath);
+
+    if (relativePath === "" || relativePath.startsWith("../")) {
+      continue;
+    }
+
+    const [firstSegment] = relativePath.split("/");
+
+    if (!firstSegment) {
+      continue;
+    }
+
+    const resolvedPath = rootPath ? `${rootPath}/${firstSegment}` : firstSegment;
+
+    if (!relativePath.includes("/")) {
+      discovered.set(resolvedPath, entry);
+      continue;
+    }
+
+    if (!discovered.has(resolvedPath)) {
+      discovered.set(resolvedPath, {
+        path: resolvedPath,
+        download_url: null,
+        type: "dir",
+      });
+    }
+  }
+
+  return Array.from(discovered.values()).sort((left, right) => left.path.localeCompare(right.path));
+}
+
+function isDescendantPath(path: string, rootPath: string): boolean {
+  if (rootPath === "") {
+    return true;
+  }
+
+  if (path === rootPath) {
+    return true;
+  }
+
+  return path.startsWith(`${rootPath}/`);
+}
+
+function isNestedCandidateAsset(
+  rootPath: string,
+  relativePath: string,
+  nestedCandidateDirectories: ReadonlySet<string>,
+): boolean {
+  const parts = relativePath.split("/").filter(Boolean);
+
+  for (let index = 1; index < parts.length - 1; index += 1) {
+    const nestedPath = `${rootPath}/${parts.slice(0, index).join("/")}`;
+
+    if (nestedCandidateDirectories.has(nestedPath)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function createDefaultManifestWriter(): ManifestWriter {

@@ -6,6 +6,7 @@ import {
 } from "./utils.js";
 
 export type GithubContentEntry = {
+  sha?: string;
   type: "dir" | "file" | "submodule" | "symlink";
   path: string;
   download_url: string | null;
@@ -182,6 +183,61 @@ export async function listGithubDirectory(
   return payload as GithubContentEntry[];
 }
 
+export async function listGithubDirectoryRecursive(
+  location: GithubDirectoryLocation,
+): Promise<GithubContentEntry[]> {
+  const treeSha = await resolveGithubTreeSha(location);
+  const response = await fetchGithub(buildTreeApiUrl(location.owner, location.repo, treeSha));
+
+  if (!response.ok) {
+    throw new Error(await formatGithubApiError(response));
+  }
+
+  const payload = (await response.json()) as {
+    tree?: Array<{ path?: unknown; type?: unknown }>;
+    truncated?: unknown;
+  };
+
+  if (!Array.isArray(payload.tree)) {
+    throw new Error(`Expected "${location.path}" to be a GitHub folder.`);
+  }
+
+  if (payload.truncated === true) {
+    throw new Error(`GitHub tree response for "${location.path}" was truncated.`);
+  }
+
+  const entries: GithubContentEntry[] = [];
+
+  for (const entry of payload.tree) {
+    if (typeof entry.path !== "string") {
+      continue;
+    }
+
+    const resolvedPath = location.path
+      ? `${location.path}/${entry.path}`.replace(/^\/+/u, "")
+      : entry.path;
+
+    if (entry.type === "tree") {
+      entries.push({
+        path: resolvedPath,
+        download_url: null,
+        type: "dir",
+      });
+      continue;
+    }
+
+    if (entry.type === "blob") {
+      entries.push({
+        path: resolvedPath,
+        download_url: buildGithubRawUrl(location.owner, location.repo, location.ref, resolvedPath),
+        type: "file",
+      });
+    }
+  }
+
+  return entries;
+}
+
 function buildContentsApiUrl(location: GithubDirectoryLocation): string {
   const pathSuffix = location.path
     .split("/")
@@ -198,6 +254,56 @@ function buildContentsApiUrl(location: GithubDirectoryLocation): string {
   return url.toString();
 }
 
+function buildTreeApiUrl(owner: string, repo: string, treeSha: string): string {
+  const pathname = `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/git/trees/${encodeURIComponent(treeSha)}`;
+  const url = new URL(pathname, GITHUB_API_BASE_URL);
+  url.searchParams.set("recursive", "1");
+  return url.toString();
+}
+
+function buildCommitApiUrl(location: GithubDirectoryLocation): string {
+  return new URL(
+    `/repos/${encodeURIComponent(location.owner)}/${encodeURIComponent(location.repo)}/commits/${encodeURIComponent(location.ref)}`,
+    GITHUB_API_BASE_URL,
+  ).toString();
+}
+
+async function resolveGithubTreeSha(location: GithubDirectoryLocation): Promise<string> {
+  if (location.path === "") {
+    const response = await fetchGithub(buildCommitApiUrl(location));
+
+    if (!response.ok) {
+      throw new Error(await formatGithubApiError(response));
+    }
+
+    const payload = (await response.json()) as { commit?: { tree?: { sha?: unknown } } };
+    const treeSha = payload.commit?.tree?.sha;
+
+    if (typeof treeSha !== "string" || treeSha === "") {
+      throw new Error(`Missing tree SHA for "${location.ref}".`);
+    }
+
+    return treeSha;
+  }
+
+  const parentLocation = {
+    ...location,
+    path: dirname(location.path),
+  };
+  const parentEntries = await listGithubDirectory(parentLocation);
+  const directoryEntry = parentEntries.find((entry) => entry.path === location.path && entry.type === "dir");
+
+  if (typeof directoryEntry?.sha !== "string" || directoryEntry.sha === "") {
+    throw new Error(`Missing tree SHA for "${location.path}".`);
+  }
+
+  return directoryEntry.sha;
+}
+
+function buildGithubRawUrl(owner: string, repo: string, ref: string, path: string): string {
+  return `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/${path}`;
+}
+
 function toRelativePath(path: string, rootPath: string): string {
   const prefix = `${rootPath}/`;
 
@@ -206,6 +312,11 @@ function toRelativePath(path: string, rootPath: string): string {
   }
 
   return path.startsWith(prefix) ? path.slice(prefix.length) : path;
+}
+
+function dirname(path: string): string {
+  const parts = path.split("/").filter(Boolean);
+  return parts.slice(0, -1).join("/");
 }
 
 async function formatGithubApiError(response: Response): Promise<string> {

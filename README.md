@@ -47,8 +47,8 @@ npx suggest-skills --generate \
 
 ```bash
 npx suggest-skills --generate \
-  https://github.com/OWNER/REPO/tree/main/skills \
-  --recursive
+  --recursive \
+  https://github.com/OWNER/REPO/tree/main/skills
 ```
 
 This may write the following files in the current working directory:
@@ -60,6 +60,7 @@ This may write the following files in the current working directory:
 
 Generate mode uses these rules:
 
+- GitHub directory discovery uses a recursive tree listing internally
 - `SKILL.md` and `DESIGN.md` are discovered in skill directories, and bundled assets are any other files next to them or in nested subdirectories
 - Without `--recursive`, `SKILL.md` and `DESIGN.md` are discovered from direct child directories of the generate root
 - With `--recursive`, only subdirectory search is expanded, so nested directories are also scanned for `SKILL.md` and `DESIGN.md`
