@@ -45,6 +45,12 @@ npx suggest-skills --generate \
   https://github.com/OWNER/REPO/tree/main/skills
 ```
 
+```bash
+npx suggest-skills --generate \
+  https://github.com/OWNER/REPO/tree/main/skills \
+  --recursive
+```
+
 This may write the following files in the current working directory:
 
 - `<owner>.<repo>[.<path>].skills.md`: entries collected from skill directories that contain `SKILL.md`
@@ -55,6 +61,10 @@ This may write the following files in the current working directory:
 Generate mode uses these rules:
 
 - `SKILL.md` and `DESIGN.md` are discovered in skill directories, and bundled assets are any other files next to them or in nested subdirectories
+- Without `--recursive`, `SKILL.md` and `DESIGN.md` are discovered from direct child directories of the generate root
+- With `--recursive`, only subdirectory search is expanded, so nested directories are also scanned for `SKILL.md` and `DESIGN.md`
+- Root-level markdown files for `.agents.md` are still discovered the same way whether `--recursive` is present or not
+- Output file naming stays based on the original generate root whether `--recursive` is present or not
 - `DESIGN.md` reads optional `name` and `description` from YAML front matter, and emits `None` when description is missing
 - flat top-level markdown files with front matter are treated as agent definitions for `.agents.md`
 - Empty generated outputs are skipped, so no file is written and no overwrite prompt is shown for them
@@ -86,6 +96,7 @@ GitHub `blob` URLs are converted to `raw.githubusercontent.com` URLs automatical
 - `-o <dir>` or `--output <dir>`: output directory for installed skills
 - `--output=<dir>`: inline form
 - `--generate <github-url>` or `--generate=<github-url>`: generate markdown inventories from a GitHub skills directory or repo root
+- `--recursive`: expand subdirectory search for `SKILL.md` and `DESIGN.md` when used with `--generate`; root-level agent discovery is unchanged
 - `--server <port>` or `--server=<port>`: run the streamable HTTP server
 
 Default output directory:
