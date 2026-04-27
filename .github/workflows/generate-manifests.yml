@@ -61,7 +61,7 @@ jobs:
           - VoltAgent/awesome-design-md/tree/ef729b271802ce7ed50f9e0928137b18942cde80/design-md
           - kzhrknt/awesome-design-md-jp/tree/main/design-md
           - android/skills
-          - sator-imaging/suggest-skills/tree/main/Unity
+          ##- sator-imaging/suggest-skills/tree/main/Unity
     env:
       # DO NOT forget add '/' at the end
       OFFICIAL_URL_PREFIXES: |
