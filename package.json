@@ -15,7 +15,7 @@
     "build": "bun build src/index.ts --outdir ./dist --target node --drop console --drop debugger --minify --production",
     "start": "bun src/index.ts",
     "server": "bun src/index.ts --server 3100",
-    "check": "bunx tsc --noEmit && bunx oxlint",
+    "check": "bunx tsgo --noEmit && bunx oxlint",
     "test": "bun run check && bun test"
   },
   "dependencies": {
@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "@types/bun": "^1.2.13",
-    "typescript": "^6.0.3"
+    "@typescript/native-preview": "7.0.0-dev.20260419.1"
   },
   "packageManager": "bun@1.3.13",
   "engines": {
