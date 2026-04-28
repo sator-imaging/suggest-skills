@@ -98,6 +98,21 @@ describe("generateSkillsManifest", () => {
       globalThis.fetch = originalFetch;
     }
   });
+
+  test("preserves hidden-directory dots after a visible path segment", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = mock(fetchMock) as unknown as typeof fetch;
+
+    try {
+      const outputs = await generateOutputs("https://github.com/octo/demo/tree/main/skills/.curated");
+
+      expect(outputs.agents.outputFileName).toBe("octo.demo.skills..curated.agents.md");
+      expect(outputs.manifest.outputFileName).toBe("octo.demo.skills..curated.skills.md");
+      expect(outputs.design.outputFileName).toBe("octo.demo.skills..curated.designs.md");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });
 
 describe("generateOutputs", () => {
@@ -400,6 +415,16 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
       truncated: false,
       tree: [
         { path: "release-agent.md", type: "blob" },
+      ],
+    });
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/git/trees/skills-curated-main-tree?recursive=1") {
+    return Response.json({
+      truncated: false,
+      tree: [
+        { path: "alpha", type: "tree" },
+        { path: "alpha/SKILL.md", type: "blob" },
       ],
     });
   }
@@ -767,6 +792,17 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
     ]);
   }
 
+  if (url === "https://api.github.com/repos/octo/demo/contents/skills/.curated?ref=main") {
+    return Response.json([
+      {
+        type: "dir",
+        path: "skills/.curated/alpha",
+        download_url: null,
+        sha: "skills-curated-main-tree",
+      },
+    ]);
+  }
+
   if (url === "https://api.github.com/repos/octo/demo/contents/skills?ref=main") {
     return Response.json([
       {
@@ -828,6 +864,12 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
         type: "dir",
         path: "skills/nameless",
         download_url: null,
+      },
+      {
+        type: "dir",
+        path: "skills/.curated",
+        download_url: null,
+        sha: "skills-curated-main-tree",
       },
     ]);
   }
@@ -1236,6 +1278,14 @@ name: beta-design
     return new Response(`---
 name: release-agent
 description: Release hidden agent
+---
+`);
+  }
+
+  if (url === "https://raw.githubusercontent.com/octo/demo/main/skills/.curated/alpha/SKILL.md") {
+    return new Response(`---
+name: alpha
+description: Curated alpha skill
 ---
 `);
   }

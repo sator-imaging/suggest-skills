@@ -742,25 +742,18 @@ function toRelativePath(path: string, rootPath: string): string {
 
 function normalizePathToDotted(path: string): string {
   let result = "";
-  let previousWasDot = false;
 
   for (let index = 0; index < path.length; index += 1) {
     const char = path[index];
 
     if (char === "/") {
-      if (!previousWasDot && result !== "") {
+      if (result !== "") {
         result += ".";
-        previousWasDot = true;
       }
       continue;
     }
 
-    if (char === "." && previousWasDot) {
-      continue;
-    }
-
     result += char;
-    previousWasDot = char === ".";
   }
 
   return result.endsWith(".") ? result.slice(0, -1) : result;

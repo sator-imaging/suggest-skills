@@ -62,6 +62,7 @@ Generate mode uses these rules:
 
 - GitHub directory discovery uses a recursive tree listing internally
 - `SKILL.md` and `DESIGN.md` are discovered in skill directories, and bundled assets are any other files next to them or in nested subdirectories
+- Symlinks found during generate are not handled specially; they may appear in bundled assets, but are not traversed
 - Without `--recursive`, `SKILL.md` and `DESIGN.md` are discovered from direct child directories of the generate root
 - With `--recursive`, only subdirectory search is expanded, so nested directories are also scanned for `SKILL.md` and `DESIGN.md`
 - Root-level markdown files for `.agents.md` are still discovered the same way whether `--recursive` is present or not
@@ -161,6 +162,8 @@ Returns every file in that folder with:
 
 - Path relative to the requested folder
 - UTF-8 text content
+- File symlinks are downloaded when GitHub provides a `download_url`
+- Repository-relative directory symlinks are resolved and downloaded recursively
 
 
 
