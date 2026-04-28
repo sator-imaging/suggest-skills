@@ -2,6 +2,7 @@ import { ConfigError, loadConfig } from "./config.js";
 import { runGenerateCommand } from "./generate.js";
 import { startHttpServer } from "./http.js";
 import { startStdioServer } from "./stdio.js";
+import { logError } from "./utils.js";
 
 type RuntimeMode =
   | { kind: "stdio" }
@@ -29,12 +30,12 @@ async function main(): Promise<void> {
     const message = error instanceof Error ? error.message : String(error);
 
     if (error instanceof ConfigError) {
-      console.error(`Configuration error: ${message}`);
+      logError(`Configuration error: ${message}`);
       process.exitCode = 1;
       return;
     }
 
-    console.error(message);
+    logError(message);
     process.exitCode = 1;
   }
 }
