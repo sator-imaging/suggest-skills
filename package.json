@@ -12,7 +12,7 @@
     "suggest-skills": "dist/index.js"
   },
   "scripts": {
-    "build": "bun build src/index.ts --outdir ./dist --target node --drop console --drop debugger --minify --production",
+    "build": "bun build --banner \"#!/usr/bin/env node\" src/index.ts --outdir ./dist --target node --drop console --drop debugger --minify --production",
     "start": "bun src/index.ts",
     "server": "bun src/index.ts --server 3100",
     "check": "bunx tsgo --noEmit && bunx oxlint",
