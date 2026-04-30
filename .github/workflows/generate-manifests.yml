@@ -18,10 +18,21 @@ env:
   OFFICIAL_DIR: official
 
 jobs:
+  prepare:
+    name: Prepare Branch
+    runs-on: ubuntu-slim
+    outputs:
+      branch: ${{ steps.vars.outputs.branch }}
+    steps:
+      - id: vars
+        run: |
+          echo "branch=bot/refresh-manifests-${{ github.run_id }}-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+
   generate:
     name: "${{ matrix.url }}"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     timeout-minutes: 10
+    needs: prepare
     strategy:
       max-parallel: 2   # To avoid GitHub API rate limit
       fail-fast: true
@@ -83,11 +94,24 @@ jobs:
       RECURSIVE_URL_PREFIXES: |
         android/
       GENERATED_DIR: generate/${{ strategy.job-index }}
+      BRANCH: ${{ needs.prepare.outputs.branch }}
 
     steps:
       - uses: actions/checkout@v6
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
+
+      - name: Switch to target branch
+        run: |
+          set -euo pipefail
+
+          git fetch origin "$BRANCH" || true
+
+          if git show-ref --verify --quiet "refs/remotes/origin/$BRANCH"; then
+            git checkout -B "$BRANCH" "origin/$BRANCH"
+          else
+            git checkout -B "$BRANCH"
+          fi
 
       - name: Generate and classify manifest files
         env:
@@ -140,44 +164,69 @@ jobs:
           mv ./*.designs.md "$output_root"/designs/ || true
           shopt -u nullglob
 
-      - uses: actions/upload-artifact@v7
-        with:
-          name: manifests-${{ github.run_id }}-${{ github.run_attempt }}-${{ strategy.job-index }}
-          path: |
-            ${{ runner.temp }}/${{ env.GENERATED_DIR }}/${{ env.CURATED_DIR }}/**/*.md
-            ${{ runner.temp }}/${{ env.GENERATED_DIR }}/${{ env.OFFICIAL_DIR }}/**/*.md
-          if-no-files-found: warn
-
-  collect-and-pr:
-    name: Collect and Create PR
-    runs-on: ubuntu-latest
-    needs: generate
-
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/download-artifact@v8
-        with:
-          path: ${{ runner.temp }}/generated
-          pattern: manifests-*
-          merge-multiple: true
-
-      - name: Organize generated files
+      - name: Update repository files
+        env:
+          WORKDIR: ${{ runner.temp }}/${{ env.GENERATED_DIR }}
         run: |
           set -euo pipefail
+
           mkdir -p "$CURATED_DIR"/agents
           mkdir -p "$CURATED_DIR"/skills
           mkdir -p "$CURATED_DIR"/designs
           mkdir -p "$OFFICIAL_DIR"/agents
           mkdir -p "$OFFICIAL_DIR"/skills
           mkdir -p "$OFFICIAL_DIR"/designs
-          find "$CURATED_DIR"/agents -maxdepth 1 -type f -name '*.md' -delete
-          find "$CURATED_DIR"/skills -maxdepth 1 -type f -name '*.md' -delete
-          find "$CURATED_DIR"/designs -maxdepth 1 -type f -name '*.md' -delete
-          find "$OFFICIAL_DIR"/agents -maxdepth 1 -type f -name '*.md' -delete
-          find "$OFFICIAL_DIR"/skills -maxdepth 1 -type f -name '*.md' -delete
-          find "$OFFICIAL_DIR"/designs -maxdepth 1 -type f -name '*.md' -delete
-          cp -R "$RUNNER_TEMP"/generated/"$CURATED_DIR"/. "$CURATED_DIR"/ 2>/dev/null || true
-          cp -R "$RUNNER_TEMP"/generated/"$OFFICIAL_DIR"/. "$OFFICIAL_DIR"/ 2>/dev/null || true
+
+          cp -R "$WORKDIR"/"$CURATED_DIR"/. "$CURATED_DIR"/ 2>/dev/null || true
+          cp -R "$WORKDIR"/"$OFFICIAL_DIR"/. "$OFFICIAL_DIR"/ 2>/dev/null || true
+
+      - name: Commit and push with retry
+        run: |
+          set -euo pipefail
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add -f "$CURATED_DIR"/agents
+          git add -f "$CURATED_DIR"/skills
+          git add -f "$CURATED_DIR"/designs
+          git add -f "$OFFICIAL_DIR"/agents
+          git add -f "$OFFICIAL_DIR"/skills
+          git add -f "$OFFICIAL_DIR"/designs
+
+          git commit -m "bot: Refresh manifests for ${{ matrix.url }}" || {
+            echo "No changes to commit."
+            exit 0
+          }
+
+          for i in 1 2 3 4 5; do
+            git fetch origin "$BRANCH" || true
+
+            if git show-ref --verify --quiet "refs/remotes/origin/$BRANCH"; then
+              git rebase "origin/$BRANCH"
+            fi
+
+            if git push --set-upstream origin "$BRANCH"; then
+              exit 0
+            fi
+
+            git rebase --abort || true
+            sleep $((i * 2))
+          done
+
+          exit 1
+
+  collect-and-pr:
+    name: Collect and Create PR
+    runs-on: ubuntu-slim
+    needs:
+      - prepare
+      - generate
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.prepare.outputs.branch }}
 
       - name: Create pull request with gh
         env:
@@ -185,25 +234,14 @@ jobs:
         run: |
           set -euo pipefail
 
-          branch="bot/refresh-manifests-${{ github.run_id }}-$(date -u +%Y%m%d-%H%M%S)"
           title="bot: Refresh Manifests"
           body="This PR refreshes manifest files from the configured external repositories."
 
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -B "$branch"
-          git add -f "$CURATED_DIR"/agents
-          git add -f "$CURATED_DIR"/skills
-          git add -f "$CURATED_DIR"/designs
-          git add -f "$OFFICIAL_DIR"/agents
-          git add -f "$OFFICIAL_DIR"/skills
-          git add -f "$OFFICIAL_DIR"/designs
-          git commit -m "$title" -m "$body" || {
-            echo "No changes to commit."
-            exit 0
-          }
-          git push --force-with-lease --set-upstream origin "$branch"
+          git fetch origin "${{ needs.prepare.outputs.branch }}"
+          git checkout -B "${{ needs.prepare.outputs.branch }}" "origin/${{ needs.prepare.outputs.branch }}"
           gh pr create \
             --base main \
-            --head "$branch" \
+            --head "${{ needs.prepare.outputs.branch }}" \
             --fill
