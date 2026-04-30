@@ -46,7 +46,7 @@ describe("downloadGithubFolder", () => {
     await expect(
       downloadGithubFolder("https://github.com/octo/demo/tree/main/skills/binary-skill"),
     ).rejects.toThrow(
-      'File "skills/binary-skill/icon.png" appears to be binary and cannot be returned as text.',
+      'File "skills/binary-skill/icon.png" appears to be binary and cannot be returned as text. Content-Type: image/png.',
     );
   });
 
@@ -202,7 +202,7 @@ describe("fetchManifestText", () => {
 
   test("returns an error when the manifest is binary", async () => {
     await expect(fetchManifestText("https://example.com/binary.manifest")).rejects.toThrow(
-      "Manifest appears to be binary and cannot be returned as text.",
+      "Manifest appears to be binary and cannot be returned as text. Content-Type: application/octet-stream.",
     );
   });
 });

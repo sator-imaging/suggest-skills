@@ -309,7 +309,7 @@ describe("generateOutputs", () => {
       await expect(
         generateOutputs("https://github.com/octo/demo/tree/main/broken-agents"),
       ).rejects.toThrow(
-        'Agent file "broken-agents/binary-agent.md" appears to be binary and cannot be returned as text.',
+        'Agent file "broken-agents/binary-agent.md" appears to be binary and cannot be returned as text. Content-Type: image/png.',
       );
     } finally {
       globalThis.fetch = originalFetch;

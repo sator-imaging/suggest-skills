@@ -468,7 +468,7 @@ async function readTextResponse(response: Response, label: string): Promise<stri
   const contentType = response.headers.get("content-type");
 
   if (contentType && isBinaryContentType(contentType)) {
-    throw new Error(`${label} appears to be binary and cannot be returned as text.`);
+    throw new Error(formatBinaryTextError(label, contentType));
   }
 
   const buffer = await response.arrayBuffer();
@@ -480,10 +480,15 @@ async function readTextResponse(response: Response, label: string): Promise<stri
   }
 
   if (looksBinary(bytes)) {
-    throw new Error(`${label} appears to be binary and cannot be returned as text.`);
+    throw new Error(formatBinaryTextError(label, contentType));
   }
 
   return new TextDecoder("utf-8").decode(bytes);
+}
+
+function formatBinaryTextError(label: string, contentType: string | null): string {
+  const detail = contentType ? ` Content-Type: ${contentType}.` : "";
+  return `${label} appears to be binary and cannot be returned as text.${detail}`;
 }
 
 function decodeTextBytes(
