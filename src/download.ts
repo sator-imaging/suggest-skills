@@ -476,7 +476,7 @@ async function readTextResponse(response: Response, label: string): Promise<stri
   const textEncoding = detectTextEncoding(contentType, bytes);
 
   if (textEncoding) {
-    return new TextDecoder(textEncoding).decode(bytes);
+    return decodeTextBytes(bytes, textEncoding);
   }
 
   if (looksBinary(bytes)) {
@@ -484,6 +484,51 @@ async function readTextResponse(response: Response, label: string): Promise<stri
   }
 
   return new TextDecoder("utf-8").decode(bytes);
+}
+
+function decodeTextBytes(
+  bytes: Uint8Array,
+  encoding: "utf-8" | "utf-16le" | "utf-16be",
+): string {
+  if (encoding === "utf-8") {
+    return new TextDecoder("utf-8").decode(bytes);
+  }
+
+  const normalizedBytes =
+    encoding === "utf-16be"
+      ? swapByteOrder(stripUtf16Bom(bytes, "utf-16be"))
+      : stripUtf16Bom(bytes, "utf-16le");
+
+  return new TextDecoder("utf-16").decode(normalizedBytes);
+}
+
+function stripUtf16Bom(bytes: Uint8Array, encoding: "utf-16le" | "utf-16be"): Uint8Array {
+  if (
+    bytes.length >= 2
+    && (
+      (encoding === "utf-16le" && bytes[0] === 255 && bytes[1] === 254)
+      || (encoding === "utf-16be" && bytes[0] === 254 && bytes[1] === 255)
+    )
+  ) {
+    return bytes.subarray(2);
+  }
+
+  return bytes;
+}
+
+function swapByteOrder(bytes: Uint8Array): Uint8Array {
+  const swapped = new Uint8Array(bytes.length);
+
+  for (let index = 0; index + 1 < bytes.length; index += 2) {
+    swapped[index] = bytes[index + 1] ?? 0;
+    swapped[index + 1] = bytes[index] ?? 0;
+  }
+
+  if (bytes.length % 2 !== 0) {
+    swapped[bytes.length - 1] = bytes[bytes.length - 1] ?? 0;
+  }
+
+  return swapped;
 }
 
 function detectTextEncoding(
