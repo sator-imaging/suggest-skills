@@ -43,9 +43,9 @@ describe("downloadGithubFolder", () => {
   });
 
   test("returns an error when a downloaded file is binary", async () => {
-    await expect(
-      downloadGithubFolder("https://github.com/octo/demo/tree/main/skills/binary-skill"),
-    ).rejects.toThrow(
+    // With concurrent downloads via ts-fibers, Bun test does not reliably capture this exception through `.rejects`,
+    // so this assertion must pass a function to `toThrow`.
+    await expect(() => downloadGithubFolder("https://github.com/octo/demo/tree/main/skills/binary-skill")).toThrow(
       'File "skills/binary-skill/icon.png" appears to be binary and cannot be returned as text. Content-Type: image/png.',
     );
   });

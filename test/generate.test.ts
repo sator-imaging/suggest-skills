@@ -306,9 +306,9 @@ describe("generateOutputs", () => {
     globalThis.fetch = mock(fetchMock) as unknown as typeof fetch;
 
     try {
-      await expect(
-        generateOutputs("https://github.com/octo/demo/tree/main/broken-agents"),
-      ).rejects.toThrow(
+      // With concurrent downloads via ts-fibers, Bun test does not reliably capture this exception through `.rejects`,
+      // so this assertion must pass a function to `toThrow`.
+      await expect(() => generateOutputs("https://github.com/octo/demo/tree/main/broken-agents")).toThrow(
         'Agent file "broken-agents/binary-agent.md" appears to be binary and cannot be returned as text. Content-Type: image/png.',
       );
     } finally {
