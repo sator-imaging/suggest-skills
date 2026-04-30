@@ -50,6 +50,19 @@ describe("downloadGithubFolder", () => {
     );
   });
 
+  test("downloads UTF-16 skill files as text", async () => {
+    const files = await downloadGithubFolder(
+      "https://github.com/octo/demo/tree/main/skills/utf16-skill",
+    );
+
+    expect(files).toEqual([
+      {
+        path: "SKILL.md",
+        content: "---\nname: utf16-skill\ndescription: UTF-16 encoded skill\n---\n",
+      },
+    ]);
+  });
+
   test("downloads file symlinks when a download URL is available", async () => {
     const files = await downloadGithubFolder(
       "https://github.com/octo/demo/tree/main/skills/file-symlink-skill",
@@ -244,6 +257,19 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
 
   if (
     url ===
+    "https://api.github.com/repos/octo/demo/contents/skills/utf16-skill?ref=main"
+  ) {
+    return Response.json([
+      {
+        type: "file",
+        path: "skills/utf16-skill/SKILL.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/skills/utf16-skill/SKILL.md",
+      },
+    ]);
+  }
+
+  if (
+    url ===
     "https://api.github.com/repos/octo/demo/contents/skills/file-symlink-skill?ref=main"
   ) {
     return Response.json([
@@ -397,6 +423,27 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
         "content-type": "image/png",
       },
     });
+  }
+
+  if (
+    url ===
+    "https://raw.githubusercontent.com/octo/demo/main/skills/utf16-skill/SKILL.md"
+  ) {
+    return new Response(
+      new Uint8Array([
+        255, 254, 45, 0, 45, 0, 45, 0, 10, 0, 110, 0, 97, 0, 109, 0, 101, 0, 58, 0, 32,
+        0, 117, 0, 116, 0, 102, 0, 49, 0, 54, 0, 45, 0, 115, 0, 107, 0, 105, 0, 108, 0,
+        108, 0, 10, 0, 100, 0, 101, 0, 115, 0, 99, 0, 114, 0, 105, 0, 112, 0, 116, 0,
+        105, 0, 111, 0, 110, 0, 58, 0, 32, 0, 85, 0, 84, 0, 70, 0, 45, 0, 49, 0, 54, 0,
+        32, 0, 101, 0, 110, 0, 99, 0, 111, 0, 100, 0, 101, 0, 100, 0, 32, 0, 115, 0, 107,
+        0, 105, 0, 108, 0, 108, 0, 10, 0, 45, 0, 45, 0, 45, 0, 10, 0,
+      ]),
+      {
+        headers: {
+          "content-type": "text/plain; charset=utf-16le",
+        },
+      },
+    );
   }
 
   if (

@@ -315,6 +315,21 @@ describe("generateOutputs", () => {
       globalThis.fetch = originalFetch;
     }
   });
+
+  test("reads UTF-16 encoded SKILL.md files while generating outputs", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = mock(fetchMock) as unknown as typeof fetch;
+
+    try {
+      const outputs = await generateOutputs("https://github.com/octo/demo/tree/utf16/utf16-skills");
+
+      expect(outputs.manifest.markdown).toContain(
+        "| [utf16-skill](https://github.com/octo/demo/tree/utf16/utf16-skills/utf16-skill) | UTF-16 generated skill | None |",
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });
 
 describe("writeGeneratedManifest", () => {
@@ -393,6 +408,37 @@ describe("writeGeneratedManifest", () => {
 
 async function fetchMock(input: string | URL | Request): Promise<Response> {
   const url = String(input);
+
+  if (url === "https://api.github.com/repos/octo/demo/contents?ref=utf16") {
+    return Response.json([
+      {
+        type: "dir",
+        path: "utf16-skills",
+        download_url: null,
+        sha: "utf16-skills-tree",
+      },
+    ]);
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/contents/utf16-skills?ref=utf16") {
+    return Response.json([
+      {
+        type: "file",
+        path: "utf16-skills/utf16-skill/SKILL.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/utf16/utf16-skills/utf16-skill/SKILL.md",
+      },
+    ]);
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/git/trees/utf16-skills-tree?recursive=1") {
+    return Response.json({
+      truncated: false,
+      tree: [
+        { path: "utf16-skill", type: "tree" },
+        { path: "utf16-skill/SKILL.md", type: "blob" },
+      ],
+    });
+  }
 
   if (url === "https://api.github.com/repos/octo/demo/contents/broken-agents?ref=main") {
     return Response.json([
@@ -1442,6 +1488,24 @@ description: Beta master skill
         "content-type": "image/png",
       },
     });
+  }
+
+  if (url === "https://raw.githubusercontent.com/octo/demo/utf16/utf16-skills/utf16-skill/SKILL.md") {
+    return new Response(
+      new Uint8Array([
+        255, 254, 45, 0, 45, 0, 45, 0, 10, 0, 110, 0, 97, 0, 109, 0, 101, 0, 58, 0, 32,
+        0, 117, 0, 116, 0, 102, 0, 49, 0, 54, 0, 45, 0, 115, 0, 107, 0, 105, 0, 108, 0,
+        108, 0, 10, 0, 100, 0, 101, 0, 115, 0, 99, 0, 114, 0, 105, 0, 112, 0, 116, 0,
+        105, 0, 111, 0, 110, 0, 58, 0, 32, 0, 85, 0, 84, 0, 70, 0, 45, 0, 49, 0, 54, 0,
+        32, 0, 103, 0, 101, 0, 110, 0, 101, 0, 114, 0, 97, 0, 116, 0, 101, 0, 100, 0,
+        32, 0, 115, 0, 107, 0, 105, 0, 108, 0, 108, 0, 10, 0, 45, 0, 45, 0, 45, 0, 10, 0,
+      ]),
+      {
+        headers: {
+          "content-type": "text/plain; charset=utf-16le",
+        },
+      },
+    );
   }
 
   throw new Error(`Unexpected fetch: ${url}`);
