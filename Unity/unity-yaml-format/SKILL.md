@@ -9,11 +9,11 @@ Use this skill when working directly with Unity text-serialized files rather tha
 
 ## First Pass
 
-- Read `references/source-summary.md`.
+- Read [references/source-summary.md](references/source-summary.md).
 - Identify the file type and intent: inspect, explain, diff, repair, or minimally edit.
-- If the task involves object or component type numbers, read `references/class-id-reference.md`.
-- If the task involves `fileID`, `guid`, `type`, script links, or external asset links, read `references/reference-semantics.md`.
-- If the task involves hand-editing, read `references/examples.md` before changing anything.
+- If the task involves object or component type numbers, read [references/class-id-reference.md](references/class-id-reference.md).
+- If the task involves `fileID`, `guid`, `type`, script links, or external asset links, read [references/reference-semantics.md](references/reference-semantics.md).
+- If the task involves hand-editing, read [references/examples.md](references/examples.md) before changing anything.
 
 ## Working Rules
 
@@ -55,7 +55,7 @@ Use this skill when working directly with Unity text-serialized files rather tha
 - Confirm the file is text-serialized Unity data and not arbitrary YAML.
 - Identify each relevant document header `--- !u!<classID> &<fileID>`.
 - Map the target object graph before editing: owning `GameObject`, linked Components, parent or child references, external asset references.
-- Resolve unknown class numbers with `references/class-id-reference.md` or the official reference page.
+- Resolve unknown class numbers with [references/class-id-reference.md](references/class-id-reference.md) or the official reference page.
 - Distinguish local references like `{fileID: 8}` from external references like `{fileID: ..., guid: ..., type: ...}` before editing.
 - Preserve every unrelated field, anchor, and reference line around the edit.
 - If changing local references, verify both sides of the relationship still point to valid objects.
@@ -79,7 +79,7 @@ Use this skill when working directly with Unity text-serialized files rather tha
 
 ## References
 
-- Read `references/source-summary.md` for UnityYAML structure and limitations.
-- Read `references/reference-semantics.md` for `fileID`, `guid`, and `type` usage.
-- Read `references/class-id-reference.md` for common Unity class IDs and how to use them.
-- Read `references/examples.md` for safe bad-to-good editing and inspection patterns.
+- Read [references/source-summary.md](references/source-summary.md) for UnityYAML structure and limitations.
+- Read [references/reference-semantics.md](references/reference-semantics.md) for `fileID`, `guid`, and `type` usage.
+- Read [references/class-id-reference.md](references/class-id-reference.md) for common Unity class IDs and how to use them.
+- Read [references/examples.md](references/examples.md) for safe bad-to-good editing and inspection patterns.
