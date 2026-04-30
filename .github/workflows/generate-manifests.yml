@@ -30,7 +30,7 @@ jobs:
 
   generate:
     name: "${{ matrix.url }}"
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: prepare
     strategy:
@@ -211,13 +211,13 @@ jobs:
             fi
 
             git rebase --abort || true
-            sleep $((i * 2))
+            sleep $((i * 3))
           done
 
           exit 1
 
   collect-and-pr:
-    name: Collect and Create PR
+    name: Create PR
     runs-on: ubuntu-slim
     needs:
       - prepare
