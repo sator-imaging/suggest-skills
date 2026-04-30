@@ -26,7 +26,7 @@ jobs:
     steps:
       - id: vars
         run: |
-          echo "branch=bot/refresh-manifests-${{ github.run_id }}-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+          echo "branch=bot/generate-manifests-${{ github.run_id }}-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
 
   generate:
     name: "${{ matrix.url }}"
@@ -194,7 +194,7 @@ jobs:
           git add -f "$OFFICIAL_DIR"/skills
           git add -f "$OFFICIAL_DIR"/designs
 
-          git commit -m "bot: Refresh manifests for ${{ matrix.url }}" || {
+          git commit -m "bot: Generate manifests for ${{ matrix.url }}" || {
             echo "No changes to commit."
             exit 0
           }
@@ -233,9 +233,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-
-          title="bot: Refresh Manifests"
-          body="This PR refreshes manifest files from the configured external repositories."
 
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
