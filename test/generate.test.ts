@@ -330,6 +330,21 @@ describe("generateOutputs", () => {
       globalThis.fetch = originalFetch;
     }
   });
+
+  test("reads octet-stream markdown skill files by file extension", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = mock(fetchMock) as unknown as typeof fetch;
+
+    try {
+      const outputs = await generateOutputs("https://github.com/octo/demo/tree/octet/octet-stream-skills");
+
+      expect(outputs.manifest.markdown).toContain(
+        "| [octet-stream-skill](https://github.com/octo/demo/tree/octet/octet-stream-skills/octet-stream-skill) | Octet stream generated skill | None |",
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });
 
 describe("writeGeneratedManifest", () => {
@@ -436,6 +451,38 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
       tree: [
         { path: "utf16-skill", type: "tree" },
         { path: "utf16-skill/SKILL.md", type: "blob" },
+      ],
+    });
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/contents?ref=octet") {
+    return Response.json([
+      {
+        type: "dir",
+        path: "octet-stream-skills",
+        download_url: null,
+        sha: "octet-stream-skills-tree",
+      },
+    ]);
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/contents/octet-stream-skills?ref=octet") {
+    return Response.json([
+      {
+        type: "file",
+        path: "octet-stream-skills/octet-stream-skill/SKILL.md",
+        download_url:
+          "https://raw.githubusercontent.com/octo/demo/octet/octet-stream-skills/octet-stream-skill/SKILL.md",
+      },
+    ]);
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/git/trees/octet-stream-skills-tree?recursive=1") {
+    return Response.json({
+      truncated: false,
+      tree: [
+        { path: "octet-stream-skill", type: "tree" },
+        { path: "octet-stream-skill/SKILL.md", type: "blob" },
       ],
     });
   }
@@ -1503,6 +1550,20 @@ description: Beta master skill
       {
         headers: {
           "content-type": "text/plain; charset=utf-16le",
+        },
+      },
+    );
+  }
+
+  if (
+    url ===
+    "https://raw.githubusercontent.com/octo/demo/octet/octet-stream-skills/octet-stream-skill/SKILL.md"
+  ) {
+    return new Response(
+      "---\nname: octet-stream-skill\ndescription: Octet stream generated skill\n---\n",
+      {
+        headers: {
+          "content-type": "application/octet-stream",
         },
       },
     );

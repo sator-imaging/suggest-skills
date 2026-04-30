@@ -63,6 +63,19 @@ describe("downloadGithubFolder", () => {
     ]);
   });
 
+  test("downloads markdown files served as octet-stream by file extension", async () => {
+    const files = await downloadGithubFolder(
+      "https://github.com/octo/demo/tree/main/skills/octet-stream-skill",
+    );
+
+    expect(files).toEqual([
+      {
+        path: "SKILL.md",
+        content: "---\nname: octet-stream-skill\ndescription: Octet stream markdown skill\n---\n",
+      },
+    ]);
+  });
+
   test("downloads file symlinks when a download URL is available", async () => {
     const files = await downloadGithubFolder(
       "https://github.com/octo/demo/tree/main/skills/file-symlink-skill",
@@ -270,6 +283,20 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
 
   if (
     url ===
+    "https://api.github.com/repos/octo/demo/contents/skills/octet-stream-skill?ref=main"
+  ) {
+    return Response.json([
+      {
+        type: "file",
+        path: "skills/octet-stream-skill/SKILL.md",
+        download_url:
+          "https://raw.githubusercontent.com/octo/demo/main/skills/octet-stream-skill/SKILL.md",
+      },
+    ]);
+  }
+
+  if (
+    url ===
     "https://api.github.com/repos/octo/demo/contents/skills/file-symlink-skill?ref=main"
   ) {
     return Response.json([
@@ -444,6 +471,17 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
         },
       },
     );
+  }
+
+  if (
+    url ===
+    "https://raw.githubusercontent.com/octo/demo/main/skills/octet-stream-skill/SKILL.md"
+  ) {
+    return new Response("---\nname: octet-stream-skill\ndescription: Octet stream markdown skill\n---\n", {
+      headers: {
+        "content-type": "application/octet-stream",
+      },
+    });
   }
 
   if (

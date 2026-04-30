@@ -34,7 +34,7 @@ export async function fetchManifestText(url: string): Promise<string> {
 }
 
 export async function fetchTextContent(url: string, label: string): Promise<string> {
-  const response = await fetchTextResponse(url, label);
+  const response = await fetchTextResponse(url, label, url);
   return response.text;
 }
 
@@ -367,7 +367,7 @@ async function downloadFileEntry(
 
   return {
     path: toRelativePath(path, rootPath),
-    content: await readTextResponse(response, `File "${path}"`),
+    content: await readTextResponse(response, `File "${path}"`, path),
   };
 }
 
@@ -448,6 +448,7 @@ async function tryParseJson(response: Response): Promise<unknown> {
 async function fetchTextResponse(
   url: string,
   label: string,
+  sourceIdentifier: string,
 ): Promise<{ response: Response; text: string }> {
   const normalizedUrl = normalizeGithubRawUrl(url) ?? url;
   const response = await fetch(normalizedUrl);
@@ -460,20 +461,24 @@ async function fetchTextResponse(
 
   return {
     response,
-    text: await readTextResponse(response, label),
+    text: await readTextResponse(response, label, sourceIdentifier),
   };
 }
 
-async function readTextResponse(response: Response, label: string): Promise<string> {
+async function readTextResponse(
+  response: Response,
+  label: string,
+  sourceIdentifier: string,
+): Promise<string> {
   const contentType = response.headers.get("content-type");
+  const textEncoding = detectTextEncoding(contentType, sourceIdentifier);
 
-  if (contentType && isBinaryContentType(contentType)) {
+  if (contentType && isBinaryContentType(contentType) && !textEncoding) {
     throw new Error(formatBinaryTextError(label, contentType));
   }
 
   const buffer = await response.arrayBuffer();
   const bytes = new Uint8Array(buffer);
-  const textEncoding = detectTextEncoding(contentType);
 
   if (textEncoding) {
     return decodeTextBytes(bytes, textEncoding);
@@ -536,7 +541,11 @@ function swapByteOrder(bytes: Uint8Array): Uint8Array {
   return swapped;
 }
 
-function detectTextEncoding(contentType: string | null): "utf-8" | "utf-16le" | "utf-16be" | undefined {
+function detectTextEncoding(
+  contentType: string | null,
+  sourceIdentifier: string,
+): "utf-8" | "utf-16le" | "utf-16be" | undefined {
+  const normalizedType = contentType?.split(";")[0]?.trim().toLowerCase();
   const charset = parseCharset(contentType);
 
   if (charset === "utf-8" || charset === "utf8") {
@@ -551,7 +560,15 @@ function detectTextEncoding(contentType: string | null): "utf-8" | "utf-16le" | 
     return "utf-16be";
   }
 
-  return charset === "utf-16" ? "utf-16le" : undefined;
+  if (charset === "utf-16") {
+    return "utf-16le";
+  }
+
+  if (normalizedType === "application/octet-stream" && hasUtf8TextFileExtension(sourceIdentifier)) {
+    return "utf-8";
+  }
+
+  return undefined;
 }
 
 function parseCharset(contentType: string | null): string | undefined {
@@ -568,6 +585,25 @@ function parseCharset(contentType: string | null): string | undefined {
   }
 
   return undefined;
+}
+
+function hasUtf8TextFileExtension(sourceIdentifier: string): boolean {
+  const normalizedIdentifier = sourceIdentifier.toLowerCase();
+
+  return (
+    normalizedIdentifier.endsWith(".md")
+    || normalizedIdentifier.endsWith(".txt")
+    || normalizedIdentifier.endsWith(".json")
+    || normalizedIdentifier.endsWith(".xml")
+    || normalizedIdentifier.endsWith(".yaml")
+    || normalizedIdentifier.endsWith(".yml")
+    || normalizedIdentifier.endsWith(".js")
+    || normalizedIdentifier.endsWith(".mjs")
+    || normalizedIdentifier.endsWith(".cjs")
+    || normalizedIdentifier.endsWith(".ts")
+    || normalizedIdentifier.endsWith(".mts")
+    || normalizedIdentifier.endsWith(".cts")
+  );
 }
 function isBinaryContentType(contentType: string): boolean {
   const normalizedType = contentType.split(";")[0]?.trim().toLowerCase();
