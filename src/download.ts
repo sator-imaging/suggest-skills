@@ -473,7 +473,7 @@ async function readTextResponse(response: Response, label: string): Promise<stri
 
   const buffer = await response.arrayBuffer();
   const bytes = new Uint8Array(buffer);
-  const textEncoding = detectTextEncoding(contentType, bytes);
+  const textEncoding = detectTextEncoding(contentType);
 
   if (textEncoding) {
     return decodeTextBytes(bytes, textEncoding);
@@ -531,10 +531,7 @@ function swapByteOrder(bytes: Uint8Array): Uint8Array {
   return swapped;
 }
 
-function detectTextEncoding(
-  contentType: string | null,
-  bytes: Uint8Array,
-): "utf-8" | "utf-16le" | "utf-16be" | undefined {
+function detectTextEncoding(contentType: string | null): "utf-8" | "utf-16le" | "utf-16be" | undefined {
   const charset = parseCharset(contentType);
 
   if (charset === "utf-8" || charset === "utf8") {
@@ -549,11 +546,7 @@ function detectTextEncoding(
     return "utf-16be";
   }
 
-  if (charset === "utf-16") {
-    return detectBomEncoding(bytes) ?? detectUtf16Encoding(bytes) ?? "utf-16le";
-  }
-
-  return detectBomEncoding(bytes) ?? detectUtf16Encoding(bytes);
+  return charset === "utf-16" ? "utf-16le" : undefined;
 }
 
 function parseCharset(contentType: string | null): string | undefined {
@@ -571,62 +564,6 @@ function parseCharset(contentType: string | null): string | undefined {
 
   return undefined;
 }
-
-function detectBomEncoding(bytes: Uint8Array): "utf-8" | "utf-16le" | "utf-16be" | undefined {
-  if (bytes.length >= 3 && bytes[0] === 239 && bytes[1] === 187 && bytes[2] === 191) {
-    return "utf-8";
-  }
-
-  if (bytes.length >= 2 && bytes[0] === 255 && bytes[1] === 254) {
-    return "utf-16le";
-  }
-
-  if (bytes.length >= 2 && bytes[0] === 254 && bytes[1] === 255) {
-    return "utf-16be";
-  }
-
-  return undefined;
-}
-
-function detectUtf16Encoding(bytes: Uint8Array): "utf-16le" | "utf-16be" | undefined {
-  if (bytes.length < 4 || bytes.length % 2 !== 0) {
-    return undefined;
-  }
-
-  let evenZeroCount = 0;
-  let oddZeroCount = 0;
-  let evenCount = 0;
-  let oddCount = 0;
-
-  for (let index = 0; index < bytes.length; index += 1) {
-    if (index % 2 === 0) {
-      evenCount += 1;
-      if (bytes[index] === 0) {
-        evenZeroCount += 1;
-      }
-      continue;
-    }
-
-    oddCount += 1;
-    if (bytes[index] === 0) {
-      oddZeroCount += 1;
-    }
-  }
-
-  const evenZeroRatio = evenCount === 0 ? 0 : evenZeroCount / evenCount;
-  const oddZeroRatio = oddCount === 0 ? 0 : oddZeroCount / oddCount;
-
-  if (oddZeroRatio > 0.3 && evenZeroRatio < 0.05) {
-    return "utf-16le";
-  }
-
-  if (evenZeroRatio > 0.3 && oddZeroRatio < 0.05) {
-    return "utf-16be";
-  }
-
-  return undefined;
-}
-
 function isBinaryContentType(contentType: string): boolean {
   const normalizedType = contentType.split(";")[0]?.trim().toLowerCase();
 
