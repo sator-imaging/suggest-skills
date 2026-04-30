@@ -38,6 +38,7 @@ jobs:
           - dotnet/skills/tree/main/plugins/dotnet-diag/skills
           - dotnet/skills/tree/main/plugins/dotnet-test/agents
           - dotnet/skills/tree/main/plugins/dotnet-test/skills
+          - garrytan/gstack
           - mattpocock/skills
           - obra/superpowers/tree/main/agents
           - obra/superpowers/tree/main/skills

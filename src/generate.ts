@@ -69,7 +69,7 @@ type ManifestWriter = {
   writeFile: (path: string, content: string) => Promise<void>;
 };
 
-const SKILL_DOWNLOAD_CONCURRENCY = 4;
+const MANIFEST_DOWNLOAD_CONCURRENCY = 4;
 const GITHUB_HOSTNAME = "github.com";
 const BUNDLED_ASSETS_NONE = "None";
 const BUNDLED_ASSETS_INLINE_MAX_ITEMS = 3;
@@ -207,8 +207,9 @@ async function summarizeAgentFiles(
   agentFiles: GithubContentEntry[],
 ): Promise<GeneratedEntry[]> {
   const results = Array.from<GeneratedEntry | undefined>({ length: agentFiles.length });
+  let fiberError: unknown;
   const fibers = Fibers.forEach(
-    SKILL_DOWNLOAD_CONCURRENCY,
+    MANIFEST_DOWNLOAD_CONCURRENCY,
     agentFiles.map((entry, index) => ({
       index,
       summary: {
@@ -221,9 +222,17 @@ async function summarizeAgentFiles(
       index,
     }),
   );
+  fibers.setErrorHandler((error) => {
+    fiberError = error;
+    return "stop";
+  });
 
   for await (const result of fibers) {
     results[result.index] = result.entry;
+  }
+
+  if (fiberError !== undefined) {
+    throw fiberError;
   }
 
   return results.filter((entry): entry is GeneratedEntry => entry !== undefined);
@@ -237,17 +246,26 @@ async function summarizeDirectories(
   const results = Array.from<{ design?: GeneratedEntry; manifest?: GeneratedEntry } | undefined>({
     length: candidateDirectories.length,
   });
+  let fiberError: unknown;
   const fibers = Fibers.forEach(
-    SKILL_DOWNLOAD_CONCURRENCY,
+    MANIFEST_DOWNLOAD_CONCURRENCY,
     candidateDirectories.map((path, index) => ({ index, path })),
     async ({ index, path }) => ({
       index,
       summary: await summarizeDirectory(rootLocation, path, summariesByDirectory),
     }),
   );
+  fibers.setErrorHandler((error) => {
+    fiberError = error;
+    return "stop";
+  });
 
   for await (const result of fibers) {
     results[result.index] = result.summary;
+  }
+
+  if (fiberError !== undefined) {
+    throw fiberError;
   }
 
   return results.filter(

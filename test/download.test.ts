@@ -67,6 +67,95 @@ describe("downloadGithubFolder", () => {
     ]);
   });
 
+  test("downloads sibling files concurrently while preserving result order", async () => {
+    let resolveFirstFile: ((response: Response) => void) | undefined;
+    let resolveFirstFileStarted: (() => void) | undefined;
+    let secondFileStarted = false;
+    const firstFileStarted = new Promise<void>((resolve) => {
+      resolveFirstFileStarted = resolve;
+    });
+    globalThis.fetch = mock(async (input: string | URL | Request) => {
+      const url = String(input);
+
+      if (
+        url ===
+        "https://api.github.com/repos/octo/demo/contents/skills/concurrent-skill?ref=main"
+      ) {
+        return Response.json([
+          {
+            type: "file",
+            path: "skills/concurrent-skill/first.txt",
+            download_url:
+              "https://raw.githubusercontent.com/octo/demo/main/skills/concurrent-skill/first.txt",
+          },
+          {
+            type: "file",
+            path: "skills/concurrent-skill/second.txt",
+            download_url:
+              "https://raw.githubusercontent.com/octo/demo/main/skills/concurrent-skill/second.txt",
+          },
+        ]);
+      }
+
+      if (
+        url ===
+        "https://raw.githubusercontent.com/octo/demo/main/skills/concurrent-skill/first.txt"
+      ) {
+        resolveFirstFileStarted?.();
+        return new Promise<Response>((resolve) => {
+          resolveFirstFile = resolve;
+        });
+      }
+
+      if (
+        url ===
+        "https://raw.githubusercontent.com/octo/demo/main/skills/concurrent-skill/second.txt"
+      ) {
+        secondFileStarted = true;
+        return new Response("second-body\n");
+      }
+
+      throw new Error(`Unexpected fetch: ${url}`);
+    }) as unknown as typeof fetch;
+
+    const pendingFiles = downloadGithubFolder(
+      "https://github.com/octo/demo/tree/main/skills/concurrent-skill",
+    );
+
+    await firstFileStarted;
+    expect(secondFileStarted).toBe(true);
+
+    resolveFirstFile?.(new Response("first-body\n"));
+
+    await expect(pendingFiles).resolves.toEqual([
+      {
+        path: "first.txt",
+        content: "first-body\n",
+      },
+      {
+        path: "second.txt",
+        content: "second-body\n",
+      },
+    ]);
+  });
+
+  test("recurses into nested directories in a normal GitHub folder", async () => {
+    const files = await downloadGithubFolder(
+      "https://github.com/octo/demo/tree/main/skills/deep-skill",
+    );
+
+    expect(files).toEqual([
+      {
+        path: "SKILL.md",
+        content: "---\nname: deep-skill\n---\n",
+      },
+      {
+        path: "docs/guide/advanced/steps.md",
+        content: "step-1\nstep-2\n",
+      },
+    ]);
+  });
+
   test("recurses into repo-relative directory symlinks", async () => {
     const files = await downloadGithubFolder(
       "https://github.com/octo/demo/tree/main/skills/directory-symlink-skill",
@@ -175,6 +264,65 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
 
   if (
     url ===
+    "https://api.github.com/repos/octo/demo/contents/skills/deep-skill?ref=main"
+  ) {
+    return Response.json([
+      {
+        type: "file",
+        path: "skills/deep-skill/SKILL.md",
+        download_url:
+          "https://raw.githubusercontent.com/octo/demo/main/skills/deep-skill/SKILL.md",
+      },
+      {
+        type: "dir",
+        path: "skills/deep-skill/docs",
+        download_url: null,
+      },
+    ]);
+  }
+
+  if (
+    url ===
+    "https://api.github.com/repos/octo/demo/contents/skills/deep-skill/docs?ref=main"
+  ) {
+    return Response.json([
+      {
+        type: "dir",
+        path: "skills/deep-skill/docs/guide",
+        download_url: null,
+      },
+    ]);
+  }
+
+  if (
+    url ===
+    "https://api.github.com/repos/octo/demo/contents/skills/deep-skill/docs/guide?ref=main"
+  ) {
+    return Response.json([
+      {
+        type: "dir",
+        path: "skills/deep-skill/docs/guide/advanced",
+        download_url: null,
+      },
+    ]);
+  }
+
+  if (
+    url ===
+    "https://api.github.com/repos/octo/demo/contents/skills/deep-skill/docs/guide/advanced?ref=main"
+  ) {
+    return Response.json([
+      {
+        type: "file",
+        path: "skills/deep-skill/docs/guide/advanced/steps.md",
+        download_url:
+          "https://raw.githubusercontent.com/octo/demo/main/skills/deep-skill/docs/guide/advanced/steps.md",
+      },
+    ]);
+  }
+
+  if (
+    url ===
     "https://api.github.com/repos/octo/demo/contents/skills/directory-symlink-skill?ref=main"
   ) {
     return Response.json([
@@ -256,6 +404,20 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
     "https://raw.githubusercontent.com/octo/demo/main/skills/file-symlink-skill/SKILL.md"
   ) {
     return new Response("---\nname: file-symlink-skill\n---\n");
+  }
+
+  if (
+    url ===
+    "https://raw.githubusercontent.com/octo/demo/main/skills/deep-skill/SKILL.md"
+  ) {
+    return new Response("---\nname: deep-skill\n---\n");
+  }
+
+  if (
+    url ===
+    "https://raw.githubusercontent.com/octo/demo/main/skills/deep-skill/docs/guide/advanced/steps.md"
+  ) {
+    return new Response("step-1\nstep-2\n");
   }
 
   if (

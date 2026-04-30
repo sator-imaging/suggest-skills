@@ -300,6 +300,21 @@ describe("generateOutputs", () => {
       globalThis.fetch = originalFetch;
     }
   });
+
+  test("propagates agent download failures without leaving unhandled fiber rejections", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = mock(fetchMock) as unknown as typeof fetch;
+
+    try {
+      await expect(
+        generateOutputs("https://github.com/octo/demo/tree/main/broken-agents"),
+      ).rejects.toThrow(
+        'Agent file "broken-agents/binary-agent.md" appears to be binary and cannot be returned as text.',
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });
 
 describe("writeGeneratedManifest", () => {
@@ -378,6 +393,16 @@ describe("writeGeneratedManifest", () => {
 
 async function fetchMock(input: string | URL | Request): Promise<Response> {
   const url = String(input);
+
+  if (url === "https://api.github.com/repos/octo/demo/contents/broken-agents?ref=main") {
+    return Response.json([
+      {
+        type: "file",
+        path: "broken-agents/binary-agent.md",
+        download_url: "https://raw.githubusercontent.com/octo/demo/main/broken-agents/binary-agent.md",
+      },
+    ]);
+  }
 
   if (url === "https://api.github.com/repos/octo/demo/commits/main") {
     return Response.json({
@@ -459,6 +484,13 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
         { path: "skills", type: "tree" },
         { path: "catalog", type: "tree" },
       ],
+    });
+  }
+
+  if (url === "https://api.github.com/repos/octo/demo/git/trees/broken-agents-main-tree?recursive=1") {
+    return Response.json({
+      truncated: false,
+      tree: [{ path: "binary-agent.md", type: "blob" }],
     });
   }
 
@@ -564,6 +596,12 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
         path: "skills",
         download_url: null,
         sha: "skills-main-tree",
+      },
+      {
+        type: "dir",
+        path: "broken-agents",
+        download_url: null,
+        sha: "broken-agents-main-tree",
       },
       {
         type: "dir",
@@ -1396,6 +1434,14 @@ name: beta
 description: Beta master skill
 ---
 `);
+  }
+
+  if (url === "https://raw.githubusercontent.com/octo/demo/main/broken-agents/binary-agent.md") {
+    return new Response(new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0]), {
+      headers: {
+        "content-type": "image/png",
+      },
+    });
   }
 
   throw new Error(`Unexpected fetch: ${url}`);

@@ -1,3 +1,4 @@
+import { Fibers } from "ts-fibers";
 import type { GithubDirectoryLocation } from "./utils.js";
 import {
   normalizeGithubRawUrl,
@@ -21,6 +22,7 @@ export type DownloadedFile = {
 const GITHUB_HOSTNAME = "github.com";
 const GITHUB_API_BASE_URL = "https://api.github.com";
 const GITHUB_API_HOSTNAME = "api.github.com";
+const DOWNLOAD_CONCURRENCY = 4;
 
 export async function downloadGithubFolder(url: string): Promise<DownloadedFile[]> {
   const location = await resolveGithubFolderUrl(url);
@@ -135,58 +137,78 @@ async function downloadDirectory(
   const nextAncestry = new Set(ancestry);
   nextAncestry.add(location.path);
   const entries = await listGithubDirectory(location);
-  const files: DownloadedFile[] = [];
+  const results = Array.from<Array<DownloadedFile> | undefined>({ length: entries.length });
+  let fiberError: unknown;
+  const fibers = Fibers.forEach(
+    DOWNLOAD_CONCURRENCY,
+    entries.map((entry, index) => ({ entry, index })),
+    async ({ entry, index }) => ({
+      index,
+      files: await downloadDirectoryEntry(entry, location, rootPath, virtualPath, nextAncestry),
+    }),
+  );
+  fibers.setErrorHandler((error) => {
+    fiberError = error;
+    return "stop";
+  });
 
-  for (const entry of entries) {
-    const virtualEntryPath = remapEntryPath(entry.path, location.path, virtualPath);
-
-    if (entry.type === "dir") {
-      files.push(
-        ...(await downloadDirectory(
-          {
-            ...location,
-            path: entry.path,
-          },
-          rootPath,
-          virtualEntryPath,
-          nextAncestry,
-        )),
-      );
-      continue;
-    }
-
-    if (entry.type === "symlink") {
-      if (entry.download_url) {
-        files.push(await downloadFileEntry(entry.download_url, virtualEntryPath, rootPath));
-        continue;
-      }
-
-      const resolvedTargetPath = resolveRepoRelativeSymlinkPath(entry.path, entry.target);
-
-      if (resolvedTargetPath) {
-        files.push(
-          ...(await downloadDirectory(
-            {
-              ...location,
-              path: resolvedTargetPath,
-            },
-            rootPath,
-            virtualEntryPath,
-            nextAncestry,
-          )),
-        );
-        continue;
-      }
-    }
-
-    if (entry.type !== "file") {
-      throw new Error(`Unsupported GitHub entry type "${entry.type}" at "${entry.path}".`);
-    }
-
-    files.push(await downloadFileEntry(entry.download_url, virtualEntryPath, rootPath));
+  for await (const result of fibers) {
+    results[result.index] = result.files;
   }
 
-  return files;
+  if (fiberError !== undefined) {
+    throw fiberError;
+  }
+
+  return results.flatMap((files) => files ?? []);
+}
+
+async function downloadDirectoryEntry(
+  entry: GithubContentEntry,
+  location: GithubDirectoryLocation,
+  rootPath: string,
+  virtualPath: string,
+  ancestry: ReadonlySet<string>,
+): Promise<DownloadedFile[]> {
+  const virtualEntryPath = remapEntryPath(entry.path, location.path, virtualPath);
+
+  if (entry.type === "dir") {
+    return downloadDirectory(
+      {
+        ...location,
+        path: entry.path,
+      },
+      rootPath,
+      virtualEntryPath,
+      new Set(ancestry),
+    );
+  }
+
+  if (entry.type === "symlink") {
+    if (entry.download_url) {
+      return [await downloadFileEntry(entry.download_url, virtualEntryPath, rootPath)];
+    }
+
+    const resolvedTargetPath = resolveRepoRelativeSymlinkPath(entry.path, entry.target);
+
+    if (resolvedTargetPath) {
+      return downloadDirectory(
+        {
+          ...location,
+          path: resolvedTargetPath,
+        },
+        rootPath,
+        virtualEntryPath,
+        new Set(ancestry),
+      );
+    }
+  }
+
+  if (entry.type !== "file") {
+    throw new Error(`Unsupported GitHub entry type "${entry.type}" at "${entry.path}".`);
+  }
+
+  return [await downloadFileEntry(entry.download_url, virtualEntryPath, rootPath)];
 }
 
 export async function listGithubDirectory(

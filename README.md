@@ -214,3 +214,11 @@ The codebase follows a few clear implementation patterns:
 - Prefer updating shared logic in `src/core.ts`, `src/config.ts`, and helper modules before adding transport-specific behavior
 - Add or update tests when changing config parsing, MCP responses, or GitHub download behavior
 - Use `SPEC.md` as the starting point for intended behavior and direction
+
+
+
+
+
+# TODO
+
+- `download_skill`: Add a test covering deep download recursion where symlinks and normal directories are mixed within the same nested tree.
