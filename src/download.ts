@@ -138,7 +138,6 @@ async function downloadDirectory(
   nextAncestry.add(location.path);
   const entries = await listGithubDirectory(location);
   const results = Array.from<Array<DownloadedFile> | undefined>({ length: entries.length });
-  let fiberError: unknown;
   const fibers = Fibers.forEach(
     DOWNLOAD_CONCURRENCY,
     entries.map((entry, index) => ({ entry, index })),
@@ -147,17 +146,9 @@ async function downloadDirectory(
       files: await downloadDirectoryEntry(entry, location, rootPath, virtualPath, nextAncestry),
     }),
   );
-  fibers.setErrorHandler((error) => {
-    fiberError = error;
-    return "stop";
-  });
 
   for await (const result of fibers) {
     results[result.index] = result.files;
-  }
-
-  if (fiberError !== undefined) {
-    throw fiberError;
   }
 
   return results.flatMap((files) => files ?? []);

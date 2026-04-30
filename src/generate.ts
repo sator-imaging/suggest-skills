@@ -207,7 +207,6 @@ async function summarizeAgentFiles(
   agentFiles: GithubContentEntry[],
 ): Promise<GeneratedEntry[]> {
   const results = Array.from<GeneratedEntry | undefined>({ length: agentFiles.length });
-  let fiberError: unknown;
   const fibers = Fibers.forEach(
     MANIFEST_DOWNLOAD_CONCURRENCY,
     agentFiles.map((entry, index) => ({
@@ -222,17 +221,9 @@ async function summarizeAgentFiles(
       index,
     }),
   );
-  fibers.setErrorHandler((error) => {
-    fiberError = error;
-    return "stop";
-  });
 
   for await (const result of fibers) {
     results[result.index] = result.entry;
-  }
-
-  if (fiberError !== undefined) {
-    throw fiberError;
   }
 
   return results.filter((entry): entry is GeneratedEntry => entry !== undefined);
@@ -246,7 +237,6 @@ async function summarizeDirectories(
   const results = Array.from<{ design?: GeneratedEntry; manifest?: GeneratedEntry } | undefined>({
     length: candidateDirectories.length,
   });
-  let fiberError: unknown;
   const fibers = Fibers.forEach(
     MANIFEST_DOWNLOAD_CONCURRENCY,
     candidateDirectories.map((path, index) => ({ index, path })),
@@ -255,17 +245,9 @@ async function summarizeDirectories(
       summary: await summarizeDirectory(rootLocation, path, summariesByDirectory),
     }),
   );
-  fibers.setErrorHandler((error) => {
-    fiberError = error;
-    return "stop";
-  });
 
   for await (const result of fibers) {
     results[result.index] = result.summary;
-  }
-
-  if (fiberError !== undefined) {
-    throw fiberError;
   }
 
   return results.filter(
