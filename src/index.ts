@@ -11,8 +11,13 @@ type RuntimeMode =
   | { kind: "server"; port: number };
 
 async function main(): Promise<void> {
-  logInfo(`Version: ${pkg.version}`);
   try {
+    if (process.argv.includes('-v') || process.argv.includes('--version')) {
+      logInfo(`Version: ${pkg.version}`);
+      logInfo(JSON.stringify(loadConfig(), null, 2));
+      return;
+    }
+
     const runtimeMode = parseRuntimeMode(process.argv);
 
     if (runtimeMode.kind === "generate") {
@@ -21,8 +26,6 @@ async function main(): Promise<void> {
     }
 
     const config = loadConfig();
-
-    logInfo(JSON.stringify(config, null, 2));
 
     if (runtimeMode.kind === "server") {
       startHttpServer(config, runtimeMode.port);
