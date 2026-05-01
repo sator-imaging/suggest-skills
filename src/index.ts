@@ -2,7 +2,8 @@ import { ConfigError, loadConfig } from "./config.js";
 import { runGenerateCommand } from "./generate.js";
 import { startHttpServer } from "./http.js";
 import { startStdioServer } from "./stdio.js";
-import { logError } from "./utils.js";
+import { logError, logInfo } from "./utils.js";
+import pkg from '../package.json';
 
 type RuntimeMode =
   | { kind: "stdio" }
@@ -10,6 +11,7 @@ type RuntimeMode =
   | { kind: "server"; port: number };
 
 async function main(): Promise<void> {
+  logInfo(`Version: ${pkg.version}`);
   try {
     const runtimeMode = parseRuntimeMode(process.argv);
 
@@ -19,6 +21,8 @@ async function main(): Promise<void> {
     }
 
     const config = loadConfig();
+
+    logInfo(JSON.stringify(config, null, 2));
 
     if (runtimeMode.kind === "server") {
       startHttpServer(config, runtimeMode.port);
