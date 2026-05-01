@@ -23,8 +23,8 @@ Note that this tool doesn't provide security checks. To find official skills rep
 {
   "mcpServers": {
     "suggest-skills": {
-      "command": "npx -y suggest-skills",
-      "args": ["-o", ".agents/skills"],
+      "command": "npx",
+      "args": ["-y", "suggest-skills", "--output", ".agents/skills"],
       "env": {
         "SUGGEST_SKILLS_MANIFEST_URLS": [
           "https://some/skill-manifest.md",
@@ -35,6 +35,15 @@ Note that this tool doesn't provide security checks. To find official skills rep
   }
 }
 ```
+
+
+### Official & Curated Skills
+
+Prebuilt skill manifests can be found in this repository:
+- [Official](./official/)
+- [Curated](./curated/)
+
+> Automatically updated everyday by [cron workflow](./.github/workflows/generate-manifests.yml).
 
 
 
@@ -109,7 +118,7 @@ Default output directory:
 
 
 
-## Run in stdio Mode
+## Run in `stdio` Mode
 
 ```bash
 SUGGEST_SKILLS_MANIFEST_URLS='["https://some/skill-manifest.md"]' \
@@ -173,7 +182,7 @@ Returns every file in that folder with:
 
 - Bun
 - TypeScript
-- `@modelcontextprotocol/sdk`
+- @modelcontextprotocol/sdk
 - Hono
 - Zod
 
