@@ -104,6 +104,7 @@ GitHub `blob` URLs are converted to `raw.githubusercontent.com` URLs automatical
 
 ## CLI Options
 
+- `--manifest-urls <url1> <url2> ...`: list of manifest URLs to use; can be used alongside the environment variable
 - `-o <dir>` or `--output <dir>`: output directory for installed skills
 - `--output=<dir>`: inline form
 - `--generate <github-url>` or `--generate=<github-url>`: generate markdown inventories from a GitHub skills directory or repo root
