@@ -135,11 +135,11 @@ jobs:
             SOURCE_URL="https://github.com/$SOURCE_URL"
           fi
 
-          generate_args=(--generate "$SOURCE_URL")
+          generate_args=(generate "$SOURCE_URL")
           while IFS= read -r prefix; do
             [[ -n "$prefix" ]] || continue
             if [[ "$raw_source_url" == "$prefix"* ]]; then
-              generate_args=(--recursive "${generate_args[@]}")
+              generate_args=(generate --recursive "$SOURCE_URL")
               break
             fi
           done <<< "$RECURSIVE_URL_PREFIXES"

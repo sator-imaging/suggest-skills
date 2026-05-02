@@ -49,40 +49,39 @@ async function main(): Promise<void> {
 
 function parseRuntimeMode(argv: readonly string[]): RuntimeMode {
   const args = argv.slice(2);
-  let generateUrl: string | undefined;
-  let recursive = false;
+
+  if (args[0] === "generate") {
+    let url: string | undefined;
+    let recursive = false;
+
+    for (let i = 1; i < args.length; i += 1) {
+      const arg = args[i] ?? "";
+
+      if (arg === "-r" || arg === "--recursive") {
+        recursive = true;
+        continue;
+      }
+
+      if (!arg.startsWith("-")) {
+        url = arg;
+      }
+    }
+
+    if (url === undefined) {
+      throw new ConfigError("generate subcommand requires a GitHub skills directory URL.");
+    }
+
+    return {
+      kind: "generate",
+      recursive,
+      url,
+    };
+  }
+
   let serverPort: number | undefined;
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index] ?? "";
-
-    if (arg === "--recursive") {
-      recursive = true;
-      continue;
-    }
-
-    if (arg === "--generate") {
-      const value = args[index + 1];
-
-      if (!value || value.startsWith("-")) {
-        throw new ConfigError("--generate requires a GitHub skills directory URL.");
-      }
-
-      generateUrl = value;
-      index += 1;
-      continue;
-    }
-
-    if (arg.startsWith("--generate=")) {
-      const value = arg.slice("--generate=".length);
-
-      if (!value) {
-        throw new ConfigError("--generate requires a GitHub skills directory URL.");
-      }
-
-      generateUrl = value;
-      continue;
-    }
 
     if (arg === "--server") {
       const value = args[index + 1];
@@ -105,18 +104,6 @@ function parseRuntimeMode(argv: readonly string[]): RuntimeMode {
 
       serverPort = parsePort(value);
     }
-  }
-
-  if (recursive && generateUrl === undefined) {
-    throw new ConfigError("--recursive can only be used with --generate.");
-  }
-
-  if (generateUrl !== undefined) {
-    return {
-      kind: "generate",
-      recursive,
-      url: generateUrl,
-    };
   }
 
   if (serverPort !== undefined) {
