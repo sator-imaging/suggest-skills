@@ -16,16 +16,43 @@ export class ConfigError extends Error {
 
 export function loadConfig(argv = process.argv, env = process.env): SuggestSkillsConfig {
   const outputDirectory = parseOutputDirectory(argv);
-  const sourceUrls = parseSourceUrls(env["SUGGEST_SKILLS_MANIFEST_URLS"]);
+  const envUrls = parseSourceUrls(env["SUGGEST_SKILLS_MANIFEST_URLS"]);
+  const cliUrls = parseManifestUrlsFromArgv(argv);
+
+  const sourceUrls = Array.from(new Set([...envUrls, ...cliUrls]));
 
   if (sourceUrls.length === 0) {
-    throw new ConfigError("SUGGEST_SKILLS_MANIFEST_URLS must contain at least one URL.");
+    throw new ConfigError(
+      "SUGGEST_SKILLS_MANIFEST_URLS environment variable or --manifest-urls CLI option must contain at least one URL.",
+    );
   }
 
   return {
     outputDirectory,
     sourceUrls,
   };
+}
+
+function parseManifestUrlsFromArgv(argv: readonly string[]): string[] {
+  const args = argv.slice(2);
+  const urls: string[] = [];
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index] ?? "";
+
+    if (arg === "--manifest-urls") {
+      for (let next = index + 1; next < args.length; next += 1) {
+        const value = args[next] ?? "";
+        if (value.startsWith("-")) {
+          break;
+        }
+        urls.push(value);
+        index = next;
+      }
+    }
+  }
+
+  return normalizeAndFilterUrls(urls);
 }
 
 function parseOutputDirectory(argv: readonly string[]): string {
@@ -59,13 +86,21 @@ function parseOutputDirectory(argv: readonly string[]): string {
 }
 
 function parseSourceUrls(rawValue: string | undefined): string[] {
+  if (rawValue === undefined) {
+    return [];
+  }
+
   if (!rawValue) {
     return [];
   }
 
   const parsedValue = parseJsonSourceUrls(rawValue);
-  const urls = Array.isArray(parsedValue) ? parsedValue : splitSourceUrls(rawValue);
+  const urls = Array.isArray(parsedValue) ? (parsedValue as unknown[]) : splitSourceUrls(rawValue);
 
+  return normalizeAndFilterUrls(urls);
+}
+
+function normalizeAndFilterUrls(urls: unknown[]): string[] {
   return urls
     .filter((url): url is string => typeof url === "string")
     .map((url) => url.trim())

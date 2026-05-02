@@ -10,7 +10,7 @@ const DEFAULT_RAW_SOURCE_URL =
   "https://raw.githubusercontent.com/github/awesome-copilot/main/docs/README.skills.md";
 
 describe("loadConfig", () => {
-  test("uses the default GitHub URL fixture from env and converts it after loading", () => {
+  test("uses the manifest URL from env and converts it after loading", () => {
     const config = loadConfig(["suggest-skills"], {
       SUGGEST_SKILLS_MANIFEST_URLS: JSON.stringify([DEFAULT_SOURCE_URL]),
     });
@@ -19,6 +19,57 @@ describe("loadConfig", () => {
       outputDirectory: ".agents/skills",
       sourceUrls: [DEFAULT_RAW_SOURCE_URL],
     });
+  });
+
+  test("uses --manifest-urls from argv", () => {
+    const config = loadConfig(
+      ["node", "index.js", "--manifest-urls", "https://example.com/manifest.md"],
+      {},
+    );
+
+    expect(config.sourceUrls).toEqual(["https://example.com/manifest.md"]);
+  });
+
+  test("combines env and --manifest-urls without duplicates", () => {
+    const config = loadConfig(
+      ["node", "index.js", "--manifest-urls", "https://example.com/1.md", "https://example.com/2.md"],
+      {
+        SUGGEST_SKILLS_MANIFEST_URLS: JSON.stringify([
+          "https://example.com/2.md",
+          "https://example.com/3.md",
+        ]),
+      },
+    );
+
+    expect(config.sourceUrls).toEqual([
+      "https://example.com/2.md",
+      "https://example.com/3.md",
+      "https://example.com/1.md",
+    ]);
+  });
+
+  test("stops reading --manifest-urls when next option is found", () => {
+    const config = loadConfig(
+      [
+        "node",
+        "index.js",
+        "--manifest-urls",
+        "https://example.com/1.md",
+        "-o",
+        "./out",
+        "https://example.com/2.md",
+      ],
+      {},
+    );
+
+    expect(config.sourceUrls).toEqual(["https://example.com/1.md"]);
+    expect(config.outputDirectory).toBe("./out");
+  });
+
+  test("throws ConfigError when no URLs are provided", () => {
+    expect(() => loadConfig(["node", "index.js"], {})).toThrow(
+      /SUGGEST_SKILLS_MANIFEST_URLS environment variable or --manifest-urls CLI option must contain at least one URL./,
+    );
   });
 });
 
