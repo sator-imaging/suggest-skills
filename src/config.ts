@@ -1,9 +1,16 @@
-import { normalizeGithubRawUrl } from "./utils.js";
+import { cac } from "cac";
+import { logInfo, normalizeGithubRawUrl } from "./utils.js";
+import pkg from "../package.json";
 
 export type SuggestSkillsConfig = {
   outputDirectory: string;
   sourceUrls: string[];
 };
+
+export type CliRuntimeMode =
+  | { kind: "stdio"; config: SuggestSkillsConfig }
+  | { kind: "generate"; url: string; recursive: boolean; config: SuggestSkillsConfig }
+  | { kind: "server"; port: number; config: SuggestSkillsConfig };
 
 const DEFAULT_OUTPUT_DIRECTORY = ".agents/skills";
 
@@ -14,10 +21,103 @@ export class ConfigError extends Error {
   }
 }
 
+export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode {
+  const cli = cac("suggest-skills");
+  cli.version(pkg.version);
+
+  let runtimeMode: CliRuntimeMode | undefined;
+
+  cli
+    .command("generate <url>", "Generate markdown inventories from a GitHub skills directory or repo root")
+    .option("-r, --recursive", "Recursive scan")
+    .action((url: string, options: { recursive?: boolean; output?: string; manifestUrls?: string | string[] }) => {
+      runtimeMode = {
+        kind: "generate",
+        url,
+        recursive: !!options.recursive,
+        config: buildConfig(options, env),
+      };
+    });
+
+  cli
+    .command("server", "Run the streamable HTTP server")
+    .option("--port <port>", "Port number")
+    .action((options: { port?: string; output?: string; manifestUrls?: string | string[] }) => {
+      if (options.port === undefined) {
+        throw new ConfigError("server subcommand requires --port <number>.");
+      }
+
+      const portValue = options.port;
+      if (!/^\d+$/u.test(portValue)) {
+        throw new ConfigError(`Invalid port number: ${portValue}`);
+      }
+
+      const port = Number.parseInt(portValue, 10);
+      if (port < 1 || port > 65535) {
+        throw new ConfigError(`Port number must be between 1 and 65535: ${portValue}`);
+      }
+
+      runtimeMode = {
+        kind: "server",
+        port,
+        config: buildConfig(options, env),
+      };
+    });
+
+  cli
+    .command("[...args]", "Run in stdio mode (default)")
+    .action((_args: string[], options: { output?: string; manifestUrls?: string | string[] }) => {
+      runtimeMode = {
+        kind: "stdio",
+        config: buildConfig(options, env),
+      };
+    });
+
+  cli.option("-o, --output <dir>", "Output directory for installed skills");
+  cli.option("--manifest-urls <urls...>", "List of manifest URLs to use");
+
+  const parsed = cli.parse(argv, { run: false });
+
+  if (parsed.options["version"]) {
+    logInfo(JSON.stringify(loadConfig(argv, env), null, 2));
+    process.exit(0);
+  }
+
+  if (parsed.options["help"]) {
+    cli.outputHelp();
+    process.exit(0);
+  }
+
+  cli.runMatchedCommand();
+
+  if (!runtimeMode) {
+    // Should not happen with [...args] catch-all
+    throw new Error("Failed to determine runtime mode.");
+  }
+
+  return runtimeMode;
+}
+
 export function loadConfig(argv = process.argv, env = process.env): SuggestSkillsConfig {
-  const outputDirectory = parseOutputDirectory(argv);
+  const cli = cac();
+  cli.option("--manifest-urls <urls...>", "Manifest URLs");
+  cli.option("-o, --output <dir>", "Output directory");
+  const { options } = cli.parse(argv, { run: false });
+
+  return buildConfig(options as Parameters<typeof buildConfig>[0], env);
+}
+
+function buildConfig(
+  options: { output?: string; manifestUrls?: string | string[] },
+  env: NodeJS.ProcessEnv,
+): SuggestSkillsConfig {
+  const outputDirectory = options.output ?? DEFAULT_OUTPUT_DIRECTORY;
   const envUrls = parseSourceUrls(env["SUGGEST_SKILLS_MANIFEST_URLS"]);
-  const cliUrls = parseManifestUrlsFromArgv(argv);
+
+  const cliUrlsRaw = options.manifestUrls;
+  const cliUrls = normalizeAndFilterUrls(
+    Array.isArray(cliUrlsRaw) ? cliUrlsRaw : cliUrlsRaw ? [cliUrlsRaw] : [],
+  );
 
   const sourceUrls = Array.from(new Set([...envUrls, ...cliUrls]));
 
@@ -31,58 +131,6 @@ export function loadConfig(argv = process.argv, env = process.env): SuggestSkill
     outputDirectory,
     sourceUrls,
   };
-}
-
-function parseManifestUrlsFromArgv(argv: readonly string[]): string[] {
-  const args = argv.slice(2);
-  const urls: string[] = [];
-
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index] ?? "";
-
-    if (arg === "--manifest-urls") {
-      for (let next = index + 1; next < args.length; next += 1) {
-        const value = args[next] ?? "";
-        if (value.startsWith("-")) {
-          break;
-        }
-        urls.push(value);
-        index = next;
-      }
-    }
-  }
-
-  return normalizeAndFilterUrls(urls);
-}
-
-function parseOutputDirectory(argv: readonly string[]): string {
-  const args = argv.slice(2);
-
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index] ?? "";
-
-    if (arg === "-o" || arg === "--output") {
-      const value = args[index + 1];
-
-      if (!value || value.startsWith("-")) {
-        throw new ConfigError(`${arg} requires an output directory.`);
-      }
-
-      return value;
-    }
-
-    if (arg.startsWith("--output=")) {
-      const value = arg.slice("--output=".length);
-
-      if (!value) {
-        throw new ConfigError("--output requires an output directory.");
-      }
-
-      return value;
-    }
-  }
-
-  return DEFAULT_OUTPUT_DIRECTORY;
 }
 
 function parseSourceUrls(rawValue: string | undefined): string[] {
