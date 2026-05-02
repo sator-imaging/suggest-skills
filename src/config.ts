@@ -1,10 +1,19 @@
+// @ts-expect-error cac types are not correctly resolved with "moduleResolution": "Bundler"
 import { cac } from "cac";
 import { normalizeGithubRawUrl } from "./utils.js";
+import pkg from "../package.json";
 
 export type SuggestSkillsConfig = {
   outputDirectory: string;
   sourceUrls: string[];
 };
+
+export type CliRuntimeMode =
+  | { kind: "stdio"; config: SuggestSkillsConfig }
+  | { kind: "generate"; url: string; recursive: boolean; config: SuggestSkillsConfig }
+  | { kind: "server"; port: number; config: SuggestSkillsConfig }
+  | { kind: "version" }
+  | { kind: "help"; cli: ReturnType<typeof cac> };
 
 const DEFAULT_OUTPUT_DIRECTORY = ".agents/skills";
 
@@ -15,16 +24,97 @@ export class ConfigError extends Error {
   }
 }
 
+export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode {
+  const cli = cac("suggest-skills");
+  cli.version(pkg.version);
+  let runtimeMode: CliRuntimeMode | undefined;
+
+  cli
+    .command("generate <url>", "Generate markdown inventories from a GitHub skills directory or repo root")
+    .option("-r, --recursive", "Recursive scan")
+    .action((url: string, options: { recursive?: boolean; output?: string; manifestUrls?: string | string[] }) => {
+      runtimeMode = {
+        kind: "generate",
+        url,
+        recursive: !!options.recursive,
+        config: buildConfig(options, env),
+      };
+    });
+
+  cli
+    .command("server", "Run the streamable HTTP server")
+    .option("--port <port>", "Port number")
+    .action((options: { port?: string; output?: string; manifestUrls?: string | string[] }) => {
+      if (options.port === undefined) {
+        throw new ConfigError("server subcommand requires --port <number>.");
+      }
+
+      const portValue = options.port;
+      if (!/^\d+$/u.test(portValue)) {
+        throw new ConfigError(`Invalid port number: ${portValue}`);
+      }
+
+      const port = Number.parseInt(portValue, 10);
+      if (port < 1 || port > 65535) {
+        throw new ConfigError(`Port number must be between 1 and 65535: ${portValue}`);
+      }
+
+      runtimeMode = {
+        kind: "server",
+        port,
+        config: buildConfig(options, env),
+      };
+    });
+
+  cli
+    .command("[...args]", "Run in stdio mode (default)")
+    .action((_args: string[], options: { output?: string; manifestUrls?: string | string[] }) => {
+      runtimeMode = {
+        kind: "stdio",
+        config: buildConfig(options, env),
+      };
+    });
+
+  cli.option("-o, --output <dir>", "Output directory for installed skills");
+  cli.option("--manifest-urls <urls...>", "List of manifest URLs to use");
+
+  const parsed = cli.parse(argv, { run: false });
+
+  if (parsed.options["help"]) {
+    return { kind: "help", cli };
+  }
+
+  if (parsed.options["version"]) {
+    return { kind: "version" };
+  }
+
+  cli.runMatchedCommand();
+
+  if (!runtimeMode) {
+    // Should not happen with [...args] catch-all
+    throw new Error("Failed to determine runtime mode.");
+  }
+
+  return runtimeMode;
+}
+
 export function loadConfig(argv = process.argv, env = process.env): SuggestSkillsConfig {
   const cli = cac();
   cli.option("--manifest-urls <urls...>", "Manifest URLs");
   cli.option("-o, --output <dir>", "Output directory");
   const { options } = cli.parse(argv, { run: false });
 
-  const outputDirectory = options["output"] ?? DEFAULT_OUTPUT_DIRECTORY;
+  return buildConfig(options, env);
+}
+
+function buildConfig(
+  options: { output?: string; manifestUrls?: string | string[] },
+  env: NodeJS.ProcessEnv,
+): SuggestSkillsConfig {
+  const outputDirectory = options.output ?? DEFAULT_OUTPUT_DIRECTORY;
   const envUrls = parseSourceUrls(env["SUGGEST_SKILLS_MANIFEST_URLS"]);
 
-  const cliUrlsRaw = options["manifestUrls"];
+  const cliUrlsRaw = options.manifestUrls;
   const cliUrls = normalizeAndFilterUrls(
     Array.isArray(cliUrlsRaw) ? cliUrlsRaw : cliUrlsRaw ? [cliUrlsRaw] : [],
   );
