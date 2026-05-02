@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "ts-fibers": "0.5.1"
+    "ts-fibers": "0.5.3"
   },
   "devDependencies": {
     "@types/bun": "^1.2.13",
