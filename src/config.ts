@@ -1,3 +1,4 @@
+import { cac } from "cac";
 import { normalizeGithubRawUrl } from "./utils.js";
 
 export type SuggestSkillsConfig = {
@@ -15,9 +16,18 @@ export class ConfigError extends Error {
 }
 
 export function loadConfig(argv = process.argv, env = process.env): SuggestSkillsConfig {
-  const outputDirectory = parseOutputDirectory(argv);
+  const cli = cac();
+  cli.option("--manifest-urls <urls...>", "Manifest URLs");
+  cli.option("-o, --output <dir>", "Output directory");
+  const { options } = cli.parse(argv, { run: false });
+
+  const outputDirectory = options.output ?? DEFAULT_OUTPUT_DIRECTORY;
   const envUrls = parseSourceUrls(env["SUGGEST_SKILLS_MANIFEST_URLS"]);
-  const cliUrls = parseManifestUrlsFromArgv(argv);
+
+  const cliUrlsRaw = options.manifestUrls;
+  const cliUrls = normalizeAndFilterUrls(
+    Array.isArray(cliUrlsRaw) ? cliUrlsRaw : cliUrlsRaw ? [cliUrlsRaw] : [],
+  );
 
   const sourceUrls = Array.from(new Set([...envUrls, ...cliUrls]));
 
@@ -31,58 +41,6 @@ export function loadConfig(argv = process.argv, env = process.env): SuggestSkill
     outputDirectory,
     sourceUrls,
   };
-}
-
-function parseManifestUrlsFromArgv(argv: readonly string[]): string[] {
-  const args = argv.slice(2);
-  const urls: string[] = [];
-
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index] ?? "";
-
-    if (arg === "--manifest-urls") {
-      for (let next = index + 1; next < args.length; next += 1) {
-        const value = args[next] ?? "";
-        if (value.startsWith("-")) {
-          break;
-        }
-        urls.push(value);
-        index = next;
-      }
-    }
-  }
-
-  return normalizeAndFilterUrls(urls);
-}
-
-function parseOutputDirectory(argv: readonly string[]): string {
-  const args = argv.slice(2);
-
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index] ?? "";
-
-    if (arg === "-o" || arg === "--output") {
-      const value = args[index + 1];
-
-      if (!value || value.startsWith("-")) {
-        throw new ConfigError(`${arg} requires an output directory.`);
-      }
-
-      return value;
-    }
-
-    if (arg.startsWith("--output=")) {
-      const value = arg.slice("--output=".length);
-
-      if (!value) {
-        throw new ConfigError("--output requires an output directory.");
-      }
-
-      return value;
-    }
-  }
-
-  return DEFAULT_OUTPUT_DIRECTORY;
 }
 
 function parseSourceUrls(rawValue: string | undefined): string[] {

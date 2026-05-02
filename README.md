@@ -106,9 +106,8 @@ GitHub `blob` URLs are converted to `raw.githubusercontent.com` URLs automatical
 
 - `--manifest-urls <url1> <url2> ...`: list of manifest URLs to use; can be used alongside the environment variable
 - `-o <dir>` or `--output <dir>`: output directory for installed skills
-- `--output=<dir>`: inline form
 - `generate [-r|--recursive] <github-url>`: generate markdown inventories from a GitHub skills directory or repo root
-- `--server <port>` or `--server=<port>`: run the streamable HTTP server
+- `server --port <number>`: run the streamable HTTP server
 
 Default output directory:
 
@@ -131,7 +130,7 @@ SUGGEST_SKILLS_MANIFEST_URLS='["https://some/skill-manifest.md"]' \
 
 ```bash
 SUGGEST_SKILLS_MANIFEST_URLS='["https://some/skill-manifest.md"]' \
-  npx suggest-skills --server 3100
+  npx suggest-skills server --port 3100
 ```
 
 The HTTP endpoint is served at `http://localhost:3100/mcp` and the health check is available at `http://localhost:3100/health`.
