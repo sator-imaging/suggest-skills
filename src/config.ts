@@ -199,21 +199,6 @@ function parseManifestUrlsFromArgv(argv: string[]): string[] {
         i++;
       }
       i--;
-    } else if (arg.startsWith("--manifest-urls=")) {
-      const firstUrl = arg.split("=", 2)[1];
-      if (firstUrl) {
-        urls.push(firstUrl);
-      }
-      i++;
-      while (i < argv.length) {
-        const nextArg = argv[i];
-        if (nextArg === undefined || nextArg.startsWith("-")) {
-          break;
-        }
-        urls.push(nextArg);
-        i++;
-      }
-      i--;
     }
   }
 
