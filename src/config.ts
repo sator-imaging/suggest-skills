@@ -1,4 +1,3 @@
-// @ts-expect-error cac types are not correctly resolved with "moduleResolution": "Bundler"
 import { cac } from "cac";
 import { logInfo, normalizeGithubRawUrl } from "./utils.js";
 import pkg from "../package.json";
@@ -24,12 +23,8 @@ export class ConfigError extends Error {
 
 export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode {
   const cli = cac("suggest-skills");
-  cli.version(pkg.version, "-v, --version");
-  cli.on("version", () => {
-    logInfo(`Version: ${pkg.version}`);
-    logInfo(JSON.stringify(loadConfig(argv, env), null, 2));
-    process.exit(0);
-  });
+  cli.version(pkg.version);
+
   let runtimeMode: CliRuntimeMode | undefined;
 
   cli
@@ -84,7 +79,6 @@ export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode
   const parsed = cli.parse(argv, { run: false });
 
   if (parsed.options["version"]) {
-    logInfo(`Version: ${pkg.version}`);
     logInfo(JSON.stringify(loadConfig(argv, env), null, 2));
     process.exit(0);
   }
