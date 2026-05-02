@@ -1,4 +1,3 @@
-// @ts-expect-error cac types are not correctly resolved with "moduleResolution": "Bundler"
 import { cac } from "cac";
 import { ConfigError, loadConfig } from "./config.js";
 import { runGenerateCommand } from "./generate.js";

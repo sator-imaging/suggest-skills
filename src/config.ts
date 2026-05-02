@@ -1,4 +1,3 @@
-// @ts-expect-error cac types are not correctly resolved with "moduleResolution": "Bundler"
 import { cac } from "cac";
 import { normalizeGithubRawUrl } from "./utils.js";
 
@@ -22,10 +21,10 @@ export function loadConfig(argv = process.argv, env = process.env): SuggestSkill
   cli.option("-o, --output <dir>", "Output directory");
   const { options } = cli.parse(argv, { run: false });
 
-  const outputDirectory = options.output ?? DEFAULT_OUTPUT_DIRECTORY;
+  const outputDirectory = options["output"] ?? DEFAULT_OUTPUT_DIRECTORY;
   const envUrls = parseSourceUrls(env["SUGGEST_SKILLS_MANIFEST_URLS"]);
 
-  const cliUrlsRaw = options.manifestUrls;
+  const cliUrlsRaw = options["manifestUrls"];
   const cliUrls = normalizeAndFilterUrls(
     Array.isArray(cliUrlsRaw) ? cliUrlsRaw : cliUrlsRaw ? [cliUrlsRaw] : [],
   );
