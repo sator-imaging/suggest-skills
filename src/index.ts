@@ -1,9 +1,8 @@
-import { ConfigError, loadConfig, parseCli } from "./config.js";
+import { ConfigError, parseCli } from "./config.js";
 import { runGenerateCommand } from "./generate.js";
 import { startHttpServer } from "./http.js";
 import { startStdioServer } from "./stdio.js";
-import { logError, logInfo } from "./utils.js";
-import pkg from "../package.json";
+import { logError } from "./utils.js";
 
 async function main(): Promise<void> {
   try {
