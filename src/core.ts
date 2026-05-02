@@ -3,6 +3,7 @@ import * as z from "zod/v4";
 import type { SuggestSkillsConfig } from "./config.js";
 import { buildSuggestionResponse } from "./suggest.js";
 import { downloadGithubFolder, fetchManifestText } from "./download.js";
+import pkg from "../package.json";
 
 const SUGGEST_TOOL_NAME = "suggest_skills";
 const DOWNLOAD_TOOL_NAME = "download_skill";
@@ -18,7 +19,7 @@ const toolDescriptions = {
 export function createServer(config: SuggestSkillsConfig): McpServer {
   const server = new McpServer({
     name: "suggest-skills",
-    version: "1.0.0",
+    version: pkg.version,
   });
 
   server.registerTool(
