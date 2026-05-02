@@ -35,7 +35,7 @@ export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode
         kind: "generate",
         url,
         recursive: !!options.recursive,
-        config: buildConfig(options, env),
+        config: buildConfig(options, env, argv),
       };
     });
 
@@ -60,7 +60,7 @@ export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode
       runtimeMode = {
         kind: "server",
         port,
-        config: buildConfig(options, env),
+        config: buildConfig(options, env, argv),
       };
     });
 
@@ -69,7 +69,7 @@ export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode
     .action((_args: string[], options: { output?: string; manifestUrls?: string | string[] }) => {
       runtimeMode = {
         kind: "stdio",
-        config: buildConfig(options, env),
+        config: buildConfig(options, env, argv),
       };
     });
 
@@ -104,20 +104,22 @@ export function loadConfig(argv = process.argv, env = process.env): SuggestSkill
   cli.option("-o, --output <dir>", "Output directory");
   const { options } = cli.parse(argv, { run: false });
 
-  return buildConfig(options as Parameters<typeof buildConfig>[0], env);
+  return buildConfig(options as Parameters<typeof buildConfig>[0], env, argv);
 }
 
 function buildConfig(
   options: { output?: string; manifestUrls?: string | string[] },
   env: NodeJS.ProcessEnv,
+  argv: string[],
 ): SuggestSkillsConfig {
   const outputDirectory = options.output ?? DEFAULT_OUTPUT_DIRECTORY;
   const envUrls = parseSourceUrls(env["SUGGEST_SKILLS_MANIFEST_URLS"]);
 
   const cliUrlsRaw = options.manifestUrls;
-  const cliUrls = normalizeAndFilterUrls(
-    Array.isArray(cliUrlsRaw) ? cliUrlsRaw : cliUrlsRaw ? [cliUrlsRaw] : [],
-  );
+  const cliUrlsFromCac = Array.isArray(cliUrlsRaw) ? cliUrlsRaw : cliUrlsRaw ? [cliUrlsRaw] : [];
+  const cliUrlsFromArgv = parseManifestUrlsFromArgv(argv);
+
+  const cliUrls = normalizeAndFilterUrls([...cliUrlsFromCac, ...cliUrlsFromArgv]);
 
   const sourceUrls = Array.from(new Set([...envUrls, ...cliUrls]));
 
@@ -175,4 +177,30 @@ function splitSourceUrls(rawValue: string): string[] {
     .split(/\r?\n|,/u)
     .map((url) => url.trim())
     .filter(Boolean);
+}
+
+function parseManifestUrlsFromArgv(argv: string[]): string[] {
+  const urls: string[] = [];
+
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === undefined) {
+      continue;
+    }
+
+    if (arg === "--manifest-urls") {
+      i++;
+      while (i < argv.length) {
+        const nextArg = argv[i];
+        if (nextArg === undefined || nextArg.startsWith("-")) {
+          break;
+        }
+        urls.push(nextArg);
+        i++;
+      }
+      i--;
+    }
+  }
+
+  return urls;
 }
