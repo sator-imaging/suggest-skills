@@ -1,3 +1,4 @@
+// @ts-expect-error cac types are not correctly resolved with "moduleResolution": "Bundler"
 import { cac } from "cac";
 import { ConfigError, loadConfig } from "./config.js";
 import { runGenerateCommand } from "./generate.js";
@@ -13,7 +14,7 @@ async function main(): Promise<void> {
     .command("generate <url>", "Generate markdown inventories from a GitHub skills directory or repo root")
     .option("-r, --recursive", "Recursive scan")
     .action(async (url: string, options: { recursive?: boolean }) => {
-      await runGenerateCommand(url, { recursive: options.recursive });
+      await runGenerateCommand(url, { recursive: !!options.recursive });
     });
 
   cli

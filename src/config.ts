@@ -1,3 +1,4 @@
+// @ts-expect-error cac types are not correctly resolved with "moduleResolution": "Bundler"
 import { cac } from "cac";
 import { normalizeGithubRawUrl } from "./utils.js";
 
