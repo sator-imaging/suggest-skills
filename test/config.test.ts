@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
-import { loadConfig } from "../src/config.js";
+import { parseCli } from "../src/config.js";
 import { createHttpApp } from "../src/http.js";
 
 const DEFAULT_SOURCE_URL =
@@ -9,29 +9,38 @@ const DEFAULT_SOURCE_URL =
 const DEFAULT_RAW_SOURCE_URL =
   "https://raw.githubusercontent.com/github/awesome-copilot/main/docs/README.skills.md";
 
-describe("loadConfig", () => {
+describe("parseCli", () => {
   test("uses the manifest URL from env and converts it after loading", () => {
-    const config = loadConfig(["suggest-skills"], {
+    const runtimeMode = parseCli(["node", "index.js"], {
       SUGGEST_SKILLS_MANIFEST_URLS: JSON.stringify([DEFAULT_SOURCE_URL]),
     });
 
-    expect(config).toEqual({
+    expect(runtimeMode.config).toEqual({
       outputDirectory: ".agents/skills",
       sourceUrls: [DEFAULT_RAW_SOURCE_URL],
     });
   });
 
   test("uses --manifest-urls from argv", () => {
-    const config = loadConfig(
+    const runtimeMode = parseCli(
       ["node", "index.js", "--manifest-urls", "https://example.com/manifest.md"],
       {},
     );
 
-    expect(config.sourceUrls).toEqual(["https://example.com/manifest.md"]);
+    expect(runtimeMode.config.sourceUrls).toEqual(["https://example.com/manifest.md"]);
+  });
+
+  test("captures multiple --manifest-urls from argv", () => {
+    const runtimeMode = parseCli(
+      ["node", "index.js", "--manifest-urls", "aa", "bb", "cc"],
+      {},
+    );
+
+    expect(runtimeMode.config.sourceUrls).toEqual(["aa", "bb", "cc"]);
   });
 
   test("combines env and --manifest-urls without duplicates", () => {
-    const config = loadConfig(
+    const runtimeMode = parseCli(
       ["node", "index.js", "--manifest-urls", "https://example.com/1.md", "https://example.com/2.md"],
       {
         SUGGEST_SKILLS_MANIFEST_URLS: JSON.stringify([
@@ -41,7 +50,7 @@ describe("loadConfig", () => {
       },
     );
 
-    expect(config.sourceUrls).toEqual([
+    expect(runtimeMode.config.sourceUrls).toEqual([
       "https://example.com/2.md",
       "https://example.com/3.md",
       "https://example.com/1.md",
@@ -49,7 +58,7 @@ describe("loadConfig", () => {
   });
 
   test("stops reading --manifest-urls when next option is found", () => {
-    const config = loadConfig(
+    const runtimeMode = parseCli(
       [
         "node",
         "index.js",
@@ -62,12 +71,12 @@ describe("loadConfig", () => {
       {},
     );
 
-    expect(config.sourceUrls).toEqual(["https://example.com/1.md"]);
-    expect(config.outputDirectory).toBe("./out");
+    expect(runtimeMode.config.sourceUrls).toEqual(["https://example.com/1.md"]);
+    expect(runtimeMode.config.outputDirectory).toBe("./out");
   });
 
   test("throws ConfigError when no URLs are provided", () => {
-    expect(() => loadConfig(["node", "index.js"], {})).toThrow(
+    expect(() => parseCli(["node", "index.js"], {})).toThrow(
       /SUGGEST_SKILLS_MANIFEST_URLS environment variable or --manifest-urls CLI option must contain at least one URL./,
     );
   });
@@ -157,10 +166,10 @@ describe("stdio MCP server", () => {
 
 describe("streamable HTTP MCP server", () => {
   test("serves health checks and handles initialize requests", async () => {
-    const config = loadConfig(["suggest-skills"], {
+    const runtimeMode = parseCli(["node", "index.js"], {
       SUGGEST_SKILLS_MANIFEST_URLS: JSON.stringify([DEFAULT_SOURCE_URL]),
     });
-    const app = createHttpApp(config);
+    const app = createHttpApp(runtimeMode.config);
 
     const healthResponse = await app.fetch(
       new Request("http://localhost/health"),
