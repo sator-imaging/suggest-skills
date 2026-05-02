@@ -49,6 +49,35 @@ async function main(): Promise<void> {
 
 function parseRuntimeMode(argv: readonly string[]): RuntimeMode {
   const args = argv.slice(2);
+
+  if (args[0] === "generate") {
+    let url: string | undefined;
+    let recursive = false;
+
+    for (let i = 1; i < args.length; i += 1) {
+      const arg = args[i] ?? "";
+
+      if (arg === "-r" || arg === "--recursive") {
+        recursive = true;
+        continue;
+      }
+
+      if (!arg.startsWith("-")) {
+        url = arg;
+      }
+    }
+
+    if (url === undefined) {
+      throw new ConfigError("generate subcommand requires a GitHub skills directory URL.");
+    }
+
+    return {
+      kind: "generate",
+      recursive,
+      url,
+    };
+  }
+
   let generateUrl: string | undefined;
   let recursive = false;
   let serverPort: number | undefined;

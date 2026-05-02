@@ -50,12 +50,12 @@ Prebuilt skill manifests can be found in this repository:
 ## Generate a Manifest
 
 ```bash
-npx suggest-skills --generate \
+npx suggest-skills generate \
   https://github.com/OWNER/REPO/tree/main/skills
 ```
 
 ```bash
-npx suggest-skills --generate \
+npx suggest-skills generate \
   --recursive \
   https://github.com/OWNER/REPO/tree/main/skills
 ```
@@ -107,8 +107,7 @@ GitHub `blob` URLs are converted to `raw.githubusercontent.com` URLs automatical
 - `--manifest-urls <url1> <url2> ...`: list of manifest URLs to use; can be used alongside the environment variable
 - `-o <dir>` or `--output <dir>`: output directory for installed skills
 - `--output=<dir>`: inline form
-- `--generate <github-url>` or `--generate=<github-url>`: generate markdown inventories from a GitHub skills directory or repo root
-- `--recursive`: expand subdirectory search for `SKILL.md` and `DESIGN.md` when used with `--generate`; root-level agent discovery is unchanged
+- `generate [-r|--recursive] <github-url>`: generate markdown inventories from a GitHub skills directory or repo root
 - `--server <port>` or `--server=<port>`: run the streamable HTTP server
 
 Default output directory:
@@ -196,8 +195,8 @@ Returns every file in that folder with:
 ```text
 Config -> MCP tool registration -> stdio or HTTP transport
 
-CLI --generate -> GitHub directory scan -> manifest markdown file
-               \-> GitHub URL normalization / folder download
+CLI generate -> GitHub directory scan -> manifest markdown file
+             \-> GitHub URL normalization / folder download
 ```
 
 
