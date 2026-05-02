@@ -1,6 +1,6 @@
 // @ts-expect-error cac types are not correctly resolved with "moduleResolution": "Bundler"
 import { cac } from "cac";
-import { normalizeGithubRawUrl } from "./utils.js";
+import { logInfo, normalizeGithubRawUrl } from "./utils.js";
 import pkg from "../package.json";
 
 export type SuggestSkillsConfig = {
@@ -11,9 +11,7 @@ export type SuggestSkillsConfig = {
 export type CliRuntimeMode =
   | { kind: "stdio"; config: SuggestSkillsConfig }
   | { kind: "generate"; url: string; recursive: boolean; config: SuggestSkillsConfig }
-  | { kind: "server"; port: number; config: SuggestSkillsConfig }
-  | { kind: "version" }
-  | { kind: "help"; cli: ReturnType<typeof cac> };
+  | { kind: "server"; port: number; config: SuggestSkillsConfig };
 
 const DEFAULT_OUTPUT_DIRECTORY = ".agents/skills";
 
@@ -26,7 +24,12 @@ export class ConfigError extends Error {
 
 export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode {
   const cli = cac("suggest-skills");
-  cli.version(pkg.version);
+  cli.version(pkg.version, "-v, --version");
+  cli.on("version", () => {
+    logInfo(`Version: ${pkg.version}`);
+    logInfo(JSON.stringify(loadConfig(argv, env), null, 2));
+    process.exit(0);
+  });
   let runtimeMode: CliRuntimeMode | undefined;
 
   cli
@@ -80,12 +83,15 @@ export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode
 
   const parsed = cli.parse(argv, { run: false });
 
-  if (parsed.options["help"]) {
-    return { kind: "help", cli };
+  if (parsed.options["version"]) {
+    logInfo(`Version: ${pkg.version}`);
+    logInfo(JSON.stringify(loadConfig(argv, env), null, 2));
+    process.exit(0);
   }
 
-  if (parsed.options["version"]) {
-    return { kind: "version" };
+  if (parsed.options["help"]) {
+    cli.outputHelp();
+    process.exit(0);
   }
 
   cli.runMatchedCommand();
@@ -104,7 +110,7 @@ export function loadConfig(argv = process.argv, env = process.env): SuggestSkill
   cli.option("-o, --output <dir>", "Output directory");
   const { options } = cli.parse(argv, { run: false });
 
-  return buildConfig(options, env);
+  return buildConfig(options as Parameters<typeof buildConfig>[0], env);
 }
 
 function buildConfig(

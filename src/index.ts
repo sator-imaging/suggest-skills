@@ -9,17 +9,6 @@ async function main(): Promise<void> {
   try {
     const runtimeMode = parseCli();
 
-    if (runtimeMode.kind === "help") {
-      runtimeMode.cli.outputHelp();
-      return;
-    }
-
-    if (runtimeMode.kind === "version") {
-      logInfo(`Version: ${pkg.version}`);
-      logInfo(JSON.stringify(loadConfig(), null, 2));
-      return;
-    }
-
     if (runtimeMode.kind === "generate") {
       await runGenerateCommand(runtimeMode.url, { recursive: runtimeMode.recursive });
       return;
