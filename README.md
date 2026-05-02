@@ -24,7 +24,15 @@ Note that this tool doesn't provide security checks. To find official skills rep
   "mcpServers": {
     "suggest-skills": {
       "command": "npx",
-      "args": ["-y", "suggest-skills", "--output", ".agents/skills"],
+      "args": [
+        "-y",
+        "suggest-skills",
+        "--output",
+        ".agents/skills",
+        "--manifest-urls",
+        "https://foo/manifest.md",
+        "https://bar/manifest.md"
+      ],
       "env": {
         "SUGGEST_SKILLS_MANIFEST_URLS": [
           "https://some/skill-manifest.md",

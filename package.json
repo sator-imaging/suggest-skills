@@ -14,7 +14,7 @@
   "scripts": {
     "build": "bun build --banner \"#!/usr/bin/env node\" src/index.ts --outdir ./dist --target node --drop console --drop debugger --minify --production",
     "start": "bun src/index.ts",
-    "server": "bun src/index.ts --server 3100",
+    "server": "bun src/index.ts server --port 3100",
     "check": "bunx tsgo --noEmit && bunx oxlint",
     "test": "bun run check && bun test"
   },
