@@ -164,6 +164,14 @@ export async function writeGeneratedManifest(
     return undefined;
   }
 
+  if (manifest.outputFileName.endsWith("skills.skills.md")) {
+    manifest.outputFileName = fixRedundantTypeSuffix(manifest.outputFileName, "skills");
+  } else if (manifest.outputFileName.endsWith("agents.agents.md")) {
+    manifest.outputFileName = fixRedundantTypeSuffix(manifest.outputFileName, "agents");
+  } else if (manifest.outputFileName.endsWith("designs.designs.md")) {
+    manifest.outputFileName = fixRedundantTypeSuffix(manifest.outputFileName, "designs");
+  }
+
   const outputPath = join(writer.workingDirectory(), manifest.outputFileName);
   const exists = await writer.fileExists(outputPath);
 
@@ -767,6 +775,20 @@ function trimTrailingSlashes(path: string): number {
   }
 
   return end;
+}
+
+function fixRedundantTypeSuffix(filename: string, kind: string): string {
+  let base = filename;
+
+  if (base.endsWith(".md")) {
+    base = base.slice(0, -2);
+  }
+
+  while (base.endsWith(kind + ".")) {
+    base = base.slice(0, -(kind.length + 1));
+  }
+
+  return base + kind + ".md";
 }
 
 function analyzeTreeEntries(rootPath: string, treeEntries: GithubContentEntry[]): TreeAnalysis {

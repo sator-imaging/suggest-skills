@@ -366,7 +366,7 @@ describe("writeGeneratedManifest", () => {
           writes.push({ content, path });
         },
       }),
-    ).rejects.toThrow('Refusing to overwrite "octo.demo.skills.skills.md".');
+    ).rejects.toThrow('Refusing to overwrite "octo.demo.skills.md".');
 
     expect(writes).toEqual([]);
   });
@@ -387,11 +387,11 @@ describe("writeGeneratedManifest", () => {
       },
     });
 
-    expect(outputPath).toBe(join(workingDirectory, "octo.demo.skills.skills.md"));
+    expect(outputPath).toBe(join(workingDirectory, "octo.demo.skills.md"));
     expect(writes).toEqual([
       {
         content: "manifest-body\n",
-        path: join(workingDirectory, "octo.demo.skills.skills.md"),
+        path: join(workingDirectory, "octo.demo.skills.md"),
       },
     ]);
   });
@@ -418,6 +418,56 @@ describe("writeGeneratedManifest", () => {
 
     expect(outputPath).toBeUndefined();
     expect(writes).toEqual([]);
+  });
+
+  test("removes redundant type suffix in output file name", async () => {
+    const writes: Array<{ content: string; path: string }> = [];
+    const manifest: GeneratedDocument = {
+      markdown: "manifest-body\n",
+      outputFileName: "octo.demo.skills.skills.md",
+    };
+
+    const outputPath = await writeGeneratedManifest(manifest, {
+      confirmOverwrite: async () => true,
+      fileExists: async () => false,
+      workingDirectory: () => workingDirectory,
+      writeFile: async (path, content) => {
+        writes.push({ content, path });
+      },
+    });
+
+    expect(outputPath).toBe(join(workingDirectory, "octo.demo.skills.md"));
+    expect(writes).toEqual([
+      {
+        content: "manifest-body\n",
+        path: join(workingDirectory, "octo.demo.skills.md"),
+      },
+    ]);
+  });
+
+  test("removes multiple redundant type suffixes in output file name", async () => {
+    const writes: Array<{ content: string; path: string }> = [];
+    const manifest: GeneratedDocument = {
+      markdown: "manifest-body\n",
+      outputFileName: "octo.demo.skills.skills.skills.md",
+    };
+
+    const outputPath = await writeGeneratedManifest(manifest, {
+      confirmOverwrite: async () => true,
+      fileExists: async () => false,
+      workingDirectory: () => workingDirectory,
+      writeFile: async (path, content) => {
+        writes.push({ content, path });
+      },
+    });
+
+    expect(outputPath).toBe(join(workingDirectory, "octo.demo.skills.md"));
+    expect(writes).toEqual([
+      {
+        content: "manifest-body\n",
+        path: join(workingDirectory, "octo.demo.skills.md"),
+      },
+    ]);
   });
 });
 
