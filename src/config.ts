@@ -35,7 +35,7 @@ export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode
         kind: "generate",
         url,
         recursive: !!options.recursive,
-        config: buildConfig(options, env, argv),
+        config: buildConfig(options, env, argv, true),
       };
     });
 
@@ -111,6 +111,7 @@ function buildConfig(
   options: { output?: string; manifestUrls?: string | string[] },
   env: NodeJS.ProcessEnv,
   argv: string[],
+  allowEmptySourceUrls = false,
 ): SuggestSkillsConfig {
   const outputDirectory = options.output ?? DEFAULT_OUTPUT_DIRECTORY;
   const envUrls = parseSourceUrls(env["SUGGEST_SKILLS_MANIFEST_URLS"]);
@@ -123,7 +124,7 @@ function buildConfig(
 
   const sourceUrls = Array.from(new Set([...envUrls, ...cliUrls]));
 
-  if (sourceUrls.length === 0) {
+  if (sourceUrls.length === 0 && !allowEmptySourceUrls) {
     throw new ConfigError(
       "SUGGEST_SKILLS_MANIFEST_URLS environment variable or --manifest-urls CLI option must contain at least one URL.",
     );

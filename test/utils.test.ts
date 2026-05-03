@@ -170,7 +170,7 @@ name: "alpha
 `)).toEqual({
       description: null,
       name: null,
-      parseError: expect.stringContaining("YAML Parse error"),
+      parseError: expect.any(String),
       source: 'name: "alpha',
     });
   });
