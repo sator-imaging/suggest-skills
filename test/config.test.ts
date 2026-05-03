@@ -30,18 +30,30 @@ describe("parseCli", () => {
     expect(runtimeMode.config.sourceUrls).toEqual(["https://example.com/manifest.md"]);
   });
 
-  test("captures multiple --manifest-urls from argv", () => {
+  test("captures multiple --manifest-urls from argv by repeating the flag", () => {
     const runtimeMode = parseCli(
-      ["node", "index.js", "--manifest-urls", "aa", "bb", "cc"],
+      ["node", "index.js", "--manifest-urls", "aa", "--manifest-urls", "bb", "--manifest-urls", "cc"],
       {},
     );
 
     expect(runtimeMode.config.sourceUrls).toEqual(["aa", "bb", "cc"]);
   });
 
-  test("combines env and --manifest-urls without duplicates", () => {
+  test("uses positional arguments as manifest URLs in stdio mode", () => {
     const runtimeMode = parseCli(
-      ["node", "index.js", "--manifest-urls", "https://example.com/1.md", "https://example.com/2.md"],
+      ["node", "index.js", "https://example.com/1.md", "https://example.com/2.md"],
+      {},
+    );
+
+    expect(runtimeMode.config.sourceUrls).toEqual([
+      "https://example.com/1.md",
+      "https://example.com/2.md",
+    ]);
+  });
+
+  test("combines env, --manifest-urls and positional arguments without duplicates", () => {
+    const runtimeMode = parseCli(
+      ["node", "index.js", "--manifest-urls", "https://example.com/1.md", "https://example.com/4.md"],
       {
         SUGGEST_SKILLS_MANIFEST_URLS: JSON.stringify([
           "https://example.com/2.md",
@@ -54,25 +66,20 @@ describe("parseCli", () => {
       "https://example.com/2.md",
       "https://example.com/3.md",
       "https://example.com/1.md",
+      "https://example.com/4.md",
     ]);
   });
 
-  test("stops reading --manifest-urls when next option is found", () => {
+  test("generate subcommand does not require manifest URLs", () => {
     const runtimeMode = parseCli(
-      [
-        "node",
-        "index.js",
-        "--manifest-urls",
-        "https://example.com/1.md",
-        "-o",
-        "./out",
-        "https://example.com/2.md",
-      ],
+      ["node", "index.js", "generate", "https://github.com/owner/repo"],
       {},
     );
 
-    expect(runtimeMode.config.sourceUrls).toEqual(["https://example.com/1.md"]);
-    expect(runtimeMode.config.outputDirectory).toBe("./out");
+    expect(runtimeMode.kind).toBe("generate");
+    if (runtimeMode.kind === "generate") {
+      expect(runtimeMode.url).toBe("https://github.com/owner/repo");
+    }
   });
 
   test("throws ConfigError when no URLs are provided", () => {

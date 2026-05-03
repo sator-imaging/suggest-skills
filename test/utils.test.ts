@@ -164,14 +164,13 @@ description: 42`,
   });
 
   test("returns parse error for invalid yaml", () => {
-    expect(parseMarkdownFrontMatterFields(`---
+    const result = parseMarkdownFrontMatterFields(`---
 name: "alpha
 ---
-`)).toEqual({
-      description: null,
-      name: null,
-      parseError: expect.stringContaining("YAML Parse error"),
-      source: 'name: "alpha',
-    });
+`);
+    expect(result.name).toBeNull();
+    expect(result.description).toBeNull();
+    expect(result.parseError).not.toBeNull();
+    expect(result.source).toBe("name: \"alpha");
   });
 });

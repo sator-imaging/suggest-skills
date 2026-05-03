@@ -33,9 +33,9 @@ export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode
     .action((url: string, options: { recursive?: boolean; output?: string; manifestUrls?: string | string[] }) => {
       runtimeMode = {
         kind: "generate",
-        url,
+        url: normalizeSourceUrl(url),
         recursive: !!options.recursive,
-        config: buildConfig(options, env, argv),
+        config: buildConfig(options, env),
       };
     });
 
@@ -57,19 +57,36 @@ export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode
         throw new ConfigError(`Port number must be between 1 and 65535: ${portValue}`);
       }
 
+      const config = buildConfig(options, env);
+      if (config.sourceUrls.length === 0) {
+        throw new ConfigError(
+          "SUGGEST_SKILLS_MANIFEST_URLS environment variable or --manifest-urls CLI option must contain at least one URL.",
+        );
+      }
+
       runtimeMode = {
         kind: "server",
         port,
-        config: buildConfig(options, env, argv),
+        config,
       };
     });
 
   cli
     .command("[...args]", "Run in stdio mode (default)")
-    .action((_args: string[], options: { output?: string; manifestUrls?: string | string[] }) => {
+    .action((args: string[], options: { output?: string; manifestUrls?: string | string[] }) => {
+      const config = buildConfig(options, env);
+      const positionalUrls = normalizeAndFilterUrls(args);
+      config.sourceUrls = Array.from(new Set([...config.sourceUrls, ...positionalUrls]));
+
+      if (config.sourceUrls.length === 0) {
+        throw new ConfigError(
+          "SUGGEST_SKILLS_MANIFEST_URLS environment variable or --manifest-urls CLI option must contain at least one URL.",
+        );
+      }
+
       runtimeMode = {
         kind: "stdio",
-        config: buildConfig(options, env, argv),
+        config,
       };
     });
 
@@ -79,7 +96,7 @@ export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode
   const parsed = cli.parse(argv, { run: false });
 
   if (parsed.options["version"]) {
-    logInfo(JSON.stringify(loadConfig(argv, env), null, 2));
+    process.stdout.write(`${pkg.version}\n`);
     process.exit(0);
   }
 
@@ -104,30 +121,21 @@ export function loadConfig(argv = process.argv, env = process.env): SuggestSkill
   cli.option("-o, --output <dir>", "Output directory");
   const { options } = cli.parse(argv, { run: false });
 
-  return buildConfig(options as Parameters<typeof buildConfig>[0], env, argv);
+  return buildConfig(options as Parameters<typeof buildConfig>[0], env);
 }
 
 function buildConfig(
   options: { output?: string; manifestUrls?: string | string[] },
   env: NodeJS.ProcessEnv,
-  argv: string[],
 ): SuggestSkillsConfig {
   const outputDirectory = options.output ?? DEFAULT_OUTPUT_DIRECTORY;
   const envUrls = parseSourceUrls(env["SUGGEST_SKILLS_MANIFEST_URLS"]);
 
   const cliUrlsRaw = options.manifestUrls;
   const cliUrlsFromCac = Array.isArray(cliUrlsRaw) ? cliUrlsRaw : cliUrlsRaw ? [cliUrlsRaw] : [];
-  const cliUrlsFromArgv = parseManifestUrlsFromArgv(argv);
-
-  const cliUrls = normalizeAndFilterUrls([...cliUrlsFromCac, ...cliUrlsFromArgv]);
+  const cliUrls = normalizeAndFilterUrls(cliUrlsFromCac);
 
   const sourceUrls = Array.from(new Set([...envUrls, ...cliUrls]));
-
-  if (sourceUrls.length === 0) {
-    throw new ConfigError(
-      "SUGGEST_SKILLS_MANIFEST_URLS environment variable or --manifest-urls CLI option must contain at least one URL.",
-    );
-  }
 
   return {
     outputDirectory,
@@ -179,28 +187,3 @@ function splitSourceUrls(rawValue: string): string[] {
     .filter(Boolean);
 }
 
-function parseManifestUrlsFromArgv(argv: string[]): string[] {
-  const urls: string[] = [];
-
-  for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i];
-    if (arg === undefined) {
-      continue;
-    }
-
-    if (arg === "--manifest-urls") {
-      i++;
-      while (i < argv.length) {
-        const nextArg = argv[i];
-        if (nextArg === undefined || nextArg.startsWith("-")) {
-          break;
-        }
-        urls.push(nextArg);
-        i++;
-      }
-      i--;
-    }
-  }
-
-  return urls;
-}

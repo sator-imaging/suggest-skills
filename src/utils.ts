@@ -1,3 +1,5 @@
+import yaml from "js-yaml";
+
 export type GithubDirectoryLocation = {
   owner: string;
   repo: string;
@@ -103,7 +105,7 @@ export function parseMarkdownFrontMatterFields(markdown: string): MarkdownFrontM
   const normalizedFrontMatter = stripTrailingCommas(frontMatter);
 
   try {
-    parsed = Bun.YAML.parse(normalizedFrontMatter);
+    parsed = yaml.load(normalizedFrontMatter);
   } catch (error) {
     return {
       description: null,
