@@ -83,7 +83,7 @@ Generate mode uses these rules:
 - Without `--recursive`, `SKILL.md` and `DESIGN.md` are discovered from direct child directories of the generate root
 - With `--recursive`, only subdirectory search is expanded, so nested directories are also scanned for `SKILL.md` and `DESIGN.md`
 - Root-level markdown files for `.agents.md` are still discovered the same way whether `--recursive` is present or not
-- Output file naming stays based on the original generate root whether `--recursive` is present or not
+- Output file naming stays based on the original generate root whether `--recursive` is present or not, and redundant `<type>.` is removed if it's already in the path segment
 - `DESIGN.md` reads optional `name` and `description` from YAML front matter, and emits `None` when description is missing
 - flat top-level markdown files with front matter are treated as agent definitions for `.agents.md`
 - Empty generated outputs are skipped, so no file is written and no overwrite prompt is shown for them

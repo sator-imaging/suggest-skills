@@ -617,6 +617,10 @@ function buildGeneratedOutputFileName(
     ? `${location.owner}.${location.repo}`
     : `${location.owner}.${location.repo}.${pathSuffix}`;
 
+  if (prefix.endsWith(kind)) {
+    return `${prefix}.md`;
+  }
+
   return `${prefix}.${kind}.md`;
 }
 

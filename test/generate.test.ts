@@ -17,7 +17,7 @@ describe("generateSkillsManifest", () => {
         "https://github.com/octo/demo/tree/main/skills",
       );
 
-      expect(manifest.outputFileName).toBe("octo.demo.skills.skills.md");
+      expect(manifest.outputFileName).toBe("octo.demo.skills.md");
       expect(manifest.markdown).toBe(`| Name | Description | Bundled Assets |
 | -----|-------------|----------------|
 | [alpha](https://github.com/octo/demo/tree/main/skills/alpha) | Alpha skill | \`examples.md\`, \`frameworks.md\`, \`refinement-criteria.md\`, \`.config/settings.json\`, \`assets/example.txt\`, \`assets/templates/config.json\`, \`refs\` (2 files), \`refs/sub/details.md\`, \`scripts/deploy.sh\` |
@@ -74,7 +74,7 @@ describe("generateSkillsManifest", () => {
         "https://github.com/octo/demo/tree/feature/skills/skills",
       );
 
-      expect(manifest.outputFileName).toBe("octo.demo.skills.skills.md");
+      expect(manifest.outputFileName).toBe("octo.demo.skills.md");
       expect(manifest.markdown).toBe(`| Name | Description | Bundled Assets |
 | -----|-------------|----------------|
 | [branch-alpha](https://github.com/octo/demo/tree/feature/skills/skills/branch-alpha) | Branch alpha skill | \`notes.md\` |
@@ -91,7 +91,7 @@ describe("generateSkillsManifest", () => {
     try {
       const outputs = await generateOutputs("https://github.com/octo/demo/tree/main/.github/agents");
 
-      expect(outputs.agents.outputFileName).toBe("octo.demo..github.agents.agents.md");
+      expect(outputs.agents.outputFileName).toBe("octo.demo..github.agents.md");
       expect(outputs.manifest.outputFileName).toBe("octo.demo..github.agents.skills.md");
       expect(outputs.design.outputFileName).toBe("octo.demo..github.agents.designs.md");
     } finally {
@@ -354,7 +354,7 @@ describe("writeGeneratedManifest", () => {
     const writes: Array<{ content: string; path: string }> = [];
     const manifest: GeneratedDocument = {
       markdown: "manifest-body\n",
-      outputFileName: "octo.demo.skills.skills.md",
+      outputFileName: "octo.demo.skills.md",
     };
 
     await expect(
@@ -366,7 +366,7 @@ describe("writeGeneratedManifest", () => {
           writes.push({ content, path });
         },
       }),
-    ).rejects.toThrow('Refusing to overwrite "octo.demo.skills.skills.md".');
+    ).rejects.toThrow('Refusing to overwrite "octo.demo.skills.md".');
 
     expect(writes).toEqual([]);
   });
@@ -375,7 +375,7 @@ describe("writeGeneratedManifest", () => {
     const writes: Array<{ content: string; path: string }> = [];
     const manifest: GeneratedDocument = {
       markdown: "manifest-body\n",
-      outputFileName: "octo.demo.skills.skills.md",
+      outputFileName: "octo.demo.skills.md",
     };
 
     const outputPath = await writeGeneratedManifest(manifest, {
@@ -387,11 +387,11 @@ describe("writeGeneratedManifest", () => {
       },
     });
 
-    expect(outputPath).toBe(join(workingDirectory, "octo.demo.skills.skills.md"));
+    expect(outputPath).toBe(join(workingDirectory, "octo.demo.skills.md"));
     expect(writes).toEqual([
       {
         content: "manifest-body\n",
-        path: join(workingDirectory, "octo.demo.skills.skills.md"),
+        path: join(workingDirectory, "octo.demo.skills.md"),
       },
     ]);
   });
