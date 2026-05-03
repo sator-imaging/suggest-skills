@@ -9,6 +9,7 @@
 !.npmignore
 
 !package*.json
+!bun.lock
 !oxlint.config.js
 !tsconfig.json
 
