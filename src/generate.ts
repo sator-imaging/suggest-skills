@@ -158,18 +158,15 @@ export async function generateOutputs(
 
 export async function writeGeneratedManifest(
   manifest: GeneratedDocument,
+  kind: string,
   writer: ManifestWriter = createDefaultManifestWriter(),
 ): Promise<string | undefined> {
   if (isEmptyGeneratedDocument(manifest)) {
     return undefined;
   }
 
-  if (manifest.outputFileName.endsWith("skills.skills.md")) {
-    manifest.outputFileName = fixRedundantTypeSuffix(manifest.outputFileName, "skills");
-  } else if (manifest.outputFileName.endsWith("agents.agents.md")) {
-    manifest.outputFileName = fixRedundantTypeSuffix(manifest.outputFileName, "agents");
-  } else if (manifest.outputFileName.endsWith("designs.designs.md")) {
-    manifest.outputFileName = fixRedundantTypeSuffix(manifest.outputFileName, "designs");
+  if (manifest.outputFileName.endsWith(`${kind}.${kind}.md`)) {
+    manifest.outputFileName = fixRedundantTypeSuffix(manifest.outputFileName, kind);
   }
 
   const outputPath = join(writer.workingDirectory(), manifest.outputFileName);
@@ -193,9 +190,9 @@ export async function runGenerateCommand(
   options: GenerateOptions = {},
 ): Promise<void> {
   const outputs = await generateOutputs(url, options);
-  const agentsPath = await writeGeneratedManifest(outputs.agents);
-  const manifestPath = await writeGeneratedManifest(outputs.manifest);
-  const designPath = await writeGeneratedManifest(outputs.design);
+  const agentsPath = await writeGeneratedManifest(outputs.agents, "agents");
+  const manifestPath = await writeGeneratedManifest(outputs.manifest, "skills");
+  const designPath = await writeGeneratedManifest(outputs.design, "designs");
 
   if (agentsPath) {
     process.stdout.write(`Wrote ${agentsPath}\n`);
