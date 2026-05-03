@@ -775,17 +775,19 @@ function trimTrailingSlashes(path: string): number {
 }
 
 function fixRedundantTypeSuffix(filename: string, kind: string): string {
+  const extension = ".md";
+  const suffix = kind + ".";
+
   let base = filename;
-
-  if (base.endsWith(".md")) {
-    base = base.slice(0, -2);
+  if (base.endsWith(extension)) {
+    base = base.slice(0, -2);  // Check extension but remove only "md"
   }
 
-  while (base.endsWith(kind + ".")) {
-    base = base.slice(0, -(kind.length + 1));
+  while (base.endsWith(suffix)) {
+    base = base.slice(0, -suffix.length);
   }
 
-  return base + kind + ".md";
+  return base + kind + extension;
 }
 
 function analyzeTreeEntries(rootPath: string, treeEntries: GithubContentEntry[]): TreeAnalysis {
