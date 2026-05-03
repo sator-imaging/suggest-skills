@@ -30,12 +30,15 @@ export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode
   cli
     .command("generate <url>", "Generate markdown inventories from a GitHub skills directory or repo root")
     .option("-r, --recursive", "Recursive scan")
-    .action((url: string, options: { recursive?: boolean; output?: string; manifestUrls?: string | string[] }) => {
+    .action((url: string, options: { recursive?: boolean; output?: string }) => {
       runtimeMode = {
         kind: "generate",
-        url,
+        url: normalizeGithubRawUrl(url) ?? url,
         recursive: !!options.recursive,
-        config: buildConfig(options, env, argv),
+        config: {
+          outputDirectory: options.output ?? DEFAULT_OUTPUT_DIRECTORY,
+          sourceUrls: [],
+        },
       };
     });
 
