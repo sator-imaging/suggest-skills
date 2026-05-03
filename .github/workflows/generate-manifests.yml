@@ -20,7 +20,7 @@ env:
 jobs:
   prepare:
     name: Prepare Branch
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     outputs:
       branch: ${{ steps.vars.outputs.branch }}
     steps:
@@ -218,7 +218,7 @@ jobs:
 
   collect-and-pr:
     name: Create PR
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     needs:
       - prepare
       - generate
