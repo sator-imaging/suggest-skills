@@ -1,4 +1,3 @@
-
 export const SUGGEST_TOOL_NAME = "suggest_skills";
 export const DOWNLOAD_TOOL_NAME = "download_skill";
 export const FETCH_MANIFEST_TOOL_NAME = "fetch_manifest";
