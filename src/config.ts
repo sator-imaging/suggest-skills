@@ -1,5 +1,5 @@
 import { cac } from "cac";
-import { logInfo, normalizeGithubRawUrl } from "./utils.js";
+import { normalizeGithubRawUrl } from "./utils.js";
 import pkg from "../package.json";
 
 export type SuggestSkillsConfig = {
