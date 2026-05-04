@@ -239,11 +239,11 @@ describe("generateOutputs", () => {
       expect(outputs.manifest.markdown).toContain(
         "| [parent](https://github.com/octo/demo/tree/main/library/parent) | Parent skill |",
       );
-      expect(outputs.manifest.markdown).toContain("\`child/DESIGN.md\`" );
-      expect(outputs.manifest.markdown).toContain("\`child/SKILL.md\`" );
-      expect(outputs.manifest.markdown).toContain("\`child/guide.md\`" );
+      expect(outputs.manifest.markdown).toContain("`child/DESIGN.md`" );
+      expect(outputs.manifest.markdown).toContain("`child/SKILL.md`" );
+      expect(outputs.manifest.markdown).toContain("`child/guide.md`" );
       expect(outputs.manifest.markdown).toContain(
-        "| [child](https://github.com/octo/demo/tree/main/library/parent/child) | Child skill | \`guide.md\` |",
+        "| [child](https://github.com/octo/demo/tree/main/library/parent/child) | Child skill | `guide.md` |",
       );
       expect(outputs.design.markdown).toContain(
         "| [child-design](https://github.com/octo/demo/tree/main/library/parent/child) | Child design | [guide.md](https://github.com/octo/demo/blob/main/library/parent/child/guide.md) |",
@@ -309,7 +309,7 @@ describe("generateOutputs", () => {
       // With concurrent downloads via ts-fibers, Bun test does not reliably capture this exception through `.rejects`,
       // so this assertion must pass a function to `toThrow`.
       await expect(() => generateOutputs("https://github.com/octo/demo/tree/main/broken-agents")).toThrow(
-        'Agent file \"broken-agents/binary-agent.md\" appears to be binary and cannot be returned as text. Content-Type: image/png.',
+        'Agent file "broken-agents/binary-agent.md" appears to be binary and cannot be returned as text. Content-Type: image/png.',
       );
     } finally {
       globalThis.fetch = originalFetch;
@@ -1579,7 +1579,7 @@ description: Missing skill name
 
   if (url === "https://raw.githubusercontent.com/octo/demo/main/skills/stitch-design/examples/DESIGN.md") {
     return new Response(`---
-# The \"Solace\" Design System
+# The "Solace" Design System
 This is a comprehensive design language for a mindfulness and wellness application.
 
 ## Typography
