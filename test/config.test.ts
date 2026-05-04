@@ -83,7 +83,7 @@ describe("parseCli", () => {
 
   test("does not throw ConfigError when --help is used without URLs", () => {
     const originalExit = process.exit;
-    const originalConsoleInfo = console.info;
+    const originalWrite = process.stdout.write;
     let exitCode: number | undefined;
     let stdoutData = "";
 
@@ -91,8 +91,9 @@ describe("parseCli", () => {
       exitCode = code;
       throw new Error("EXIT");
     };
-    (console.info as any) = (...args: any[]) => {
-      stdoutData += args.join(" ") + "\n";
+    (process.stdout.write as any) = (data: string | Uint8Array) => {
+      stdoutData += typeof data === "string" ? data : new TextDecoder().decode(data);
+      return true;
     };
 
     try {
@@ -103,7 +104,7 @@ describe("parseCli", () => {
       }
     } finally {
       process.exit = originalExit;
-      console.info = originalConsoleInfo;
+      process.stdout.write = originalWrite;
     }
 
     expect(exitCode).toBe(0);
@@ -113,7 +114,7 @@ describe("parseCli", () => {
 
   test("does not throw ConfigError when --version is used without URLs", () => {
     const originalExit = process.exit;
-    const originalConsoleInfo = console.info;
+    const originalWrite = process.stdout.write;
     let exitCode: number | undefined;
     let stdoutData = "";
 
@@ -121,8 +122,9 @@ describe("parseCli", () => {
       exitCode = code;
       throw new Error("EXIT");
     };
-    (console.info as any) = (...args: any[]) => {
-      stdoutData += args.join(" ") + "\n";
+    (process.stdout.write as any) = (data: string | Uint8Array) => {
+      stdoutData += typeof data === "string" ? data : new TextDecoder().decode(data);
+      return true;
     };
 
     try {
@@ -133,7 +135,37 @@ describe("parseCli", () => {
       }
     } finally {
       process.exit = originalExit;
-      console.info = originalConsoleInfo;
+      process.stdout.write = originalWrite;
+    }
+
+    expect(exitCode).toBe(0);
+    expect(stdoutData).toMatch(/suggest-skills\/\d+\.\d+\.\d+/u);
+  });
+
+  test("does not throw ConfigError and shows version when subcommand --version is used without URLs", () => {
+    const originalExit = process.exit;
+    const originalWrite = process.stdout.write;
+    let exitCode: number | undefined;
+    let stdoutData = "";
+
+    (process.exit as any) = (code: number) => {
+      exitCode = code;
+      throw new Error("EXIT");
+    };
+    (process.stdout.write as any) = (data: string | Uint8Array) => {
+      stdoutData += typeof data === "string" ? data : new TextDecoder().decode(data);
+      return true;
+    };
+
+    try {
+      parseCli(["node", "index.js", "generate", "--version"], {});
+    } catch (e: any) {
+      if (e.message !== "EXIT") {
+        throw e;
+      }
+    } finally {
+      process.exit = originalExit;
+      process.stdout.write = originalWrite;
     }
 
     expect(exitCode).toBe(0);
@@ -142,7 +174,7 @@ describe("parseCli", () => {
 
   test("does not throw ConfigError when subcommand --help is used without URLs", () => {
     const originalExit = process.exit;
-    const originalConsoleInfo = console.info;
+    const originalWrite = process.stdout.write;
     let exitCode: number | undefined;
     let stdoutData = "";
 
@@ -150,8 +182,9 @@ describe("parseCli", () => {
       exitCode = code;
       throw new Error("EXIT");
     };
-    (console.info as any) = (...args: any[]) => {
-      stdoutData += args.join(" ") + "\n";
+    (process.stdout.write as any) = (data: string | Uint8Array) => {
+      stdoutData += typeof data === "string" ? data : new TextDecoder().decode(data);
+      return true;
     };
 
     try {
@@ -162,7 +195,7 @@ describe("parseCli", () => {
       }
     } finally {
       process.exit = originalExit;
-      console.info = originalConsoleInfo;
+      process.stdout.write = originalWrite;
     }
 
     expect(exitCode).toBe(0);
