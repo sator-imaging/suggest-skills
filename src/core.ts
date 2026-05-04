@@ -5,17 +5,7 @@ import { buildSuggestionResponse } from "./suggest.js";
 import { downloadGithubFolder, fetchManifestText } from "./download.js";
 import { normalizeGithubRawUrl } from "./utils.js";
 import pkg from "../package.json";
-
-export const SUGGEST_TOOL_NAME = "suggest_skills";
-export const DOWNLOAD_TOOL_NAME = "download_skill";
-export const FETCH_MANIFEST_TOOL_NAME = "fetch_manifest";
-const toolDescriptions = {
-  suggestSkills: "Suggest AI-agent skills for this repository.",
-  downloadSkill:
-    "Download a GitHub skill folder and return every file with its original relative path and text content.",
-  fetchManifest:
-    "Fetch a manifest file from a URL and return its text content.",
-} as const;
+import { SUGGEST_TOOL_NAME, toolDescriptions, DOWNLOAD_TOOL_NAME, FETCH_MANIFEST_TOOL_NAME } from "./constants.js";
 
 export function createServer(config: SuggestSkillsConfig): McpServer {
   const server = new McpServer({

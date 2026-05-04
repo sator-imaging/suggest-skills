@@ -1,5 +1,5 @@
 import type { SuggestSkillsConfig } from "./config.js";
-import { DOWNLOAD_TOOL_NAME, FETCH_MANIFEST_TOOL_NAME } from "./core.js";
+import { DOWNLOAD_TOOL_NAME, FETCH_MANIFEST_TOOL_NAME } from "./constants.js";
 
 export function buildSuggestionResponse(
   config: SuggestSkillsConfig,
