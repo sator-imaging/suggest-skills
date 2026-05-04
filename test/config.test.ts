@@ -285,7 +285,7 @@ describe("stdio MCP server", () => {
     expect(JSON.stringify(toolResponse)).toContain(DEFAULT_RAW_SOURCE_URL);
   });
 
-  test("overwrites manifest URL when manifest_url argument is provided in suggest_skills tool call", async () => {
+  test("overwrites manifest URL when manifestUrl argument is provided in suggest_skills tool call", async () => {
     const OVERRIDE_URL = "https://example.com/override.md";
     const server = Bun.spawn(["bun", "src/index.ts"], {
       cwd: process.cwd(),
