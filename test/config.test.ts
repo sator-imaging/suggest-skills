@@ -439,18 +439,16 @@ describe("streamable HTTP MCP server", () => {
     const runtimeMode = parseCli(["node", "index.js"], {
       SUGGEST_SKILLS_MANIFEST_URLS: JSON.stringify([DEFAULT_SOURCE_URL]),
     });
-    const app = createHttpApp(runtimeMode.config);
+    const server = createHttpApp(runtimeMode.config, 0);
 
-    const healthResponse = await app.fetch(
-      new Request("http://localhost/health"),
-      {} as never,
-    );
+    try {
+      const baseUrl = `http://localhost:${server.port}`;
+      const healthResponse = await fetch(`${baseUrl}/health`);
 
-    expect(healthResponse.status).toBe(200);
-    expect(await healthResponse.json()).toEqual({ status: "ok" });
+      expect(healthResponse.status).toBe(200);
+      expect(await healthResponse.json()).toEqual({ status: "ok" });
 
-    const initializeResponse = await app.fetch(
-      new Request("http://localhost/mcp", {
+      const initializeResponse = await fetch(`${baseUrl}/mcp`, {
         method: "POST",
         headers: {
           "content-type": "application/json",
@@ -469,12 +467,13 @@ describe("streamable HTTP MCP server", () => {
             },
           },
         }),
-      }),
-      {} as never,
-    );
+      });
 
-    expect(initializeResponse.status).toBe(200);
-    expect(initializeResponse.headers.get("mcp-session-id")).toBeNull();
-    expect(await initializeResponse.text()).toContain('"id":1');
+      expect(initializeResponse.status).toBe(200);
+      expect(initializeResponse.headers.get("mcp-session-id")).toBeNull();
+      expect(await initializeResponse.text()).toContain('"id":1');
+    } finally {
+      server.stop();
+    }
   });
 });
