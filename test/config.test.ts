@@ -284,6 +284,69 @@ describe("stdio MCP server", () => {
     });
     expect(JSON.stringify(toolResponse)).toContain(DEFAULT_RAW_SOURCE_URL);
   });
+
+  test("overwrites manifest URL when manifest_url argument is provided in suggest_skills tool call", async () => {
+    const OVERRIDE_URL = "https://example.com/override.md";
+    const server = Bun.spawn(["bun", "src/index.ts"], {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        SUGGEST_SKILLS_MANIFEST_URLS: JSON.stringify([DEFAULT_SOURCE_URL]),
+      },
+      stderr: "pipe",
+      stdin: "pipe",
+      stdout: "pipe",
+    });
+
+    const messages: JSONRPCMessage[] = [
+      {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: {
+          protocolVersion: "2024-11-05",
+          capabilities: {},
+          clientInfo: {
+            name: "suggest-skills-test",
+            version: "1.0.0",
+          },
+        },
+      },
+      {
+        jsonrpc: "2.0",
+        method: "notifications/initialized",
+        params: {},
+      },
+      {
+        jsonrpc: "2.0",
+        id: 2,
+        method: "tools/call",
+        params: {
+          name: "suggest_skills",
+          arguments: {
+            manifest_url: OVERRIDE_URL,
+          },
+        },
+      },
+    ];
+
+    server.stdin.write(`${messages.map((message) => JSON.stringify(message)).join("\n")}\n`);
+    await server.stdin.flush();
+    server.stdin.end();
+
+    const stdout = await new Response(server.stdout).text();
+    const responses = stdout
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line) as Record<string, unknown>);
+    const toolResponse = responses.find((response) => response["id"] === 2);
+
+    expect(JSON.stringify(toolResponse)).toContain(OVERRIDE_URL);
+    expect(JSON.stringify(toolResponse)).not.toContain(DEFAULT_RAW_SOURCE_URL);
+
+    await server.exited;
+  });
 });
 
 describe("streamable HTTP MCP server", () => {
