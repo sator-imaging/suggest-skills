@@ -2,6 +2,7 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import type { Server } from "bun";
 import type { SuggestSkillsConfig } from "./config.js";
 import { createServer } from "./core.js";
+import { logError } from "./utils.js";
 
 export function createHttpApp(config: SuggestSkillsConfig, port?: number): Server<undefined> {
   return Bun.serve({
@@ -20,7 +21,7 @@ export function createHttpApp(config: SuggestSkillsConfig, port?: number): Serve
       return new Response("Not Found", { status: 404 });
     },
     error(error: Error): Response {
-      process.stderr.write(`${error.message}\n`);
+      logError(error.message);
       return new Response("Internal Server Error", { status: 500 });
     },
   });
