@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/sator-imaging/suggest-skills/compare/v1.0.3...v1.1.0) (2026-05-04)
+
+
+### Features
+
+* **tool:** suggest_skills now accepts an optional manifestUrl to overwrite the default configuration ([1a7c36c](https://github.com/sator-imaging/suggest-skills/commit/1a7c36c0cde1d409689d8703b235b12d4ced6367))
+
 ## [1.0.3](https://github.com/sator-imaging/suggest-skills/compare/v1.0.2...v1.0.3) (2026-05-04)
 
 
