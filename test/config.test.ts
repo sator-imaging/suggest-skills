@@ -83,10 +83,16 @@ describe("parseCli", () => {
 
   test("does not throw ConfigError when --help is used without URLs", () => {
     const originalExit = process.exit;
+    const originalConsoleInfo = console.info;
     let exitCode: number | undefined;
+    let stdoutData = "";
+
     (process.exit as any) = (code: number) => {
       exitCode = code;
       throw new Error("EXIT");
+    };
+    (console.info as any) = (...args: any[]) => {
+      stdoutData += args.join(" ") + "\n";
     };
 
     try {
@@ -97,17 +103,26 @@ describe("parseCli", () => {
       }
     } finally {
       process.exit = originalExit;
+      console.info = originalConsoleInfo;
     }
 
     expect(exitCode).toBe(0);
+    expect(stdoutData).toContain("Usage:");
+    expect(stdoutData).toContain("suggest-skills");
   });
 
   test("does not throw ConfigError when --version is used without URLs", () => {
     const originalExit = process.exit;
+    const originalConsoleInfo = console.info;
     let exitCode: number | undefined;
+    let stdoutData = "";
+
     (process.exit as any) = (code: number) => {
       exitCode = code;
       throw new Error("EXIT");
+    };
+    (console.info as any) = (...args: any[]) => {
+      stdoutData += args.join(" ") + "\n";
     };
 
     try {
@@ -118,17 +133,25 @@ describe("parseCli", () => {
       }
     } finally {
       process.exit = originalExit;
+      console.info = originalConsoleInfo;
     }
 
     expect(exitCode).toBe(0);
+    expect(stdoutData).toMatch(/suggest-skills\/\d+\.\d+\.\d+/u);
   });
 
   test("does not throw ConfigError when subcommand --help is used without URLs", () => {
     const originalExit = process.exit;
+    const originalConsoleInfo = console.info;
     let exitCode: number | undefined;
+    let stdoutData = "";
+
     (process.exit as any) = (code: number) => {
       exitCode = code;
       throw new Error("EXIT");
+    };
+    (console.info as any) = (...args: any[]) => {
+      stdoutData += args.join(" ") + "\n";
     };
 
     try {
@@ -139,9 +162,12 @@ describe("parseCli", () => {
       }
     } finally {
       process.exit = originalExit;
+      console.info = originalConsoleInfo;
     }
 
     expect(exitCode).toBe(0);
+    expect(stdoutData).toContain("Usage:");
+    expect(stdoutData).toContain("suggest-skills server");
   });
 });
 
