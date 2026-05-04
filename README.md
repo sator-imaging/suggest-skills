@@ -152,6 +152,8 @@ The HTTP endpoint is served at `http://localhost:3100/mcp` and the health check 
 
 ## `suggest_skills`
 
+Accepts an optional `manifestUrl` to overwrite the default configuration.
+
 Returns a generated instruction payload that tells an agent how to:
 
 - Fetch available skills from configured manifests
