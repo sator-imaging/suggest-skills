@@ -3,19 +3,20 @@ import type { Server } from "bun";
 import type { SuggestSkillsConfig } from "./config.js";
 import { createServer } from "./core.js";
 
-export function createHttpApp(config: SuggestSkillsConfig, port?: number): Server {
+export function createHttpApp(config: SuggestSkillsConfig, port?: number): Server<undefined> {
   return Bun.serve({
-    port,
-    routes: {
-      "/health": () => Response.json({ status: "ok" }),
-      "/mcp": async (req: Request) => {
+    port: port ?? 0,
+    async fetch(req: Request) {
+      const url = new URL(req.url);
+      if (url.pathname === "/health") {
+        return Response.json({ status: "ok" });
+      }
+      if (url.pathname === "/mcp") {
         const transport = new WebStandardStreamableHTTPServerTransport({});
         const server = createServer(config);
         await server.connect(transport);
         return transport.handleRequest(req);
-      },
-    },
-    fetch() {
+      }
       return new Response("Not Found", { status: 404 });
     },
     error(error: Error): Response {
