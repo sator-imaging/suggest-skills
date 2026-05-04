@@ -347,6 +347,91 @@ describe("stdio MCP server", () => {
 
     await server.exited;
   });
+
+  test("returns all tools with correct required entries in tools/list response", async () => {
+    const server = Bun.spawn(["bun", "src/index.ts"], {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        SUGGEST_SKILLS_MANIFEST_URLS: JSON.stringify([DEFAULT_SOURCE_URL]),
+      },
+      stderr: "pipe",
+      stdin: "pipe",
+      stdout: "pipe",
+    });
+
+    const messages: JSONRPCMessage[] = [
+      {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: {
+          protocolVersion: "2024-11-05",
+          capabilities: {},
+          clientInfo: {
+            name: "suggest-skills-test",
+            version: "1.0.0",
+          },
+        },
+      },
+      {
+        jsonrpc: "2.0",
+        method: "notifications/initialized",
+        params: {},
+      },
+      {
+        jsonrpc: "2.0",
+        id: 2,
+        method: "tools/list",
+        params: {},
+      },
+    ];
+
+    server.stdin.write(`${messages.map((message) => JSON.stringify(message)).join("\n")}\n`);
+    await server.stdin.flush();
+    server.stdin.end();
+
+    const stdout = await new Response(server.stdout).text();
+    const responses = stdout
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line) as Record<string, unknown>);
+    const listResponse = responses.find((response) => response["id"] === 2);
+
+    const tools = (listResponse as any).result.tools;
+    expect(tools).toHaveLength(3);
+
+    const suggestSkills = tools.find((t: any) => t.name === "suggest_skills");
+    expect(suggestSkills.inputSchema).toMatchObject({
+      type: "object",
+      properties: {
+        manifestUrl: expect.any(Object),
+      },
+    });
+    // Optional field should not be in required
+    expect(suggestSkills.inputSchema.required).toBeUndefined();
+
+    const downloadSkill = tools.find((t: any) => t.name === "download_skill");
+    expect(downloadSkill.inputSchema).toMatchObject({
+      type: "object",
+      properties: {
+        url: expect.any(Object),
+      },
+      required: ["url"],
+    });
+
+    const fetchManifest = tools.find((t: any) => t.name === "fetch_manifest");
+    expect(fetchManifest.inputSchema).toMatchObject({
+      type: "object",
+      properties: {
+        url: expect.any(Object),
+      },
+      required: ["url"],
+    });
+
+    await server.exited;
+  });
 });
 
 describe("streamable HTTP MCP server", () => {
