@@ -82,7 +82,6 @@ export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode
   const parsed = cli.parse(argv, { run: false });
 
   if (parsed.options["version"]) {
-    logInfo(JSON.stringify(loadConfig(argv, env), null, 2));
     process.exit(0);
   }
 

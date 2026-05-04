@@ -80,6 +80,69 @@ describe("parseCli", () => {
       /SUGGEST_SKILLS_MANIFEST_URLS environment variable or --manifest-urls CLI option must contain at least one URL./,
     );
   });
+
+  test("does not throw ConfigError when --help is used without URLs", () => {
+    const originalExit = process.exit;
+    let exitCode: number | undefined;
+    (process.exit as any) = (code: number) => {
+      exitCode = code;
+      throw new Error("EXIT");
+    };
+
+    try {
+      parseCli(["node", "index.js", "--help"], {});
+    } catch (e: any) {
+      if (e.message !== "EXIT") {
+        throw e;
+      }
+    } finally {
+      process.exit = originalExit;
+    }
+
+    expect(exitCode).toBe(0);
+  });
+
+  test("does not throw ConfigError when --version is used without URLs", () => {
+    const originalExit = process.exit;
+    let exitCode: number | undefined;
+    (process.exit as any) = (code: number) => {
+      exitCode = code;
+      throw new Error("EXIT");
+    };
+
+    try {
+      parseCli(["node", "index.js", "--version"], {});
+    } catch (e: any) {
+      if (e.message !== "EXIT") {
+        throw e;
+      }
+    } finally {
+      process.exit = originalExit;
+    }
+
+    expect(exitCode).toBe(0);
+  });
+
+  test("does not throw ConfigError when subcommand --help is used without URLs", () => {
+    const originalExit = process.exit;
+    let exitCode: number | undefined;
+    (process.exit as any) = (code: number) => {
+      exitCode = code;
+      throw new Error("EXIT");
+    };
+
+    try {
+      parseCli(["node", "index.js", "server", "--help"], {});
+    } catch (e: any) {
+      if (e.message !== "EXIT") {
+        throw e;
+      }
+    } finally {
+      process.exit = originalExit;
+    }
+
+    expect(exitCode).toBe(0);
+  });
 });
 
 describe("stdio MCP server", () => {
