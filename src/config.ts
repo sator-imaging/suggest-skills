@@ -1,5 +1,5 @@
 import { cac } from "cac";
-import { normalizeGithubRawUrl } from "./utils.js";
+import { logInfo, normalizeGithubRawUrl } from "./utils.js";
 import pkg from "../package.json";
 
 export type SuggestSkillsConfig = {
@@ -82,11 +82,23 @@ export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode
   const parsed = cli.parse(argv, { run: false });
 
   if (parsed.options["version"]) {
-    cli.outputVersion();
+    logInfo(
+      `${pkg.name}/${pkg.version} ${process.platform}-${process.arch} ${typeof Bun !== "undefined" ? "bun" : "node"}-${process.version}`,
+    );
     process.exit(0);
   }
 
   if (parsed.options["help"]) {
+    cli.help((sections) => {
+      for (const section of sections) {
+        if (section.title) {
+          logInfo(`${section.title}:`);
+        }
+        logInfo(section.body);
+        logInfo("");
+      }
+      return [];
+    });
     cli.outputHelp();
     process.exit(0);
   }
