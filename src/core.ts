@@ -28,14 +28,14 @@ export function createServer(config: SuggestSkillsConfig): McpServer {
     {
       description: toolDescriptions.suggestSkills,
       inputSchema: {
-        manifest_url: z
+        manifestUrl: z
           .string()
           .optional()
           .describe("Optional manifest URL to overwrite the default configuration."),
       },
     },
-    async ({ manifest_url }) => {
-      const normalizedUrl = manifest_url ? (normalizeGithubRawUrl(manifest_url) ?? manifest_url) : undefined;
+    async ({ manifestUrl }) => {
+      const normalizedUrl = manifestUrl ? (normalizeGithubRawUrl(manifestUrl) ?? manifestUrl) : undefined;
 
       return {
         content: [

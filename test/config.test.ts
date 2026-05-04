@@ -324,7 +324,7 @@ describe("stdio MCP server", () => {
         params: {
           name: "suggest_skills",
           arguments: {
-            manifest_url: OVERRIDE_URL,
+            manifestUrl: OVERRIDE_URL,
           },
         },
       },
