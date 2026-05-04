@@ -2,8 +2,10 @@ import type { SuggestSkillsConfig } from "./config.js";
 
 export function buildSuggestionResponse(
   config: SuggestSkillsConfig,
+  manifestUrl?: string,
 ): string {
-  const sourceUrlList = config.sourceUrls
+  const urls = manifestUrl ? [manifestUrl] : config.sourceUrls;
+  const sourceUrlList = urls
     .map((url) => `- ${url}\n`)
     .join();
   return INSTRUCTIONS

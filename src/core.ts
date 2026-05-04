@@ -3,6 +3,7 @@ import * as z from "zod/v4";
 import type { SuggestSkillsConfig } from "./config.js";
 import { buildSuggestionResponse } from "./suggest.js";
 import { downloadGithubFolder, fetchManifestText } from "./download.js";
+import { normalizeGithubRawUrl } from "./utils.js";
 import pkg from "../package.json";
 
 const SUGGEST_TOOL_NAME = "suggest_skills";
@@ -26,15 +27,25 @@ export function createServer(config: SuggestSkillsConfig): McpServer {
     SUGGEST_TOOL_NAME,
     {
       description: toolDescriptions.suggestSkills,
+      inputSchema: {
+        manifestUrl: z
+          .string()
+          .optional()
+          .describe("Optional manifest URL to overwrite the default configuration."),
+      },
     },
-    async () => ({
-      content: [
-        {
-          type: "text" as const,
-          text: buildSuggestionResponse(config),
-        },
-      ],
-    }),
+    async ({ manifestUrl }) => {
+      const normalizedUrl = manifestUrl ? (normalizeGithubRawUrl(manifestUrl) ?? manifestUrl) : undefined;
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: buildSuggestionResponse(config, normalizedUrl),
+          },
+        ],
+      };
+    },
   );
 
   server.registerTool(
