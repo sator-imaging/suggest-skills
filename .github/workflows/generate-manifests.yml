@@ -78,7 +78,8 @@ jobs:
       # DO NOT forget add '/' at the end
       OFFICIAL_URL_PREFIXES: |
         anthropics/
-        github/
+        ## NOTE: 'awesome-copilot' is an official skills registry but it has too broad of categories
+        #github/
         dotnet/
         vercel-labs/
         openai/
