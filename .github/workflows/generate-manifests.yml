@@ -244,4 +244,5 @@ jobs:
           gh pr create \
             --base main \
             --head "${{ needs.prepare.outputs.branch }}" \
+            --title "bot: ${{ needs.prepare.outputs.branch }}" \
             --fill
