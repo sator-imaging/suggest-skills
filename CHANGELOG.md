@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3](https://github.com/sator-imaging/suggest-skills/compare/v1.0.2...v1.0.3) (2026-05-04)
+
+
+### Bug Fixes
+
+* --version and --help flags ([#62](https://github.com/sator-imaging/suggest-skills/issues/62)) ([24035f5](https://github.com/sator-imaging/suggest-skills/commit/24035f5b3be0da44da26eba0698af3af254211a3))
+
 ## [1.0.2](https://github.com/sator-imaging/suggest-skills/compare/v1.0.1...v1.0.2) (2026-05-04)
 
 
