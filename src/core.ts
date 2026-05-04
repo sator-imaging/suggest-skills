@@ -6,9 +6,9 @@ import { downloadGithubFolder, fetchManifestText } from "./download.js";
 import { normalizeGithubRawUrl } from "./utils.js";
 import pkg from "../package.json";
 
-const SUGGEST_TOOL_NAME = "suggest_skills";
-const DOWNLOAD_TOOL_NAME = "download_skill";
-const FETCH_MANIFEST_TOOL_NAME = "fetch_manifest";
+export const SUGGEST_TOOL_NAME = "suggest_skills";
+export const DOWNLOAD_TOOL_NAME = "download_skill";
+export const FETCH_MANIFEST_TOOL_NAME = "fetch_manifest";
 const toolDescriptions = {
   suggestSkills: "Suggest AI-agent skills for this repository.",
   downloadSkill:

@@ -1,4 +1,5 @@
 import type { SuggestSkillsConfig } from "./config.js";
+import { DOWNLOAD_TOOL_NAME, FETCH_MANIFEST_TOOL_NAME } from "./core.js";
 
 export function buildSuggestionResponse(
   config: SuggestSkillsConfig,
@@ -33,7 +34,7 @@ Analyze the current repository context and suggest relevant Agent Skills based o
 
 ## Process
 
-1. **Fetch Available Skills**: Use \`fetch_manifest\` to read each manifest, then extract the list of skills and their descriptions
+1. **Fetch Available Skills**: Use MCP tool \`${FETCH_MANIFEST_TOOL_NAME}\` to read each manifest, then extract the list of skills and their descriptions
 2. **Scan Local Skills**: Discover existing skill folders in \`###outdir###\` folder
 3. **Extract Descriptions**: Read front matter from local \`SKILL.md\` files to get \`name\` and \`description\`
 4. **Analyze Context**: Review chat history, repository files, and current project needs
@@ -126,7 +127,7 @@ If the user has not stated a preference, ask which they prefer.
 
 - Use shell command \`gh skill\` (reference: https://github.blog/changelog/2026-04-16-manage-agent-skills-with-github-cli/)
 - Use shell command \`npx skills\` (reference: https://raw.githubusercontent.com/vercel-labs/skills/refs/heads/main/README.md)
-- Use MCP tool \`download_skill\`
+- Use MCP tool \`${DOWNLOAD_TOOL_NAME}\`
   - Pass a GitHub folder URL in the form \`https://github.com/<owner>/<repo>/tree/<ref>/<path>\`
   - The URL must include the folder path inside the repository
   - The tool returns every downloaded file with its relative path and file content
@@ -134,7 +135,7 @@ If the user has not stated a preference, ask which they prefer.
 
 ## Update Process
 
-This update process applies only when using MCP tool \`download_skill\`.
+This update process applies only when using MCP tool \`${DOWNLOAD_TOOL_NAME}\`.
 
 - When updating a skill, treat the downloaded folder as the full replacement for that skill
 - Delete the existing local skill folder with the same name before writing the updated files
