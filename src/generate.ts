@@ -158,10 +158,15 @@ export async function generateOutputs(
 
 export async function writeGeneratedManifest(
   manifest: GeneratedDocument,
+  kind: string,
   writer: ManifestWriter = createDefaultManifestWriter(),
 ): Promise<string | undefined> {
   if (isEmptyGeneratedDocument(manifest)) {
     return undefined;
+  }
+
+  if (manifest.outputFileName.endsWith(`${kind}.${kind}.md`)) {
+    manifest.outputFileName = fixRedundantTypeSuffix(manifest.outputFileName, kind);
   }
 
   const outputPath = join(writer.workingDirectory(), manifest.outputFileName);
@@ -185,9 +190,9 @@ export async function runGenerateCommand(
   options: GenerateOptions = {},
 ): Promise<void> {
   const outputs = await generateOutputs(url, options);
-  const agentsPath = await writeGeneratedManifest(outputs.agents);
-  const manifestPath = await writeGeneratedManifest(outputs.manifest);
-  const designPath = await writeGeneratedManifest(outputs.design);
+  const agentsPath = await writeGeneratedManifest(outputs.agents, "agents");
+  const manifestPath = await writeGeneratedManifest(outputs.manifest, "skills");
+  const designPath = await writeGeneratedManifest(outputs.design, "designs");
 
   if (agentsPath) {
     process.stdout.write(`Wrote ${agentsPath}\n`);
@@ -767,6 +772,22 @@ function trimTrailingSlashes(path: string): number {
   }
 
   return end;
+}
+
+function fixRedundantTypeSuffix(filename: string, kind: string): string {
+  const extension = ".md";
+  const suffix = kind + ".";
+
+  let base = filename;
+  if (base.endsWith(extension)) {
+    base = base.slice(0, -2);  // Check extension but remove only "md"
+  }
+
+  while (base.endsWith(suffix)) {
+    base = base.slice(0, -suffix.length);
+  }
+
+  return base + kind + extension;
 }
 
 function analyzeTreeEntries(rootPath: string, treeEntries: GithubContentEntry[]): TreeAnalysis {
