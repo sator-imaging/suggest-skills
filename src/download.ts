@@ -1,6 +1,9 @@
+import { mkdir, writeFile } from "node:fs/promises";
+import { dirname as pathDirname, join } from "node:path";
 import { Fibers } from "ts-fibers";
 import type { GithubDirectoryLocation } from "./utils.js";
 import {
+  logInfo,
   normalizeGithubRawUrl,
   parseGithubDirectoryUrl,
   parseUrl,
@@ -24,9 +27,33 @@ const GITHUB_API_BASE_URL = "https://api.github.com";
 const GITHUB_API_HOSTNAME = "api.github.com";
 const DOWNLOAD_CONCURRENCY = 4;
 
-export async function downloadGithubFolder(url: string): Promise<DownloadedFile[]> {
+export async function downloadGithubFolder(
+  url: string,
+  recursive = true,
+): Promise<DownloadedFile[]> {
   const location = await resolveGithubFolderUrl(url);
-  return downloadDirectory(location, location.path);
+  return downloadDirectory(location, location.path, location.path, new Set(), recursive);
+}
+
+export async function runDownloadCommand(
+  url: string,
+  options: { recursive?: boolean } = {},
+): Promise<void> {
+  const location = await resolveGithubFolderUrl(url);
+  const files = await downloadGithubFolder(url, options.recursive);
+
+  const baseDir = join(GITHUB_HOSTNAME, location.owner, location.repo, location.path);
+
+  for (const file of files) {
+    const fullPath = join(baseDir, file.path);
+    const directory = pathDirname(fullPath);
+
+    await mkdir(directory, { recursive: true });
+    await writeFile(fullPath, file.content, "utf-8");
+    logInfo(`Downloaded: ${fullPath}`);
+  }
+
+  logInfo(`Successfully downloaded ${files.length} files to ./${baseDir}`);
 }
 
 export async function fetchManifestText(url: string): Promise<string> {
@@ -129,6 +156,7 @@ async function downloadDirectory(
   rootPath: string,
   virtualPath = location.path,
   ancestry = new Set<string>(),
+  recursive = true,
 ): Promise<DownloadedFile[]> {
   if (ancestry.has(location.path)) {
     throw new Error(`Detected recursive GitHub symlink cycle at "${location.path}".`);
@@ -143,7 +171,14 @@ async function downloadDirectory(
     entries.map((entry, index) => ({ entry, index })),
     async ({ entry, index }) => ({
       index,
-      files: await downloadDirectoryEntry(entry, location, rootPath, virtualPath, nextAncestry),
+      files: await downloadDirectoryEntry(
+        entry,
+        location,
+        rootPath,
+        virtualPath,
+        nextAncestry,
+        recursive,
+      ),
     }),
   );
 
@@ -160,10 +195,15 @@ async function downloadDirectoryEntry(
   rootPath: string,
   virtualPath: string,
   ancestry: ReadonlySet<string>,
+  recursive: boolean,
 ): Promise<DownloadedFile[]> {
   const virtualEntryPath = remapEntryPath(entry.path, location.path, virtualPath);
 
   if (entry.type === "dir") {
+    if (!recursive) {
+      return [];
+    }
+
     return downloadDirectory(
       {
         ...location,
@@ -172,12 +212,17 @@ async function downloadDirectoryEntry(
       rootPath,
       virtualEntryPath,
       new Set(ancestry),
+      recursive,
     );
   }
 
   if (entry.type === "symlink") {
     if (entry.download_url) {
       return [await downloadFileEntry(entry.download_url, virtualEntryPath, rootPath)];
+    }
+
+    if (!recursive) {
+      return [];
     }
 
     const resolvedTargetPath = resolveRepoRelativeSymlinkPath(entry.path, entry.target);
@@ -191,6 +236,7 @@ async function downloadDirectoryEntry(
         rootPath,
         virtualEntryPath,
         new Set(ancestry),
+        recursive,
       );
     }
   }

@@ -1,4 +1,5 @@
 import { ConfigError, parseCli } from "./config.js";
+import { runDownloadCommand } from "./download.js";
 import { runGenerateCommand } from "./generate.js";
 import { startHttpServer } from "./http.js";
 import { startStdioServer } from "./stdio.js";
@@ -10,6 +11,11 @@ async function main(): Promise<void> {
 
     if (runtimeMode.kind === "generate") {
       await runGenerateCommand(runtimeMode.url, { recursive: runtimeMode.recursive });
+      return;
+    }
+
+    if (runtimeMode.kind === "download") {
+      await runDownloadCommand(runtimeMode.url, { recursive: runtimeMode.recursive });
       return;
     }
 
