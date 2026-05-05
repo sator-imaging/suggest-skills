@@ -193,7 +193,6 @@ Returns every file in that folder with:
 - Bun
 - TypeScript
 - @modelcontextprotocol/sdk
-- Hono
 - Zod
 
 

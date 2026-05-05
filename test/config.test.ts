@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
 import { parseCli } from "../src/config.js";
 import { createHttpApp } from "../src/http.js";
+import { logInfo } from "../src/utils.js";
 
 const DEFAULT_SOURCE_URL =
   "https://github.com/github/awesome-copilot/blob/main/docs/README.skills.md";
@@ -262,7 +263,7 @@ describe("stdio MCP server", () => {
     const initializeResponse = responses.find((response) => response["id"] === 1);
     const toolResponse = responses.find((response) => response["id"] === 2);
 
-    console.log(JSON.stringify(responses, null, 2));
+    logInfo(JSON.stringify(responses, null, 2));
 
     expect(exitCode).toBe(0);
     expect(stderr).toBe("");
@@ -439,18 +440,16 @@ describe("streamable HTTP MCP server", () => {
     const runtimeMode = parseCli(["node", "index.js"], {
       SUGGEST_SKILLS_MANIFEST_URLS: JSON.stringify([DEFAULT_SOURCE_URL]),
     });
-    const app = createHttpApp(runtimeMode.config);
+    const server = createHttpApp(runtimeMode.config, 0);
 
-    const healthResponse = await app.fetch(
-      new Request("http://localhost/health"),
-      {} as never,
-    );
+    try {
+      const baseUrl = `http://localhost:${server.port}`;
+      const healthResponse = await fetch(`${baseUrl}/health`);
 
-    expect(healthResponse.status).toBe(200);
-    expect(await healthResponse.json()).toEqual({ status: "ok" });
+      expect(healthResponse.status).toBe(200);
+      expect(await healthResponse.json()).toEqual({ status: "ok" });
 
-    const initializeResponse = await app.fetch(
-      new Request("http://localhost/mcp", {
+      const initializeResponse = await fetch(`${baseUrl}/mcp`, {
         method: "POST",
         headers: {
           "content-type": "application/json",
@@ -469,12 +468,13 @@ describe("streamable HTTP MCP server", () => {
             },
           },
         }),
-      }),
-      {} as never,
-    );
+      });
 
-    expect(initializeResponse.status).toBe(200);
-    expect(initializeResponse.headers.get("mcp-session-id")).toBeNull();
-    expect(await initializeResponse.text()).toContain('"id":1');
+      expect(initializeResponse.status).toBe(200);
+      expect(initializeResponse.headers.get("mcp-session-id")).toBeNull();
+      expect(await initializeResponse.text()).toContain('"id":1');
+    } finally {
+      server.stop();
+    }
   });
 });
