@@ -195,15 +195,15 @@ export async function runGenerateCommand(
   const designPath = await writeGeneratedManifest(outputs.design, "designs");
 
   if (agentsPath) {
-    process.stdout.write(`Wrote ${agentsPath}\n`);
+    logInfo(`Wrote ${agentsPath}`);
   }
 
   if (manifestPath) {
-    process.stdout.write(`Wrote ${manifestPath}\n`);
+    logInfo(`Wrote ${manifestPath}`);
   }
 
   if (designPath) {
-    process.stdout.write(`Wrote ${designPath}\n`);
+    logInfo(`Wrote ${designPath}`);
   }
 }
 
