@@ -10,6 +10,7 @@ export type SuggestSkillsConfig = {
 export type CliRuntimeMode =
   | { kind: "stdio"; config: SuggestSkillsConfig }
   | { kind: "generate"; url: string; recursive: boolean; config: SuggestSkillsConfig }
+  | { kind: "download"; url: string; recursive: boolean; config: SuggestSkillsConfig }
   | { kind: "server"; port: number; config: SuggestSkillsConfig };
 
 const DEFAULT_OUTPUT_DIRECTORY = ".agents/skills";
@@ -37,6 +38,21 @@ export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode
         recursive: !!options.recursive,
         config: {
           outputDirectory: DEFAULT_OUTPUT_DIRECTORY,
+          sourceUrls: [],
+        },
+      };
+    });
+
+  cli
+    .command("download <url>", "Download skills, agents and designs to the current directory")
+    .option("-r, --recursive", "Recursive scan")
+    .action((url: string, options: { recursive?: boolean }) => {
+      runtimeMode = {
+        kind: "download",
+        url: normalizeGithubRawUrl(url) ?? url,
+        recursive: !!options.recursive,
+        config: {
+          outputDirectory: ".",
           sourceUrls: [],
         },
       };
