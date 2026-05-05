@@ -6,6 +6,7 @@ import {
   listGithubDirectoryRecursive,
   resolveGithubFolderUrl,
 } from "./download.js";
+import { analyzeTreeEntries } from "./generate.js";
 import { logInfo, parseUrl } from "./utils.js";
 
 export async function runDownloadCommand(url: string, options: { recursive?: boolean }) {
@@ -25,41 +26,43 @@ export async function runDownloadCommand(url: string, options: { recursive?: boo
   }
 
   logInfo(`Scanning for candidates in ${url}${options.recursive ? " (recursive)" : ""}...`);
-  const entries = await listGithubDirectoryRecursive(location);
+  const treeEntries = await listGithubDirectoryRecursive(location);
+  const analysis = analyzeTreeEntries(location.path, treeEntries);
 
   const folderCandidates = new Set<string>();
   const fileCandidates: { path: string; url: string }[] = [];
 
-  // Check if target folder itself is a candidate
-  const isTargetCandidate = entries.some((e) => {
-    const relPath = toRelativePath(e.path, location.path);
-    return relPath === "SKILL.md" || relPath === "DESIGN.md";
-  });
+  const candidateDirectories = options.recursive
+    ? analysis.recursiveCandidateDirectories
+    : analysis.immediateEntries
+        .filter((entry) => entry.type === "dir")
+        .map((entry) => entry.path);
 
-  if (isTargetCandidate) {
+  for (const dir of candidateDirectories) {
+    folderCandidates.add(dir);
+  }
+
+  // Check if target folder itself is a candidate (has SKILL.md or DESIGN.md)
+  const rootSummary = analysis.summariesByDirectory.get(location.path);
+  if (rootSummary?.skillFileUrl || rootSummary?.designFileUrl) {
     folderCandidates.add(location.path);
   }
 
-  for (const entry of entries) {
-    if (entry.type === "file") {
+  // File Candidates: .md files that are not SKILL.md or DESIGN.md and not inside any folder candidate
+  for (const entry of treeEntries) {
+    if (entry.type === "file" && entry.path.endsWith(".md") && entry.download_url) {
       const fileName = basename(entry.path);
+      if (fileName === "SKILL.md" || fileName === "DESIGN.md") {
+        continue;
+      }
+
       const dir = dirname(entry.path);
       const relDir = toRelativePath(dir, location.path);
-
-      const isImmediateChild = relDir !== "" && !relDir.includes("/");
       const isRoot = relDir === "";
 
-      if (fileName === "SKILL.md" || fileName === "DESIGN.md") {
-        if (options.recursive || isImmediateChild || isRoot) {
-          folderCandidates.add(dir);
-        }
-      } else if (fileName.endsWith(".md")) {
-        // For agents, we only take them from the root if not recursive
-        if (options.recursive || isRoot) {
-          if (entry.download_url) {
-            fileCandidates.push({ path: entry.path, url: entry.download_url });
-          }
-        }
+      // For agents, we only take them from the root if not recursive
+      if (options.recursive || isRoot) {
+        fileCandidates.push({ path: entry.path, url: entry.download_url });
       }
     }
   }
