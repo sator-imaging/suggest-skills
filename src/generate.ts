@@ -37,13 +37,13 @@ type GeneratedEntry = {
   url: string;
 };
 
-type DirectorySummary = {
+export type DirectorySummary = {
   assets: string[];
   designFileUrl?: string;
   skillFileUrl?: string;
 };
 
-type TreeAnalysis = {
+export type TreeAnalysis = {
   immediateEntries: GithubContentEntry[];
   recursiveCandidateDirectories: string[];
   summariesByDirectory: Map<string, DirectorySummary>;
@@ -790,7 +790,7 @@ function fixRedundantTypeSuffix(filename: string, kind: string): string {
   return base + kind + extension;
 }
 
-function analyzeTreeEntries(rootPath: string, treeEntries: GithubContentEntry[]): TreeAnalysis {
+export function analyzeTreeEntries(rootPath: string, treeEntries: GithubContentEntry[]): TreeAnalysis {
   const immediateEntries = new Map<string, GithubContentEntry>();
   const nestedCandidateDirectories = new Set<string>();
   const summariesByDirectory = new Map<string, DirectorySummary>();
