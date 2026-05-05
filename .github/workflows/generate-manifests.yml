@@ -100,7 +100,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: oven-sh/setup-bun@v2
-      - run: bun install --frozen-lockfile
+      - run: bun install --production --frozen-lockfile
 
       - name: Switch to target branch
         run: |
