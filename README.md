@@ -45,11 +45,11 @@ Note that this tool doesn't provide security checks. To find official skills rep
 ```
 
 
-### Official & Curated Skills
+### Official & Community Skills
 
 Prebuilt skill manifests can be found in this repository:
-- [Official](./official/)
-- [Curated](./curated/)
+- [Official Skills, Agents and Designs](./official/)
+- [Community Skills, Agents and Designs](./community/)
 
 > Automatically updated everyday by [cron workflow](./.github/workflows/generate-manifests.yml).
 
