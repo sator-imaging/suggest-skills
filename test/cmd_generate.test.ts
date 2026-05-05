@@ -5,7 +5,7 @@ import {
   generateSkillsManifest,
   writeGeneratedManifest,
   type GeneratedDocument,
-} from "../src/generate.js";
+} from "../src/cmd_generate.js";
 
 describe("generateSkillsManifest", () => {
   test("builds a manifest from a GitHub skills directory", async () => {

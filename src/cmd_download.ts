@@ -6,7 +6,7 @@ import {
   listGithubDirectoryRecursive,
   resolveGithubFolderUrl,
 } from "./download.js";
-import { analyzeTreeEntries } from "./generate.js";
+import { analyzeTreeEntries } from "./cmd_generate.js";
 import { logInfo, parseUrl } from "./utils.js";
 
 export async function runDownloadCommand(url: string, options: { recursive?: boolean }) {

@@ -1,6 +1,6 @@
 import { ConfigError, parseCli } from "./config.js";
-import { runDownloadCommand } from "./download_cmd.js";
-import { runGenerateCommand } from "./generate.js";
+import { runDownloadCommand } from "./cmd_download.js";
+import { runGenerateCommand } from "./cmd_generate.js";
 import { startHttpServer } from "./http.js";
 import { startStdioServer } from "./stdio.js";
 import { logError } from "./utils.js";
