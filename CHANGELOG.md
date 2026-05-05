@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/sator-imaging/suggest-skills/compare/v1.1.1...v1.2.0) (2026-05-05)
+
+
+### Features
+
+* **cmd:** Add download subcommand ([#73](https://github.com/sator-imaging/suggest-skills/issues/73)) ([d260193](https://github.com/sator-imaging/suggest-skills/commit/d2601937e80bc41b46bd5c3e99814d80cd06c196))
+
 ## [1.1.1](https://github.com/sator-imaging/suggest-skills/compare/v1.1.0...v1.1.1) (2026-05-05)
 
 
