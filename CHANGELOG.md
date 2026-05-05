@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.1.1](https://github.com/sator-imaging/suggest-skills/compare/v1.1.0...v1.1.1) (2026-05-05)
+
+
+### Bug Fixes
+
+* **action:** address errors ([d264ace](https://github.com/sator-imaging/suggest-skills/commit/d264ace6203e9f6c41a5ce4661c9181eb121c07e))
+* **action:** obsolete source ([c94b56d](https://github.com/sator-imaging/suggest-skills/commit/c94b56df0f1c936addf9947dd56d2dfaa49a8653))
+* logging ([8b1da51](https://github.com/sator-imaging/suggest-skills/commit/8b1da51a3c0384358c71abb9969ad533b33601d3))
+* Use `Bun.serve` instead of `hono` ([#69](https://github.com/sator-imaging/suggest-skills/issues/69)) ([1beb5a6](https://github.com/sator-imaging/suggest-skills/commit/1beb5a6143eaccc91eeabe3e6b61b641097a48cf))
+
 ## [1.1.0](https://github.com/sator-imaging/suggest-skills/compare/v1.0.3...v1.1.0) (2026-05-04)
 
 
