@@ -195,7 +195,7 @@ jobs:
           git add -f "$OFFICIAL_DIR"/skills
           git add -f "$OFFICIAL_DIR"/designs
 
-          git commit -m "bot: Generate manifests for ${{ matrix.url }}" || {
+          git commit -m "[bot] Generate manifests for ${{ matrix.url }}" || {
             echo "No changes to commit."
             exit 0
           }
@@ -244,5 +244,5 @@ jobs:
           gh pr create \
             --base main \
             --head "${{ needs.prepare.outputs.branch }}" \
-            --title "bot: ${{ needs.prepare.outputs.branch }}" \
+            --title "[bot] ${{ needs.prepare.outputs.branch }}" \
             --fill
