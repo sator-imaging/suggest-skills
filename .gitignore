@@ -18,6 +18,7 @@
 !README*.md
 !LICENSE.md
 !CHANGELOG.md
+!DOC_COVERAGE.md
 
 !Unity
 Unity/*
