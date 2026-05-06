@@ -6,7 +6,7 @@ import {
   listGithubDirectoryRecursive,
   resolveGithubFolderUrl,
 } from "./download.js";
-import { analyzeTreeEntries } from "./cmd_generate.js";
+import { analyzeTreeEntries, basename, dirname, toRelativePath } from "./generate.js";
 import { logInfo, parseUrl } from "./utils.js";
 
 export async function runDownloadCommand(url: string, options: { recursive?: boolean }) {
@@ -144,26 +144,3 @@ function resolveRootLocation(url: string) {
   return undefined;
 }
 
-function toRelativePath(path: string, rootPath: string): string {
-  if (path === rootPath) {
-    return "";
-  }
-  if (rootPath === "") {
-    return path;
-  }
-  const prefix = `${rootPath}/`;
-  return path.startsWith(prefix) ? path.slice(prefix.length) : path;
-}
-
-function basename(path: string): string {
-  const parts = path.split("/");
-  return parts[parts.length - 1] ?? "";
-}
-
-function dirname(path: string): string {
-  const parts = path.split("/");
-  if (parts.length <= 1) {
-    return "";
-  }
-  return parts.slice(0, -1).join("/");
-}
