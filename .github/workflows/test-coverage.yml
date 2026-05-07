@@ -70,7 +70,7 @@ jobs:
                 | Functions | ${pct(fnh, fnf)}% |
                 | Branches  | ${pct(brh, brf)}% |
               `
-              .replace(/^\s+/mg, '');
+              .replace(/^\s+/mg, "");
             }
 
             console.log(md);
