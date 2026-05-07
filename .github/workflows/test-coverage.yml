@@ -65,7 +65,7 @@ jobs:
               const pct = (hit, found) =>
                 found === 0 ? "n/a" : ((hit / found) * 100).toFixed(2);
 
-              md += `| ${file} | ${pct(brh, brf)} | ${pct(fnh, fnf)} | ${pct(lh, lf)} |`;
+              md += `| ${file} | ${pct(brh, brf)} | ${pct(fnh, fnf)} | ${pct(lh, lf)} |\n`;
             }
 
             console.log(md);
