@@ -21,25 +21,57 @@ jobs:
           bun test \
             --coverage \
             --coverage-reporter=text \
-            --coverage-reporter=json \
-            > coverage.json
+            --coverage-reporter=lcov \
+            > coverage.lconv
 
       - name: Write coverage summary
         shell: bash
         run: |
           bun -e '
             const fs = require("fs");
-            const data = JSON.parse(fs.readFileSync("coverage.json", "utf8"));
-            const t = data.total;
+            const raw = fs.readFileSync("coverage.lcov", "utf8");
+            const records = raw.split("end_of_record");
 
-            console.info(`\
-              # 📊 Test Coverage
+            let md = "# 📊 Coverage Report";
 
-              | Metric     | Coverage                        |
-              |:-----------|--------------------------------:|
-              | Lines      | ${t.lines.pct.toFixed(2)}%      |
-              | Functions  | ${t.functions.pct.toFixed(2)}%  |
-              | Branches   | ${t.branches.pct.toFixed(2)}%   |
-              | Statements | ${t.statements.pct.toFixed(2)}% |
-            `);
-          ' >> $GITHUB_STEP_SUMMARY
+            for (const rec of records) {
+              const lines = rec.trim().split("\n");
+
+              let file = null;
+
+              let lh = 0, lf = 0;
+              let brh = 0, brf = 0;
+              let fnh = 0, fnf = 0;
+
+              for (const line of lines) {
+                if (line.startsWith("SF:")) file = line.slice(3);
+
+                if (line.startsWith("LH:")) lh += +line.slice(3);
+                if (line.startsWith("LF:")) lf += +line.slice(3);
+
+                if (line.startsWith("BRH:")) brh += +line.slice(4);
+                if (line.startsWith("BRF:")) brf += +line.slice(4);
+
+                if (line.startsWith("FNH:")) fnh += +line.slice(4);
+                if (line.startsWith("FNF:")) fnf += +line.slice(4);
+              }
+
+              if (!file) continue;
+
+              const pct = (hit, found) =>
+                found === 0 ? "100.00" : ((hit / found) * 100).toFixed(2);
+
+              md += `
+
+              ## ${file}
+
+              | Metric    | Coverage          |
+              |:----------|------------------:|
+              | Lines     | ${pct(lh, lf)}%   |
+              | Functions | ${pct(fnh, fnf)}% |
+              | Branches  | ${pct(brh, brf)}% |
+              `;
+            }
+
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, md);
+          '
