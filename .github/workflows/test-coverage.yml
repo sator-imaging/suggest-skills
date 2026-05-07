@@ -34,8 +34,8 @@ jobs:
             let md
               = "# 📊 Coverage Report\n"
               +"\n"
-              + "| File | % Branches | % Functions | % Lines |\n"
-              + "|:-----|-----------:|------------:|--------:|\n"
+              + "| File | % Functions | % Lines | % Branches |\n"
+              + "|:-----|------------:|--------:|-----------:|\n"
               ;
 
             for (const rec of records) {
@@ -65,7 +65,7 @@ jobs:
               const pct = (hit, found) =>
                 found === 0 ? "n/a" : ((hit / found) * 100).toFixed(2);
 
-              md += `| ${file} | ${pct(brh, brf)} | ${pct(fnh, fnf)} | ${pct(lh, lf)} |\n`;
+              md += `| ${file} | ${pct(fnh, fnf)} | ${pct(lh, lf)} | ${pct(brh, brf)} |\n`;
             }
 
             console.log(md);
