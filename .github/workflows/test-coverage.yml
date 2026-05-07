@@ -20,19 +20,15 @@ jobs:
         run: |
           bun test \
             --coverage \
-            --coverage-reporter=lcov \
             --coverage-reporter=text \
-            > coverage.lconv
-          cat "------------ coverage.lconv ------------"
-          cat coverage.lconv
-          cat "----------------------------------------"
+            --coverage-reporter=lcov  # Output path is hard-coded
 
       - name: Write coverage summary
         shell: bash
         run: |
           bun -e '
             const fs = require("fs");
-            const raw = fs.readFileSync("coverage.lcov", "utf8");
+            const raw = fs.readFileSync("coverage/lcov.info", "utf8");
             const records = raw.split("end_of_record");
 
             let md = "# 📊 Coverage Report";
