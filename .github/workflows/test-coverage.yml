@@ -73,5 +73,5 @@ jobs:
               `;
             }
 
-            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, md);
-          '
+            console.infomd);
+          ' >> $GITHUB_STEP_SUMMARY
