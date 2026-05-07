@@ -74,6 +74,7 @@ jobs:
           - kzhrknt/awesome-design-md-jp/tree/main/design-md
           - android/skills
           - sator-imaging/suggest-skills/tree/main/Unity
+          - warpdotdev/oz-skills/tree/main/.agents/skills
     env:
       # DO NOT forget add '/' at the end
       OFFICIAL_URL_PREFIXES: |
