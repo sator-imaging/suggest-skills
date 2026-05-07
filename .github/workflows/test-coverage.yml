@@ -20,10 +20,12 @@ jobs:
         run: |
           bun test \
             --coverage \
-            --coverage-reporter=text \
+            ##--coverage-reporter=text \
             --coverage-reporter=lcov \
             > coverage.lconv
+          cat "------------ coverage.lconv ------------"
           cat coverage.lconv
+          cat "----------------------------------------"
 
       - name: Write coverage summary
         shell: bash
