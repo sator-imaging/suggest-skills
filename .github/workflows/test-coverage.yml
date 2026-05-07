@@ -21,36 +21,25 @@ jobs:
           bun test \
             --coverage \
             --coverage-reporter=text \
-            --coverage-reporter=lcov \
-            > coverage.txt
+            --coverage-reporter=json \
+            > coverage.json
 
       - name: Write coverage summary
         shell: bash
         run: |
-          TOTAL_LINE=$(grep "^All files" coverage.txt)
+          bun -e '
+            const fs = require("fs");
+            const data = JSON.parse(fs.readFileSync("coverage.json", "utf8"));
+            const t = data.total;
 
-          # Extract columns from bun coverage text
-          # ex: All files | 91.23 | 88.10 | 90.01 | ...
-          LINES=$(echo "$TOTAL_LINE" | awk -F'|' '{gsub(/ /,"",$2); print $2}')
-          FUNCTIONS=$(echo "$TOTAL_LINE" | awk -F'|' '{gsub(/ /,"",$3); print $3}')
-          BRANCHES=$(echo "$TOTAL_LINE" | awk -F'|' '{gsub(/ /,"",$4); print $4}')
-          STATEMENTS=$(echo "$TOTAL_LINE" | awk -F'|' '{gsub(/ /,"",$5); print $5}')
+            console.info(`\
+              # 📊 Test Coverage
 
-          {
-            echo "# Test Coverage"
-            echo ""
-            echo "## Summary"
-            echo ""
-            echo "| Metric | Coverage |"
-            echo "|---|---|"
-            echo "| Lines | ${LINES}% |"
-            echo "| Functions | ${FUNCTIONS}% |"
-            echo "| Branches | ${BRANCHES}% |"
-            echo "| Statements | ${STATEMENTS}% |"
-            echo ""
-            echo "## Raw Output"
-            echo ""
-            echo '```text'
-            cat coverage.txt
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+              | Metric     | Coverage                        |
+              |:-----------|--------------------------------:|
+              | Lines      | ${t.lines.pct.toFixed(2)}%      |
+              | Functions  | ${t.functions.pct.toFixed(2)}%  |
+              | Branches   | ${t.branches.pct.toFixed(2)}%   |
+              | Statements | ${t.statements.pct.toFixed(2)}% |
+            `);
+          ' >> $GITHUB_STEP_SUMMARY
