@@ -31,7 +31,12 @@ jobs:
             const raw = fs.readFileSync("coverage/lcov.info", "utf8");
             const records = raw.split("end_of_record");
 
-            let md = "# 📊 Coverage Report";
+            let md
+              = "# 📊 Coverage Report\n"
+              +"\n"
+              + "| File | % Branches | % Functions | % Lines |\n"
+              + "|:-----|-----------:|------------:|--------:|\n"
+              ;
 
             for (const rec of records) {
               const lines = rec.trim().split("\n");
@@ -60,17 +65,7 @@ jobs:
               const pct = (hit, found) =>
                 found === 0 ? "n/a" : ((hit / found) * 100).toFixed(2);
 
-              md += `
-
-                ## ${file}
-
-                | Metric    | Coverage          |
-                |:----------|------------------:|
-                | Lines     | ${pct(lh, lf)}%   |
-                | Functions | ${pct(fnh, fnf)}% |
-                | Branches  | ${pct(brh, brf)}% |
-              `
-              .replace(/^\s+/mg, "");
+              md += `| ${file} | ${pct(brh, brf)} | ${pct(fnh, fnf)} | ${pct(lh, lf)} |`;
             }
 
             console.log(md);
