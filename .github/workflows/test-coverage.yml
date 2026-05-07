@@ -23,6 +23,7 @@ jobs:
             --coverage-reporter=text \
             --coverage-reporter=lcov \
             > coverage.lconv
+          cat coverage.lconv
 
       - name: Write coverage summary
         shell: bash
