@@ -20,8 +20,8 @@ jobs:
         run: |
           bun test \
             --coverage \
-            ##--coverage-reporter=text \
             --coverage-reporter=lcov \
+            --coverage-reporter=text \
             > coverage.lconv
           cat "------------ coverage.lconv ------------"
           cat coverage.lconv
