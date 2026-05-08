@@ -75,12 +75,15 @@ jobs:
           - android/skills
           - sator-imaging/suggest-skills/tree/main/Unity
           - warpdotdev/oz-skills/tree/main/.agents/skills
+          - vercel-labs/emulate/tree/main/skills
+          - aws/agent-toolkit-for-aws/tree/main/skills
     env:
       # DO NOT forget add '/' at the end
       OFFICIAL_URL_PREFIXES: |
-        anthropics/
-        ### NOTE: 'awesome-copilot' is an official skills registry but it has too broad of categories
+        ### NOTE: DO NOT include 'github/'
+        ###       --> 'github/awesome-copilot' is an official, but community-managed skills registry.
         ###github/
+        anthropics/
         dotnet/
         vercel-labs/
         openai/
@@ -93,8 +96,10 @@ jobs:
         google-gemini/
         google-labs-code/
         android/
+        aws/
       RECURSIVE_URL_PREFIXES: |
-        android/
+        android/skills
+        aws/agent-toolkit-for-aws
       GENERATED_DIR: generate/${{ strategy.job-index }}
       BRANCH: ${{ needs.prepare.outputs.branch }}
 
@@ -236,6 +241,24 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+
+          for BASE_DIR in "$COMMUNITY_DIR" "$OFFICIAL_DIR"; do
+            for SUB_DIR in agents skills designs; do
+              TARGET_DIR="$BASE_DIR/$SUB_DIR"
+              ALL_MD="$TARGET_DIR/ALL.md"
+
+              rm -f "$ALL_MD"
+
+              find "$TARGET_DIR" -maxdepth 1 -type f -name "*.md" ! -name "ALL.md" | sort | while read -r MD_FILE; do
+                BASENAME="$(basename "$MD_FILE" .md)"
+                {
+                  echo "# $BASENAME"
+                  cat "$MD_FILE"
+                  echo
+                } >> "$ALL_MD"
+              done
+            done
+          done
 
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
