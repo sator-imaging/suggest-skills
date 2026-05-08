@@ -5,13 +5,6 @@
 
 ### Bug Fixes
 
-* push ALL.md ([19bf487](https://github.com/sator-imaging/suggest-skills/commit/19bf487e916291821c29b7acf771e7b35d9b49c6))
-
-## [1.2.1](https://github.com/sator-imaging/suggest-skills/compare/v1.2.0...v1.2.1) (2026-05-08)
-
-
-### Bug Fixes
-
 * refactor subcommands ([57aece6](https://github.com/sator-imaging/suggest-skills/commit/57aece67d7454e129e76509ba402fc8f746c98a9))
 
 ## [1.2.0](https://github.com/sator-imaging/suggest-skills/compare/v1.1.1...v1.2.0) (2026-05-05)
