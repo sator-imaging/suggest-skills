@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/sator-imaging/suggest-skills/compare/v1.2.1...v1.3.0) (2026-05-08)
+
+
+### Features
+
+* add in-memory cache for fetch_manifest tool ([#91](https://github.com/sator-imaging/suggest-skills/issues/91)) ([f704352](https://github.com/sator-imaging/suggest-skills/commit/f7043523037491376cadb55883623759077fff6c))
+
 ## [1.2.1](https://github.com/sator-imaging/suggest-skills/compare/v1.2.0...v1.2.1) (2026-05-08)
 
 
