@@ -242,6 +242,13 @@ jobs:
         run: |
           set -euo pipefail
 
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git fetch origin main:refs/remotes/origin/main
+          git fetch origin "${{ needs.prepare.outputs.branch }}"
+          git checkout -B "${{ needs.prepare.outputs.branch }}" "origin/${{ needs.prepare.outputs.branch }}"
+
           for BASE_DIR in "$COMMUNITY_DIR" "$OFFICIAL_DIR"; do
             for SUB_DIR in agents skills designs; do
               TARGET_DIR="$BASE_DIR/$SUB_DIR"
@@ -257,14 +264,14 @@ jobs:
                   echo
                 } >> "$ALL_MD"
               done
+
+              git add -f "$ALL_MD" || true
+              git commit -m "[bot] Merged manifests $ALL_MD" || true
             done
           done
 
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git fetch origin main:refs/remotes/origin/main
-          git fetch origin "${{ needs.prepare.outputs.branch }}"
-          git checkout -B "${{ needs.prepare.outputs.branch }}" "origin/${{ needs.prepare.outputs.branch }}"
+          git push --set-upstream origin "${{ needs.prepare.outputs.branch }}" || true
+
           gh pr create \
             --base main \
             --head "${{ needs.prepare.outputs.branch }}" \
