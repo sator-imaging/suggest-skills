@@ -260,6 +260,7 @@ jobs:
                 BASENAME="$(basename "$MD_FILE" .md)"
                 {
                   echo "# $BASENAME"
+                  echo
                   cat "$MD_FILE"
                   echo
                 } >> "$ALL_MD"
