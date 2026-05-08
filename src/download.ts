@@ -24,13 +24,29 @@ const GITHUB_API_BASE_URL = "https://api.github.com";
 const GITHUB_API_HOSTNAME = "api.github.com";
 const DOWNLOAD_CONCURRENCY = 4;
 
+const MANIFEST_CACHE = new Map<string, string>();
+
+/** @internal */
+export function clearManifestCache(): void {
+  MANIFEST_CACHE.clear();
+}
+
 export async function downloadGithubFolder(url: string): Promise<DownloadedFile[]> {
   const location = await resolveGithubFolderUrl(url);
   return downloadDirectory(location, location.path);
 }
 
 export async function fetchManifestText(url: string): Promise<string> {
-  return fetchTextContent(url, "Manifest");
+  const cached = MANIFEST_CACHE.get(url);
+
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const content = await fetchTextContent(url, "Manifest");
+  MANIFEST_CACHE.set(url, content);
+
+  return content;
 }
 
 export async function fetchTextContent(url: string, label: string): Promise<string> {

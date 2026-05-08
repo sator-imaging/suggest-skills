@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
-import { downloadGithubFolder, fetchManifestText } from "../src/download.js";
+import { downloadGithubFolder, fetchManifestText, clearManifestCache } from "../src/download.js";
 
 const ORIGINAL_FETCH = globalThis.fetch;
 
 beforeEach(() => {
   globalThis.fetch = mock(fetchMock) as unknown as typeof fetch;
+  clearManifestCache();
 });
 
 afterEach(() => {
@@ -217,6 +218,16 @@ describe("fetchManifestText", () => {
     await expect(fetchManifestText("https://example.com/binary.manifest")).rejects.toThrow(
       "Manifest appears to be binary and cannot be returned as text. Content-Type: application/octet-stream.",
     );
+  });
+
+  test("caches manifest text to avoid redundant fetches", async () => {
+    const url = "https://github.com/octo/demo/blob/main/docs/README.skills.md";
+    const firstCall = await fetchManifestText(url);
+    const secondCall = await fetchManifestText(url);
+
+    expect(firstCall).toBe("# manifest\n");
+    expect(secondCall).toBe("# manifest\n");
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
   });
 });
 
