@@ -249,6 +249,11 @@ jobs:
           git fetch origin "${{ needs.prepare.outputs.branch }}"
           git checkout -B "${{ needs.prepare.outputs.branch }}" "origin/${{ needs.prepare.outputs.branch }}"
 
+          # Because 'awesome-copilot' has too many skills.
+          LOW_PRIORITY_FILES=(
+            "github.awesome-copilot.skills.md"
+          )
+
           for BASE_DIR in "$COMMUNITY_DIR" "$OFFICIAL_DIR"; do
             for SUB_DIR in agents skills designs; do
               TARGET_DIR="$BASE_DIR/$SUB_DIR"
@@ -256,7 +261,17 @@ jobs:
 
               rm -f "$ALL_MD"
 
-              find "$TARGET_DIR" -maxdepth 1 -type f -name "*.md" ! -name "ALL.md" | sort | while read -r MD_FILE; do
+              find "$TARGET_DIR" -maxdepth 1 -type f -name "*.md" ! -name "ALL.md" | while IFS= read -r MD_FILE; do
+                FILENAME="$(basename "$MD_FILE")"
+
+                PRIORITY=0
+                for LOW_FILE in "${LOW_PRIORITY_FILES[@]}"; do
+                  [[ "$LOW_FILE" == "$FILENAME" ]] && PRIORITY=1
+                done
+
+                printf "%d|%s\n" "$PRIORITY" "$MD_FILE"
+              done | sort -n | cut -d'|' -f2- | while IFS= read -r MD_FILE; do
+
                 BASENAME="$(basename "$MD_FILE" .md)"
                 {
                   echo "# $BASENAME"
@@ -264,6 +279,7 @@ jobs:
                   cat "$MD_FILE"
                   echo
                 } >> "$ALL_MD"
+
               done
 
               git add -f "$ALL_MD" || true
