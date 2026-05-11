@@ -139,7 +139,7 @@ export function loadConfig(argv = process.argv, env = process.env): SuggestSkill
 }
 
 function buildConfig(
-  args: string[],
+  args: readonly string[],
   options: { output?: string },
   env: NodeJS.ProcessEnv,
 ): SuggestSkillsConfig {
@@ -177,7 +177,7 @@ function parseSourceUrls(rawValue: string | undefined): string[] {
   return normalizeAndFilterUrls(urls);
 }
 
-function normalizeAndFilterUrls(urls: unknown[]): string[] {
+function normalizeAndFilterUrls(urls: readonly unknown[]): string[] {
   return urls
     .filter((url): url is string => typeof url === "string")
     .map((url) => url.trim())
