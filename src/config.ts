@@ -28,6 +28,11 @@ export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode
 
   let runtimeMode: CliRuntimeMode | undefined;
 
+  cli.option("-o, --output <dir>", "Output directory for installed skills");
+  cli.option("--manifest-urls", "List of manifest URLs to use (ignored; use positional arguments instead)", {
+    type: [Boolean],
+  });
+
   cli
     .command("generate <url>", "Generate markdown inventories from a GitHub skills directory or repo root")
     .option("-r, --recursive", "Recursive scan")
@@ -59,9 +64,9 @@ export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode
     });
 
   cli
-    .command("server", "Run the streamable HTTP server")
+    .command("server [...args]", "Run the streamable HTTP server")
     .option("--port <port>", "Port number")
-    .action((options: { port?: string; output?: string; manifestUrls?: string | string[] }) => {
+    .action((args: string[], options: { port?: string; output?: string }) => {
       if (options.port === undefined) {
         throw new ConfigError("server subcommand requires --port <number>.");
       }
@@ -79,21 +84,18 @@ export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode
       runtimeMode = {
         kind: "server",
         port,
-        config: buildConfig(options, env, argv),
+        config: buildConfig(args, options, env),
       };
     });
 
   cli
     .command("[...args]", "Run in stdio mode (default)")
-    .action((_args: string[], options: { output?: string; manifestUrls?: string | string[] }) => {
+    .action((args: string[], options: { output?: string }) => {
       runtimeMode = {
         kind: "stdio",
-        config: buildConfig(options, env, argv),
+        config: buildConfig(args, options, env),
       };
     });
-
-  cli.option("-o, --output <dir>", "Output directory for installed skills");
-  cli.option("--manifest-urls <urls...>", "List of manifest URLs to use");
 
   const parsed = cli.parse(argv, { run: false });
 
@@ -129,32 +131,28 @@ export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode
 
 export function loadConfig(argv = process.argv, env = process.env): SuggestSkillsConfig {
   const cli = cac();
-  cli.option("--manifest-urls <urls...>", "Manifest URLs");
+  cli.option("--manifest-urls", "Manifest URLs", { type: [Boolean] });
   cli.option("-o, --output <dir>", "Output directory");
-  const { options } = cli.parse(argv, { run: false });
+  const { args, options } = cli.parse(argv, { run: false });
 
-  return buildConfig(options as Parameters<typeof buildConfig>[0], env, argv);
+  return buildConfig(args, options as Parameters<typeof buildConfig>[1], env);
 }
 
 function buildConfig(
-  options: { output?: string; manifestUrls?: string | string[] },
+  args: string[],
+  options: { output?: string },
   env: NodeJS.ProcessEnv,
-  argv: string[],
 ): SuggestSkillsConfig {
   const outputDirectory = options.output ?? DEFAULT_OUTPUT_DIRECTORY;
   const envUrls = parseSourceUrls(env["SUGGEST_SKILLS_MANIFEST_URLS"]);
 
-  const cliUrlsRaw = options.manifestUrls;
-  const cliUrlsFromCac = Array.isArray(cliUrlsRaw) ? cliUrlsRaw : cliUrlsRaw ? [cliUrlsRaw] : [];
-  const cliUrlsFromArgv = parseManifestUrlsFromArgv(argv);
-
-  const cliUrls = normalizeAndFilterUrls([...cliUrlsFromCac, ...cliUrlsFromArgv]);
+  const cliUrls = normalizeAndFilterUrls(args);
 
   const sourceUrls = Array.from(new Set([...envUrls, ...cliUrls]));
 
   if (sourceUrls.length === 0) {
     throw new ConfigError(
-      "SUGGEST_SKILLS_MANIFEST_URLS environment variable or --manifest-urls CLI option must contain at least one URL.",
+      "SUGGEST_SKILLS_MANIFEST_URLS environment variable or positional arguments must contain at least one URL.",
     );
   }
 
@@ -183,6 +181,12 @@ function normalizeAndFilterUrls(urls: unknown[]): string[] {
   return urls
     .filter((url): url is string => typeof url === "string")
     .map((url) => url.trim())
+    .map((url) => {
+      if (!url.toLowerCase().endsWith(".md")) {
+        throw new ConfigError(`Manifest URL must end with .md: ${url}`);
+      }
+      return url;
+    })
     .map(normalizeSourceUrl)
     .filter(Boolean);
 }
@@ -206,30 +210,4 @@ function splitSourceUrls(rawValue: string): string[] {
     .split(/\r?\n|,/u)
     .map((url) => url.trim())
     .filter(Boolean);
-}
-
-function parseManifestUrlsFromArgv(argv: string[]): string[] {
-  const urls: string[] = [];
-
-  for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i];
-    if (arg === undefined) {
-      continue;
-    }
-
-    if (arg === "--manifest-urls") {
-      i++;
-      while (i < argv.length) {
-        const nextArg = argv[i];
-        if (nextArg === undefined || nextArg.startsWith("-")) {
-          break;
-        }
-        urls.push(nextArg);
-        i++;
-      }
-      i--;
-    }
-  }
-
-  return urls;
 }

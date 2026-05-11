@@ -20,7 +20,7 @@ describe("CLI", () => {
     expect(stdout).toBe("");
     expect(stderr).toContain("[ERROR] Configuration error:");
     expect(stderr).toContain(
-      "SUGGEST_SKILLS_MANIFEST_URLS environment variable or --manifest-urls CLI option must contain at least one URL.",
+      "SUGGEST_SKILLS_MANIFEST_URLS environment variable or positional arguments must contain at least one URL.",
     );
   });
 });

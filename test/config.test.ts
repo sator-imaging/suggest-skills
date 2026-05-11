@@ -22,27 +22,27 @@ describe("parseCli", () => {
     });
   });
 
-  test("uses --manifest-urls from argv", () => {
+  test("uses positional arguments from argv", () => {
     const runtimeMode = parseCli(
-      ["node", "index.js", "--manifest-urls", "https://example.com/manifest.md"],
+      ["node", "index.js", "https://example.com/manifest.md"],
       {},
     );
 
     expect(runtimeMode.config.sourceUrls).toEqual(["https://example.com/manifest.md"]);
   });
 
-  test("captures multiple --manifest-urls from argv", () => {
+  test("captures multiple positional arguments from argv", () => {
     const runtimeMode = parseCli(
-      ["node", "index.js", "--manifest-urls", "aa", "bb", "cc"],
+      ["node", "index.js", "aa.md", "bb.md", "cc.md"],
       {},
     );
 
-    expect(runtimeMode.config.sourceUrls).toEqual(["aa", "bb", "cc"]);
+    expect(runtimeMode.config.sourceUrls).toEqual(["aa.md", "bb.md", "cc.md"]);
   });
 
-  test("combines env and --manifest-urls without duplicates", () => {
+  test("combines env and positional arguments without duplicates", () => {
     const runtimeMode = parseCli(
-      ["node", "index.js", "--manifest-urls", "https://example.com/1.md", "https://example.com/2.md"],
+      ["node", "index.js", "https://example.com/1.md", "https://example.com/2.md"],
       {
         SUGGEST_SKILLS_MANIFEST_URLS: JSON.stringify([
           "https://example.com/2.md",
@@ -58,27 +58,57 @@ describe("parseCli", () => {
     ]);
   });
 
-  test("stops reading --manifest-urls when next option is found", () => {
+  test("throws ConfigError when URL does not end with .md", () => {
+    expect(() => parseCli(["node", "index.js", "https://example.com/manifest.txt"], {})).toThrow(
+      /Manifest URL must end with .md: https:\/\/example.com\/manifest.txt/,
+    );
+  });
+
+  test("throws ConfigError when env URL does not end with .md", () => {
+    expect(() =>
+      parseCli(["node", "index.js"], {
+        SUGGEST_SKILLS_MANIFEST_URLS: JSON.stringify(["https://example.com/manifest.txt"]),
+      }),
+    ).toThrow(/Manifest URL must end with .md: https:\/\/example.com\/manifest.txt/);
+  });
+
+  test("ignores --manifest-urls but accepts positional arguments", () => {
     const runtimeMode = parseCli(
-      [
-        "node",
-        "index.js",
-        "--manifest-urls",
-        "https://example.com/1.md",
-        "-o",
-        "./out",
-        "https://example.com/2.md",
-      ],
+      ["node", "index.js", "--manifest-urls", "val", "https://example.com/1.md", "https://example.com/2.md"],
       {},
     );
 
-    expect(runtimeMode.config.sourceUrls).toEqual(["https://example.com/1.md"]);
+    // --manifest-urls is a flag (type: [Boolean]), so it consumes the immediate next 'val',
+    // and "https://example.com/1.md" and "https://example.com/2.md" are positional
+    expect(runtimeMode.config.sourceUrls).toEqual([
+      "https://example.com/1.md",
+      "https://example.com/2.md",
+    ]);
+  });
+
+  test("handles inline output option -o=dir", () => {
+    const runtimeMode = parseCli(
+      ["node", "index.js", "-o=./out", "https://example.com/1.md"],
+      {},
+    );
+
     expect(runtimeMode.config.outputDirectory).toBe("./out");
+    expect(runtimeMode.config.sourceUrls).toEqual(["https://example.com/1.md"]);
+  });
+
+  test("handles inline output option --output=dir", () => {
+    const runtimeMode = parseCli(
+      ["node", "index.js", "--output=./out", "https://example.com/1.md"],
+      {},
+    );
+
+    expect(runtimeMode.config.outputDirectory).toBe("./out");
+    expect(runtimeMode.config.sourceUrls).toEqual(["https://example.com/1.md"]);
   });
 
   test("throws ConfigError when no URLs are provided", () => {
     expect(() => parseCli(["node", "index.js"], {})).toThrow(
-      /SUGGEST_SKILLS_MANIFEST_URLS environment variable or --manifest-urls CLI option must contain at least one URL./,
+      /SUGGEST_SKILLS_MANIFEST_URLS environment variable or positional arguments must contain at least one URL./,
     );
   });
 
