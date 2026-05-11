@@ -22,16 +22,20 @@ export class ConfigError extends Error {
   }
 }
 
+function registerCommonOptions(cli: ReturnType<typeof cac>) {
+  cli.option("-o, --output <dir>", "Output directory for installed skills");
+  cli.option("--manifest-urls", "[Deprecated] List of manifest URLs", {
+    type: [Boolean],
+  });
+}
+
 export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode {
   const cli = cac("suggest-skills");
   cli.version(pkg.version);
 
   let runtimeMode: CliRuntimeMode | undefined;
 
-  cli.option("-o, --output <dir>", "Output directory for installed skills");
-  cli.option("--manifest-urls", "List of manifest URLs to use (ignored; use positional arguments instead)", {
-    type: [Boolean],
-  });
+  registerCommonOptions(cli);
 
   cli
     .command("generate <url>", "Generate markdown inventories from a GitHub skills directory or repo root")
@@ -131,8 +135,7 @@ export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode
 
 export function loadConfig(argv = process.argv, env = process.env): SuggestSkillsConfig {
   const cli = cac();
-  cli.option("--manifest-urls", "Manifest URLs", { type: [Boolean] });
-  cli.option("-o, --output <dir>", "Output directory");
+  registerCommonOptions(cli);
   const { args, options } = cli.parse(argv, { run: false });
 
   return buildConfig(args, options as Parameters<typeof buildConfig>[1], env);
@@ -152,7 +155,7 @@ function buildConfig(
 
   if (sourceUrls.length === 0) {
     throw new ConfigError(
-      "SUGGEST_SKILLS_MANIFEST_URLS environment variable or positional arguments must contain at least one URL.",
+      "No manifest URLs provided. Specify them as positional arguments or via SUGGEST_SKILLS_MANIFEST_URLS environment variable.",
     );
   }
 

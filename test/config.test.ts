@@ -108,7 +108,7 @@ describe("parseCli", () => {
 
   test("throws ConfigError when no URLs are provided", () => {
     expect(() => parseCli(["node", "index.js"], {})).toThrow(
-      /SUGGEST_SKILLS_MANIFEST_URLS environment variable or positional arguments must contain at least one URL./,
+      /No manifest URLs provided. Specify them as positional arguments or via SUGGEST_SKILLS_MANIFEST_URLS environment variable./,
     );
   });
 
