@@ -29,8 +29,8 @@ Note that this tool doesn't provide security checks. To find official skills rep
         "suggest-skills",
         "--",
         "--output=.agents/skills",
-        "https://foo/manifest.md",
-        "https://bar/manifest.md"
+        "https://github.com/sator-imaging/suggest-skills/blob/main/official/skills/ALL.md",
+        "https://github.com/sator-imaging/suggest-skills/blob/main/community/skills/ALL.md"
       ],
       "env": {
         "SUGGEST_SKILLS_MANIFEST_URLS": [
