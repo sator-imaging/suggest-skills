@@ -27,8 +27,8 @@ Note that this tool doesn't provide security checks. To find official skills rep
       "args": [
         "-y",
         "suggest-skills",
-        "--output",
-        ".agents/skills",
+        "--",
+        "--output=.agents/skills",
         "https://foo/manifest.md",
         "https://bar/manifest.md"
       ],
