@@ -31,7 +31,6 @@ type CliActions = {
 
 function registerCommands(cli: ReturnType<typeof cac>, actions: CliActions) {
   cli.option("-o, --output <dir>", "Output directory for installed skills");
-  cli.option("--manifest-urls [urls...]", "[Deprecated] List of manifest URLs (ignored)");
 
   cli
     .command("generate <url>", "Generate markdown inventories from a GitHub skills directory or repo root")
