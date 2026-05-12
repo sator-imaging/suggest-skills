@@ -22,16 +22,45 @@ export class ConfigError extends Error {
   }
 }
 
+type CliActions = {
+  onGenerate: (url: string, options: { recursive?: boolean }) => void;
+  onDownload: (url: string, options: { recursive?: boolean }) => void;
+  onServer: (args: string[], options: { port?: string; output?: string }) => void;
+  onStdio: (args: string[], options: { output?: string }) => void;
+};
+
+function registerCommands(cli: ReturnType<typeof cac>, actions: CliActions) {
+  cli.option("-o, --output <dir>", "Output directory for installed skills");
+  cli.option("--manifest-urls [urls...]", "[Deprecated] List of manifest URLs (ignored)");
+
+  cli
+    .command("generate <url>", "Generate markdown inventories from a GitHub skills directory or repo root")
+    .option("-r, --recursive", "Recursive scan")
+    .action(actions.onGenerate);
+
+  cli
+    .command("download <url>", "Download skills, agents and designs to the current directory")
+    .option("-r, --recursive", "Recursive scan")
+    .action(actions.onDownload);
+
+  cli
+    .command("server [...args]", "Run the streamable HTTP server")
+    .option("--port <port>", "Port number")
+    .action(actions.onServer);
+
+  cli
+    .command("[...args]", "Run in stdio mode (default)")
+    .action(actions.onStdio);
+}
+
 export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode {
   const cli = cac("suggest-skills");
   cli.version(pkg.version);
 
   let runtimeMode: CliRuntimeMode | undefined;
 
-  cli
-    .command("generate <url>", "Generate markdown inventories from a GitHub skills directory or repo root")
-    .option("-r, --recursive", "Recursive scan")
-    .action((url: string, options: { recursive?: boolean }) => {
+  const actions: CliActions = {
+    onGenerate: (url: string, options: { recursive?: boolean }) => {
       runtimeMode = {
         kind: "generate",
         url: normalizeGithubRawUrl(url) ?? url,
@@ -41,12 +70,8 @@ export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode
           sourceUrls: [],
         },
       };
-    });
-
-  cli
-    .command("download <url>", "Download skills, agents and designs to the current directory")
-    .option("-r, --recursive", "Recursive scan")
-    .action((url: string, options: { recursive?: boolean }) => {
+    },
+    onDownload: (url: string, options: { recursive?: boolean }) => {
       runtimeMode = {
         kind: "download",
         url: normalizeGithubRawUrl(url) ?? url,
@@ -56,12 +81,8 @@ export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode
           sourceUrls: [],
         },
       };
-    });
-
-  cli
-    .command("server", "Run the streamable HTTP server")
-    .option("--port <port>", "Port number")
-    .action((options: { port?: string; output?: string; manifestUrls?: string | string[] }) => {
+    },
+    onServer: (args: string[], options: { port?: string; output?: string }) => {
       if (options.port === undefined) {
         throw new ConfigError("server subcommand requires --port <number>.");
       }
@@ -79,21 +100,18 @@ export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode
       runtimeMode = {
         kind: "server",
         port,
-        config: buildConfig(options, env, argv),
+        config: buildConfig(args, options, env),
       };
-    });
-
-  cli
-    .command("[...args]", "Run in stdio mode (default)")
-    .action((_args: string[], options: { output?: string; manifestUrls?: string | string[] }) => {
+    },
+    onStdio: (args: string[], options: { output?: string }) => {
       runtimeMode = {
         kind: "stdio",
-        config: buildConfig(options, env, argv),
+        config: buildConfig(args, options, env),
       };
-    });
+    },
+  };
 
-  cli.option("-o, --output <dir>", "Output directory for installed skills");
-  cli.option("--manifest-urls <urls...>", "List of manifest URLs to use");
+  registerCommands(cli, actions);
 
   const parsed = cli.parse(argv, { run: false });
 
@@ -129,32 +147,32 @@ export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode
 
 export function loadConfig(argv = process.argv, env = process.env): SuggestSkillsConfig {
   const cli = cac();
-  cli.option("--manifest-urls <urls...>", "Manifest URLs");
-  cli.option("-o, --output <dir>", "Output directory");
-  const { options } = cli.parse(argv, { run: false });
+  registerCommands(cli, {
+    onGenerate: () => {},
+    onDownload: () => {},
+    onServer: () => {},
+    onStdio: () => {},
+  });
+  const { args, options } = cli.parse(argv, { run: false });
 
-  return buildConfig(options as Parameters<typeof buildConfig>[0], env, argv);
+  return buildConfig(args, options as Parameters<typeof buildConfig>[1], env);
 }
 
 function buildConfig(
-  options: { output?: string; manifestUrls?: string | string[] },
+  args: readonly string[],
+  options: { output?: string },
   env: NodeJS.ProcessEnv,
-  argv: string[],
 ): SuggestSkillsConfig {
   const outputDirectory = options.output ?? DEFAULT_OUTPUT_DIRECTORY;
   const envUrls = parseSourceUrls(env["SUGGEST_SKILLS_MANIFEST_URLS"]);
 
-  const cliUrlsRaw = options.manifestUrls;
-  const cliUrlsFromCac = Array.isArray(cliUrlsRaw) ? cliUrlsRaw : cliUrlsRaw ? [cliUrlsRaw] : [];
-  const cliUrlsFromArgv = parseManifestUrlsFromArgv(argv);
-
-  const cliUrls = normalizeAndFilterUrls([...cliUrlsFromCac, ...cliUrlsFromArgv]);
+  const cliUrls = normalizeAndFilterUrls(args);
 
   const sourceUrls = Array.from(new Set([...envUrls, ...cliUrls]));
 
   if (sourceUrls.length === 0) {
     throw new ConfigError(
-      "SUGGEST_SKILLS_MANIFEST_URLS environment variable or --manifest-urls CLI option must contain at least one URL.",
+      "No manifest URLs provided. Specify them as positional arguments or via SUGGEST_SKILLS_MANIFEST_URLS environment variable.",
     );
   }
 
@@ -179,10 +197,16 @@ function parseSourceUrls(rawValue: string | undefined): string[] {
   return normalizeAndFilterUrls(urls);
 }
 
-function normalizeAndFilterUrls(urls: unknown[]): string[] {
+function normalizeAndFilterUrls(urls: readonly unknown[]): string[] {
   return urls
     .filter((url): url is string => typeof url === "string")
     .map((url) => url.trim())
+    .map((url) => {
+      if (!url.toLowerCase().endsWith(".md")) {
+        throw new ConfigError(`Manifest URL must end with .md: ${url}`);
+      }
+      return url;
+    })
     .map(normalizeSourceUrl)
     .filter(Boolean);
 }
@@ -206,30 +230,4 @@ function splitSourceUrls(rawValue: string): string[] {
     .split(/\r?\n|,/u)
     .map((url) => url.trim())
     .filter(Boolean);
-}
-
-function parseManifestUrlsFromArgv(argv: string[]): string[] {
-  const urls: string[] = [];
-
-  for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i];
-    if (arg === undefined) {
-      continue;
-    }
-
-    if (arg === "--manifest-urls") {
-      i++;
-      while (i < argv.length) {
-        const nextArg = argv[i];
-        if (nextArg === undefined || nextArg.startsWith("-")) {
-          break;
-        }
-        urls.push(nextArg);
-        i++;
-      }
-      i--;
-    }
-  }
-
-  return urls;
 }
