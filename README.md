@@ -29,7 +29,6 @@ Note that this tool doesn't provide security checks. To find official skills rep
         "suggest-skills",
         "--output",
         ".agents/skills",
-        "--manifest-urls",
         "https://foo/manifest.md",
         "https://bar/manifest.md"
       ],
@@ -113,7 +112,6 @@ GitHub `blob` URLs are converted to `raw.githubusercontent.com` URLs automatical
 
 ## CLI Options
 
-- `--manifest-urls <url1> <url2> ...`: list of manifest URLs to use; can be used alongside the environment variable
 - `-o <dir>` or `--output <dir>`: output directory for installed skills
 - `generate [-r|--recursive] <github-url>`: generate markdown inventories from a GitHub skills directory or repo root
 - `server --port <number>`: run the streamable HTTP server

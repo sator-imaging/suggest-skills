@@ -72,20 +72,6 @@ describe("parseCli", () => {
     ).toThrow(/Manifest URL must end with .md: https:\/\/example.com\/manifest.txt/);
   });
 
-  test("ignores --manifest-urls but accepts positional arguments", () => {
-    const runtimeMode = parseCli(
-      ["node", "index.js", "--manifest-urls", "val", "https://example.com/1.md", "https://example.com/2.md"],
-      {},
-    );
-
-    // --manifest-urls is a flag (type: [Boolean]), so it consumes the immediate next 'val',
-    // and "https://example.com/1.md" and "https://example.com/2.md" are positional
-    expect(runtimeMode.config.sourceUrls).toEqual([
-      "https://example.com/1.md",
-      "https://example.com/2.md",
-    ]);
-  });
-
   test("handles inline output option -o=dir", () => {
     const runtimeMode = parseCli(
       ["node", "index.js", "-o=./out", "https://example.com/1.md"],
