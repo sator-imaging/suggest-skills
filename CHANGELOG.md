@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0](https://github.com/sator-imaging/suggest-skills/compare/v1.3.1...v2.0.0) (2026-05-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove deprecated --manifest-urls cli option ([#100](https://github.com/sator-imaging/suggest-skills/issues/100))
+
+### Features
+
+* remove deprecated --manifest-urls cli option ([#100](https://github.com/sator-imaging/suggest-skills/issues/100)) ([4d42e21](https://github.com/sator-imaging/suggest-skills/commit/4d42e2152fa9a6d0773675f7fe19078e7754012b))
+
 ## [1.3.1](https://github.com/sator-imaging/suggest-skills/compare/v1.3.0...v1.3.1) (2026-05-10)
 
 
