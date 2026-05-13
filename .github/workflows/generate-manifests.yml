@@ -77,6 +77,7 @@ jobs:
           - warpdotdev/oz-skills/tree/main/.agents/skills
           - vercel-labs/emulate/tree/main/skills
           - aws/agent-toolkit-for-aws/tree/main/skills
+          - anthropics/claude-for-legal
     env:
       # DO NOT forget add '/' at the end
       OFFICIAL_URL_PREFIXES: |
@@ -100,6 +101,7 @@ jobs:
       RECURSIVE_URL_PREFIXES: |
         android/skills
         aws/agent-toolkit-for-aws
+        anthropics/claude-for-legal
       GENERATED_DIR: generate/${{ strategy.job-index }}
       BRANCH: ${{ needs.prepare.outputs.branch }}
 
