@@ -244,13 +244,15 @@ jobs:
         run: |
           set -euo pipefail
 
+          BRANCH_NAME="${{ needs.prepare.outputs.branch }}"
+
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git fetch origin main:refs/remotes/origin/main
-          git fetch origin "${{ needs.prepare.outputs.branch }}" \
+          git fetch origin "$BRANCH_NAME" \
             || exit 0  # No changes
-          git checkout -B "${{ needs.prepare.outputs.branch }}" "origin/${{ needs.prepare.outputs.branch }}"
+          git checkout -B "$BRANCH_NAME" "origin/$BRANCH_NAME"
 
           for BASE_DIR in "$COMMUNITY_DIR" "$OFFICIAL_DIR"; do
             for SUB_DIR in agents skills designs; do
@@ -287,10 +289,10 @@ jobs:
             done
           done
 
-          git push --set-upstream origin "${{ needs.prepare.outputs.branch }}" || true
+          git push --set-upstream origin "$BRANCH_NAME" || true
 
           gh pr create \
             --base main \
-            --head "${{ needs.prepare.outputs.branch }}" \
-            --title "[bot] ${{ replace(needs.prepare.outputs.branch, 'bot/', '') }}" \
+            --head "$BRANCH_NAME" \
+            --title "[bot] ${BRANCH_NAME#bot/}" \
             --fill
