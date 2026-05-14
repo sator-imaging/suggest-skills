@@ -252,7 +252,8 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git fetch origin main:refs/remotes/origin/main
-          git fetch origin "${{ needs.prepare.outputs.branch }}"
+          git fetch origin "${{ needs.prepare.outputs.branch }}" \
+            || exit 0  # No changes
           git checkout -B "${{ needs.prepare.outputs.branch }}" "origin/${{ needs.prepare.outputs.branch }}"
 
           for BASE_DIR in "$COMMUNITY_DIR" "$OFFICIAL_DIR"; do
