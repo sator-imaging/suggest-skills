@@ -292,5 +292,5 @@ jobs:
           gh pr create \
             --base main \
             --head "${{ needs.prepare.outputs.branch }}" \
-            --title "[bot] ${{ needs.prepare.outputs.branch }}" \
+            --title "[bot] ${{ replace(needs.prepare.outputs.branch, 'bot/', '') }}" \
             --fill
