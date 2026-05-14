@@ -92,6 +92,10 @@ export async function runDownloadCommand(url: string, options: { recursive?: boo
     return true;
   });
 
+  if (finalFolderCandidates.size === 0 && filteredFileCandidates.length === 0) {
+    throw new Error("No skills, designs, or agents found in the specified location.");
+  }
+
   for (const folderPath of finalFolderCandidates) {
     const folderUrl = `https://github.com/${location.owner}/${location.repo}/tree/${location.ref}/${folderPath}`;
     logInfo(`Downloading folder: ${folderPath || "(root)"}`);
