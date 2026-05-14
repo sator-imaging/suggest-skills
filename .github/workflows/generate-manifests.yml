@@ -268,10 +268,11 @@ jobs:
 
                 PRIORITY=0
                 while read -r LOW_FILE; do
+                  [[ -n "$LOW_FILE" ]] || continue
                   if [[ "$LOW_FILE" == "$FILENAME" ]]; then
                     PRIORITY=1
                   else
-                    echo "NOT MATCH: $LOW_FILE == $FILENAME"
+                    echo "NOT MATCH: $LOW_FILE == $FILENAME" >&2
                   fi
                 done <<< "$LOW_PRIORITY_FILES"
 
