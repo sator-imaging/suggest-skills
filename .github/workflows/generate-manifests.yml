@@ -272,7 +272,7 @@ jobs:
                   if [[ "$LOW_FILE" == "$FILENAME" ]]; then
                     PRIORITY=1
                   else
-                    echo "NOT MATCH: $LOW_FILE == $FILENAME" >&2
+                    echo "NOT MATCH: $LOW_FILE == $FILENAME"
                   fi
                 done <<< "$LOW_PRIORITY_FILES"
 
