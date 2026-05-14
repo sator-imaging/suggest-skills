@@ -16,6 +16,33 @@ concurrency:
 env:
   COMMUNITY_DIR: community
   OFFICIAL_DIR: official
+  # DO NOT forget add '/' at the end
+  OFFICIAL_URL_PREFIXES: |
+    ### NOTE: DO NOT include 'github/'
+    ###       --> 'github/awesome-copilot' is an official, but community-managed skills registry.
+    ###github/
+    anthropics/
+    dotnet/
+    vercel-labs/
+    openai/
+    Kotlin/
+    figma/
+    cloudflare/
+    browser-use/
+    firebase/
+    facebook/
+    google-gemini/
+    google-labs-code/
+    android/
+    aws/
+  RECURSIVE_URL_PREFIXES: |
+    android/skills
+    aws/agent-toolkit-for-aws
+    anthropics/claude-for-legal
+  # These files are concatenated to ALL.md later
+  LOW_PRIORITY_FILES: |
+    github.awesome-copilot.skills.md
+    anthropics.claude-for-legal.skills.md
 
 jobs:
   prepare:
@@ -79,32 +106,6 @@ jobs:
           - aws/agent-toolkit-for-aws/tree/main/skills
           - anthropics/claude-for-legal
     env:
-      # DO NOT forget add '/' at the end
-      OFFICIAL_URL_PREFIXES: |
-        ### NOTE: DO NOT include 'github/'
-        ###       --> 'github/awesome-copilot' is an official, but community-managed skills registry.
-        ###github/
-        anthropics/
-        dotnet/
-        vercel-labs/
-        openai/
-        Kotlin/
-        figma/
-        cloudflare/
-        browser-use/
-        firebase/
-        facebook/
-        google-gemini/
-        google-labs-code/
-        android/
-        aws/
-      RECURSIVE_URL_PREFIXES: |
-        android/skills
-        aws/agent-toolkit-for-aws
-        anthropics/claude-for-legal
-      LOW_PRIORITY_FILES: |
-        github.awesome-copilot.skills.md
-        anthropics.claude-for-legal.skills.md
       GENERATED_DIR: generate/${{ strategy.job-index }}
       BRANCH: ${{ needs.prepare.outputs.branch }}
 
@@ -127,11 +128,7 @@ jobs:
 
       - name: Generate and classify manifest files
         env:
-          COMMUNITY_DIR: ${{ env.COMMUNITY_DIR }}
           GITHUB_PAT: ${{ secrets.GITHUB_PAT || github.token }}
-          OFFICIAL_DIR: ${{ env.OFFICIAL_DIR }}
-          OFFICIAL_URL_PREFIXES: ${{ env.OFFICIAL_URL_PREFIXES }}
-          RECURSIVE_URL_PREFIXES: ${{ env.RECURSIVE_URL_PREFIXES }}
           SOURCE_URL: ${{ matrix.url }}
           WORKDIR: ${{ runner.temp }}/${{ env.GENERATED_DIR }}
         run: |
@@ -242,9 +239,6 @@ jobs:
           fetch-depth: 0
 
       - name: Create pull request with gh
-        env:
-          GH_TOKEN: ${{ github.token }}
-          LOW_PRIORITY_FILES: ${{ env.LOW_PRIORITY_FILES }}
         run: |
           set -euo pipefail
 
@@ -268,7 +262,6 @@ jobs:
 
                 PRIORITY=0
                 while IFS= read -r LOW_FILE; do
-                  echo "MATCH: $LOW_FILE == $FILENAME" >> $GITHUB_STEP_SUMMARY
                   if [[ "$LOW_FILE" == "$FILENAME" ]]; then
                     PRIORITY=1
                   fi
