@@ -186,6 +186,7 @@ export async function runGenerateCommand(
   url: string,
   options: GenerateOptions = {},
 ): Promise<void> {
+  let writtenCount = 0;
   const outputs = await generateOutputs(url, options);
   const agentsPath = await writeGeneratedManifest(outputs.agents, "agents");
   const manifestPath = await writeGeneratedManifest(outputs.manifest, "skills");
@@ -193,14 +194,21 @@ export async function runGenerateCommand(
 
   if (agentsPath) {
     logInfo(`Wrote ${agentsPath}`);
+    writtenCount += 1;
   }
 
   if (manifestPath) {
     logInfo(`Wrote ${manifestPath}`);
+    writtenCount += 1;
   }
 
   if (designPath) {
     logInfo(`Wrote ${designPath}`);
+    writtenCount += 1;
+  }
+
+  if (writtenCount === 0) {
+    throw new Error("No manifest files were written.");
   }
 }
 

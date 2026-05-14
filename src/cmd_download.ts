@@ -10,6 +10,7 @@ import { analyzeTreeEntries, basename, dirname, toRelativePath } from "./generat
 import { logInfo, parseUrl } from "./utils.js";
 
 export async function runDownloadCommand(url: string, options: { recursive?: boolean }) {
+  let savedCount = 0;
   const parsedUrlForHostname = parseUrl(url);
   const hostname = parsedUrlForHostname?.hostname ?? "github.com";
 
@@ -92,10 +93,6 @@ export async function runDownloadCommand(url: string, options: { recursive?: boo
     return true;
   });
 
-  if (finalFolderCandidates.size === 0 && filteredFileCandidates.length === 0) {
-    throw new Error("No skills, designs, or agents found in the specified location.");
-  }
-
   for (const folderPath of finalFolderCandidates) {
     const folderUrl = `https://github.com/${location.owner}/${location.repo}/tree/${location.ref}/${folderPath}`;
     logInfo(`Downloading folder: ${folderPath || "(root)"}`);
@@ -103,6 +100,7 @@ export async function runDownloadCommand(url: string, options: { recursive?: boo
     for (const file of files) {
       const fullRepoPath = folderPath ? `${folderPath}/${file.path}` : file.path;
       await saveFile(hostname, location, fullRepoPath, file.content);
+      savedCount += 1;
     }
   }
 
@@ -110,6 +108,11 @@ export async function runDownloadCommand(url: string, options: { recursive?: boo
     logInfo(`Downloading file: ${file.path}`);
     const content = await fetchTextContent(file.url, `File ${file.path}`);
     await saveFile(hostname, location, file.path, content);
+    savedCount += 1;
+  }
+
+  if (savedCount === 0) {
+    throw new Error("No skills, designs, or agents were saved.");
   }
 }
 
