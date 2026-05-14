@@ -238,7 +238,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ needs.prepare.outputs.branch }}
+          ##ref: ${{ needs.prepare.outputs.branch }}
           fetch-depth: 0
 
       - name: Create pull request with gh
