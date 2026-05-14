@@ -268,7 +268,7 @@ jobs:
 
                 PRIORITY=0
                 while IFS= read -r LOW_FILE; do
-                  echo "MATCH: $LOW_FILE == $FILENAME" > $GITHUB_STEP_SUMMARY
+                  echo "MATCH: $LOW_FILE == $FILENAME" >> $GITHUB_STEP_SUMMARY
                   if [[ "$LOW_FILE" == "$FILENAME" ]]; then
                     PRIORITY=1
                   fi
