@@ -102,6 +102,9 @@ jobs:
         android/skills
         aws/agent-toolkit-for-aws
         anthropics/claude-for-legal
+      LOW_PRIORITY_FILES: |
+        github.awesome-copilot.skills.md
+        anthropics.claude-for-legal.skills.md
       GENERATED_DIR: generate/${{ strategy.job-index }}
       BRANCH: ${{ needs.prepare.outputs.branch }}
 
@@ -241,6 +244,7 @@ jobs:
       - name: Create pull request with gh
         env:
           GH_TOKEN: ${{ github.token }}
+          LOW_PRIORITY_FILES: ${{ env.LOW_PRIORITY_FILES }}
         run: |
           set -euo pipefail
 
@@ -250,11 +254,6 @@ jobs:
           git fetch origin main:refs/remotes/origin/main
           git fetch origin "${{ needs.prepare.outputs.branch }}"
           git checkout -B "${{ needs.prepare.outputs.branch }}" "origin/${{ needs.prepare.outputs.branch }}"
-
-          # Because 'awesome-copilot' has too many skills.
-          LOW_PRIORITY_FILES=(
-            "github.awesome-copilot.skills.md"
-          )
 
           for BASE_DIR in "$COMMUNITY_DIR" "$OFFICIAL_DIR"; do
             for SUB_DIR in agents skills designs; do
@@ -267,9 +266,9 @@ jobs:
                 FILENAME="$(basename "$MD_FILE")"
 
                 PRIORITY=0
-                for LOW_FILE in "${LOW_PRIORITY_FILES[@]}"; do
+                while IFS= read -r LOW_FILE; do
                   [[ "$LOW_FILE" == "$FILENAME" ]] && PRIORITY=1
-                done
+                done <<< "$LOW_PRIORITY_FILES"
 
                 printf "%d|%s\n" "$PRIORITY" "$MD_FILE"
               done | sort -n | cut -d'|' -f2- | while IFS= read -r MD_FILE; do
