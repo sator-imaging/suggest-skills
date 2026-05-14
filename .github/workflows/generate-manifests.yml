@@ -267,7 +267,7 @@ jobs:
                 FILENAME="$(basename "$MD_FILE")"
 
                 PRIORITY=0
-                while read -r LOW_FILE; do
+                while IFS= read -r LOW_FILE; do
                   [[ -n "$LOW_FILE" ]] || continue
                   if [[ "$LOW_FILE" == "$FILENAME" ]]; then
                     PRIORITY=1
