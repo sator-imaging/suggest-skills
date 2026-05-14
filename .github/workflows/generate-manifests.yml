@@ -271,9 +271,9 @@ jobs:
                   [[ -n "$LOW_FILE" ]] || continue
                   if [[ "$LOW_FILE" == "$FILENAME" ]]; then
                     PRIORITY=1
-                    echo "MATCH: $LOW_FILE == $FILENAME"
+                    echo "MATCH: $LOW_FILE == $FILENAME" > $GITHUB_STEP_SUMMARY
                   else
-                    echo "NOT MATCH: $LOW_FILE == $FILENAME"
+                    echo "NOT MATCH: $LOW_FILE == $FILENAME" > $GITHUB_STEP_SUMMARY
                   fi
                 done <<< "$LOW_PRIORITY_FILES"
 
