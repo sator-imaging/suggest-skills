@@ -37,8 +37,9 @@ env:
     aws/
   RECURSIVE_URL_PREFIXES: |
     android/skills
-    aws/agent-toolkit-for-aws
+    aws/agent-toolkit-for-aws/tree/main/skills
     anthropics/claude-for-legal
+    mattpocock/skills/tree/main/skills
   # These files are concatenated to ALL.md later
   LOW_PRIORITY_FILES: |
     github.awesome-copilot.skills.md
@@ -77,7 +78,7 @@ jobs:
           - dotnet/skills/tree/main/plugins/dotnet-test/agents
           - dotnet/skills/tree/main/plugins/dotnet-test/skills
           - garrytan/gstack
-          - mattpocock/skills
+          - mattpocock/skills/tree/main/skills
           ## Obsolete - obra/superpowers/tree/main/agents
           - obra/superpowers/tree/main/skills
           - addyosmani/agent-skills/tree/main/agents
