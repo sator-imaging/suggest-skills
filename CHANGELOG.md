@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/sator-imaging/suggest-skills/compare/v2.0.0...v2.0.1) (2026-05-15)
+
+
+### Bug Fixes
+
+* Verify actual file writes for download and generate commands ([#119](https://github.com/sator-imaging/suggest-skills/issues/119)) ([e37d398](https://github.com/sator-imaging/suggest-skills/commit/e37d398eaa68720765703ab2b8326fb9bc8bb3e6))
+
 ## [2.0.0](https://github.com/sator-imaging/suggest-skills/compare/v1.3.1...v2.0.0) (2026-05-12)
 
 
