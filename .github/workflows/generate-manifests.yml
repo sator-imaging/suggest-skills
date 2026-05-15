@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: generate-manifests
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   COMMUNITY_DIR: community
