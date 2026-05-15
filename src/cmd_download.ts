@@ -112,7 +112,7 @@ export async function runDownloadCommand(url: string, options: { recursive?: boo
   }
 
   if (savedCount === 0) {
-    throw new Error("No skills, designs, or agents were saved.");
+    throw new Error("No skills, designs, or agents found in the specified location.");
   }
 }
 

@@ -208,7 +208,7 @@ export async function runGenerateCommand(
   }
 
   if (writtenCount === 0) {
-    throw new Error("No manifest files were written.");
+    throw new Error("No manifest files were generated.");
   }
 }
 
