@@ -226,7 +226,6 @@
 | [WG Code Alchemist](https://github.com/github/awesome-copilot/blob/main/agents/wg-code-alchemist.agent.md) | Ask WG Code Alchemist to transform your code with Clean Code principles and SOLID design |
 | [WG Code Sentinel](https://github.com/github/awesome-copilot/blob/main/agents/wg-code-sentinel.agent.md) | Ask WG Code Sentinel to review your code for security issues. |
 | [WinForms Expert](https://github.com/github/awesome-copilot/blob/main/agents/WinFormsExpert.agent.md) | Support development of .NET (OOP) WinForms Designer compatible Apps. |
-| [WinUI 3 Expert](https://github.com/github/awesome-copilot/blob/main/agents/winui3-expert.agent.md) | Expert agent for WinUI 3 and Windows App SDK development. Prevents common UWP-to-WinUI 3 API mistakes, guides XAML controls, MVVM patterns, windowing, threading, app lifecycle, dialogs, and deployment for desktop Windows apps. |
 
 # runceel.ai-dev-template..github.agents
 
