@@ -65,6 +65,7 @@
 | [Debug Mode Instructions](https://github.com/github/awesome-copilot/blob/main/agents/debug.agent.md) | Debug your application to find and fix a bug |
 | [Declarative Agents Architect](https://github.com/github/awesome-copilot/blob/main/agents/declarative-agents-architect.agent.md) | None |
 | [Defender Scout KQL](https://github.com/github/awesome-copilot/blob/main/agents/defender-scout-kql.agent.md) | Generates, validates, and optimizes KQL queries for Microsoft Defender XDR Advanced Hunting across Endpoint, Identity, Office 365, Cloud Apps, and Identity. |
+| [Delphi Expert](https://github.com/github/awesome-copilot/blob/main/agents/delphi-expert.agent.md) | An agent designed to assist with software development tasks for Delphi/Object Pascal projects. |
 | [Demonstrate Understanding mode instructions](https://github.com/github/awesome-copilot/blob/main/agents/demonstrate-understanding.agent.md) | Validate user understanding of code, design patterns, and implementation details through guided questioning. |
 | [Devils Advocate](https://github.com/github/awesome-copilot/blob/main/agents/devils-advocate.agent.md) | I play the devil's advocate to challenge and stress-test your ideas by finding flaws, risks, and edge cases |
 | [DevOps Expert](https://github.com/github/awesome-copilot/blob/main/agents/devops-expert.agent.md) | DevOps specialist following the infinity loop principle (Plan → Code → Build → Test → Release → Deploy → Operate → Monitor) with focus on automation, collaboration, and continuous improvement |
