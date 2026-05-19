@@ -40,6 +40,7 @@ env:
     aws/agent-toolkit-for-aws/tree/main/skills
     anthropics/claude-for-legal
     mattpocock/skills/tree/main/skills
+    google-labs-code/stitch-skills/tree/main/plugins
   # These files are concatenated to ALL.md later
   LOW_PRIORITY_FILES: |
     github.awesome-copilot.skills.md
@@ -96,7 +97,7 @@ jobs:
           - firebase/agent-skills/tree/main/skills
           - facebook/react/tree/main/.claude/skills
           - google-gemini/gemini-cli/tree/main/.gemini/skills
-          - google-labs-code/stitch-skills/tree/main/skills
+          - google-labs-code/stitch-skills/tree/main/plugins
           - google-labs-code/design.md/tree/main/examples
           - VoltAgent/awesome-design-md/tree/ef729b271802ce7ed50f9e0928137b18942cde80/design-md
           - kzhrknt/awesome-design-md-jp/tree/main/design-md
