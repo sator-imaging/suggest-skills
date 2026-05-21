@@ -23,10 +23,13 @@ multi-ecosystem-groups:
 updates:
   - package-ecosystem: "npm"
     multi-ecosystem-group: "default"
+    patterns: ["*"]
     directory: "/"
   - package-ecosystem: "bun"
     multi-ecosystem-group: "default"
+    patterns: ["*"]
     directory: "/"
   - package-ecosystem: "nuget"
     multi-ecosystem-group: "default"
+    patterns: ["*"]
     directory: "/"
