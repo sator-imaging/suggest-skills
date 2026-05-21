@@ -16,33 +16,6 @@ concurrency:
 env:
   COMMUNITY_DIR: community
   OFFICIAL_DIR: official
-  # DO NOT forget add '/' at the end
-  OFFICIAL_URL_PREFIXES: |
-    ### NOTE: DO NOT include 'github/'
-    ###       --> 'github/awesome-copilot' is an official, but community-managed skills registry.
-    ###github/
-    anthropics/
-    dotnet/
-    vercel-labs/
-    openai/
-    Kotlin/
-    figma/
-    cloudflare/
-    browser-use/
-    firebase/
-    facebook/
-    google-gemini/
-    google-labs-code/
-    android/
-    aws/
-    GoogleChrome/
-  RECURSIVE_URL_PREFIXES: |
-    android/skills
-    aws/agent-toolkit-for-aws/tree/main/skills
-    anthropics/claude-for-legal
-    mattpocock/skills/tree/main/skills
-    google-labs-code/stitch-skills/tree/main/plugins
-    multica-ai/andrej-karpathy-skills
   # These files are concatenated to ALL.md later
   LOW_PRIORITY_FILES: |
     github.awesome-copilot.skills.md
@@ -112,6 +85,33 @@ jobs:
           - multica-ai/andrej-karpathy-skills
           - GoogleChrome/modern-web-guidance/tree/main/skills
     env:
+      # DO NOT forget add '/' at the end
+      OFFICIAL_URL_PREFIXES: |
+        ### NOTE: DO NOT include 'github/'
+        ###       --> 'github/awesome-copilot' is an official, but community-managed skills registry.
+        ###github/
+        anthropics/
+        dotnet/
+        vercel-labs/
+        openai/
+        Kotlin/
+        figma/
+        cloudflare/
+        browser-use/
+        firebase/
+        facebook/
+        google-gemini/
+        google-labs-code/
+        android/
+        aws/
+        GoogleChrome/
+      RECURSIVE_URL_PREFIXES: |
+        android/skills
+        aws/agent-toolkit-for-aws/tree/main/skills
+        anthropics/claude-for-legal
+        mattpocock/skills/tree/main/skills
+        google-labs-code/stitch-skills/tree/main/plugins
+        multica-ai/andrej-karpathy-skills
       GENERATED_DIR: generate/${{ strategy.job-index }}
       BRANCH: ${{ needs.prepare.outputs.branch }}
 
