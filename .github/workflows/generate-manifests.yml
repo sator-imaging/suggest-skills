@@ -35,6 +35,7 @@ env:
     google-labs-code/
     android/
     aws/
+    GoogleChrome/
   RECURSIVE_URL_PREFIXES: |
     android/skills
     aws/agent-toolkit-for-aws/tree/main/skills
@@ -109,6 +110,7 @@ jobs:
           - aws/agent-toolkit-for-aws/tree/main/skills
           - anthropics/claude-for-legal
           - multica-ai/andrej-karpathy-skills
+          - GoogleChrome/modern-web-guidance/tree/main/skills
     env:
       GENERATED_DIR: generate/${{ strategy.job-index }}
       BRANCH: ${{ needs.prepare.outputs.branch }}
