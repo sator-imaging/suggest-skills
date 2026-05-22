@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           registry-url: ${{ env.REPOSITORY_URL }}
-      - run: npm ci
+      - run: npm i
       - run: npm test
       - run: npm run build
       - run: npm publish
