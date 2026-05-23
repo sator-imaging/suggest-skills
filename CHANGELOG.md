@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.0.2](https://github.com/sator-imaging/suggest-skills/compare/v2.0.1...v2.0.2) (2026-05-23)
+
+
+### Bug Fixes
+
+* generate action ([502d45d](https://github.com/sator-imaging/suggest-skills/commit/502d45d39c28afb71f0199d53bdfc05a4df33e96))
+* generate action 2 ([f1ecc2c](https://github.com/sator-imaging/suggest-skills/commit/f1ecc2c1020791f4ed31b7b8995b16c04e4b9431))
+
 ## [2.0.1](https://github.com/sator-imaging/suggest-skills/compare/v2.0.0...v2.0.1) (2026-05-15)
 
 
