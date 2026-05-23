@@ -84,6 +84,7 @@ jobs:
           - anthropics/claude-for-legal
           - multica-ai/andrej-karpathy-skills
           - GoogleChrome/modern-web-guidance/tree/main/skills
+          - NousResearch/hermes-agent/tree/main/skills
     env:
       # DO NOT forget add '/' at the end
       OFFICIAL_URL_PREFIXES: |
@@ -112,6 +113,7 @@ jobs:
         mattpocock/skills/tree/main/skills
         google-labs-code/stitch-skills/tree/main/plugins
         multica-ai/andrej-karpathy-skills
+        NousResearch/hermes-agent/tree/main/skills
       GENERATED_DIR: generate/${{ strategy.job-index }}
       BRANCH: ${{ needs.prepare.outputs.branch }}
 
