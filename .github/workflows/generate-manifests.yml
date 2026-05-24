@@ -20,6 +20,7 @@ env:
   LOW_PRIORITY_FILES: |
     github.awesome-copilot.skills.md
     anthropics.claude-for-legal.skills.md
+    NousResearch.hermes-agent.skills.md
 
 jobs:
   prepare:
