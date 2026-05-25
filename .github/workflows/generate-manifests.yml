@@ -67,6 +67,7 @@ jobs:
           - runceel/ai-dev-template/tree/main/.github/agents
           - vercel-labs/agent-skills/tree/main/skills
           - openai/skills/tree/main/skills/.curated
+          - openai/skills/tree/main/skills/.system
           - Kotlin/kotlin-agent-skills/tree/main/skills
           - figma/mcp-server-guide/tree/main/skills
           - cloudflare/skills/tree/main/skills
