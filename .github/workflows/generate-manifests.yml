@@ -88,6 +88,7 @@ jobs:
           - multica-ai/andrej-karpathy-skills
           - GoogleChrome/modern-web-guidance/tree/main/skills
           - NousResearch/hermes-agent/tree/main/skills
+          - steipete/agent-scripts/tree/main/skills
     env:
       # DO NOT forget add '/' at the end
       OFFICIAL_URL_PREFIXES: |
