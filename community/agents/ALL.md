@@ -100,10 +100,11 @@
 | [gem-implementer-mobile](https://github.com/github/awesome-copilot/blob/main/agents/gem-implementer-mobile.agent.md) | Mobile implementation — React Native, Expo, Flutter with TDD. |
 | [gem-implementer](https://github.com/github/awesome-copilot/blob/main/agents/gem-implementer.agent.md) | TDD code implementation — features, bugs, refactoring. Never reviews own work. |
 | [gem-mobile-tester](https://github.com/github/awesome-copilot/blob/main/agents/gem-mobile-tester.agent.md) | Mobile E2E testing — Detox, Maestro, iOS/Android simulators. |
-| [gem-orchestrator](https://github.com/github/awesome-copilot/blob/main/agents/gem-orchestrator.agent.md) | The team lead: Orchestrates research, planning, implementation, and verification. |
+| [gem-orchestrator](https://github.com/github/awesome-copilot/blob/main/agents/gem-orchestrator.agent.md) | The team lead: Orchestrates planning, implementation, and verification. |
 | [gem-planner](https://github.com/github/awesome-copilot/blob/main/agents/gem-planner.agent.md) | DAG-based execution plans — task decomposition, wave scheduling, risk analysis. |
 | [gem-researcher](https://github.com/github/awesome-copilot/blob/main/agents/gem-researcher.agent.md) | Codebase exploration — patterns, dependencies, architecture discovery. |
 | [gem-reviewer](https://github.com/github/awesome-copilot/blob/main/agents/gem-reviewer.agent.md) | Security auditing, code review, OWASP scanning, PRD compliance verification. |
+| [gem-skill-creator](https://github.com/github/awesome-copilot/blob/main/agents/gem-skill-creator.agent.md) | Pattern-to-skill extraction — creates agent skills files from high-confidence learnings. |
 | [Gilfoyle Code Review Mode](https://github.com/github/awesome-copilot/blob/main/agents/gilfoyle.agent.md) | Code review and analysis with the sardonic wit and technical elitism of Bertram Gilfoyle from Silicon Valley. Prepare for brutal honesty about your code. |
 | [GitHub Actions Expert](https://github.com/github/awesome-copilot/blob/main/agents/github-actions-expert.agent.md) | GitHub Actions specialist focused on secure CI/CD workflows, action pinning, OIDC authentication, permissions least privilege, and supply-chain security |
 | [GitHub Actions Node Runtime Upgrade](https://github.com/github/awesome-copilot/blob/main/agents/github-actions-node-upgrade.agent.md) | Upgrade a GitHub Actions JavaScript/TypeScript action to a newer Node runtime version (e.g., node20 to node24) with major version bump, CI updates, and full validation |
