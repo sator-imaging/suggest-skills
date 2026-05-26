@@ -79,6 +79,7 @@ jobs:
           - vercel-labs/emulate/tree/main/skills
           - aws/agent-toolkit-for-aws/tree/main/skills
           - anthropics/claude-for-legal
+          - anthropics/knowledge-work-plugins
           - multica-ai/andrej-karpathy-skills
           - GoogleChrome/modern-web-guidance/tree/main/skills
           - NousResearch/hermes-agent/tree/main/skills
@@ -108,6 +109,7 @@ jobs:
         android/skills
         aws/agent-toolkit-for-aws/tree/main/skills
         anthropics/claude-for-legal
+        anthropics/knowledge-work-plugins
         mattpocock/skills/tree/main/skills
         google-labs-code/stitch-skills/tree/main/plugins
         multica-ai/andrej-karpathy-skills
