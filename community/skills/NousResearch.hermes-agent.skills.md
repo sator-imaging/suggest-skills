@@ -79,6 +79,7 @@
 | [xurl](https://github.com/NousResearch/hermes-agent/tree/main/skills/social-media/xurl) | X/Twitter via xurl CLI: post, search, DM, media, v2 API. | None |
 | [debugging-hermes-tui-commands](https://github.com/NousResearch/hermes-agent/tree/main/skills/software-development/debugging-hermes-tui-commands) | Debug Hermes TUI slash commands: Python, gateway, Ink UI. | None |
 | [hermes-agent-skill-authoring](https://github.com/NousResearch/hermes-agent/tree/main/skills/software-development/hermes-agent-skill-authoring) | Author in-repo SKILL.md: frontmatter, validator, structure. | None |
+| [hermes-s6-container-supervision](https://github.com/NousResearch/hermes-agent/tree/main/skills/software-development/hermes-s6-container-supervision) | Modify, debug, or extend the s6-overlay supervision tree inside the Hermes Agent Docker image — adding new services, debugging profile gateways, understanding the Architecture B main-program pattern. | None |
 | [node-inspect-debugger](https://github.com/NousResearch/hermes-agent/tree/main/skills/software-development/node-inspect-debugger) | Debug Node.js via --inspect + Chrome DevTools Protocol CLI. | None |
 | [plan](https://github.com/NousResearch/hermes-agent/tree/main/skills/software-development/plan) | Plan mode: write markdown plan to .hermes/plans/, no exec. | None |
 | [python-debugpy](https://github.com/NousResearch/hermes-agent/tree/main/skills/software-development/python-debugpy) | Debug Python: pdb REPL + debugpy remote (DAP). | None |
