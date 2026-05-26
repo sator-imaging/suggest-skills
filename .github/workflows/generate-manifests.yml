@@ -16,12 +16,12 @@ concurrency:
 env:
   COMMUNITY_DIR: community
   OFFICIAL_DIR: official
-  # These files have so much number of skills.
-  # --> Goes to low priority area in ALL.md
-  LOW_PRIORITY_FILES: |
-    github.awesome-copilot.skills.md
-    anthropics.claude-for-legal.skills.md
-    NousResearch.hermes-agent.skills.md
+  ## These files have so much number of skills.
+  ## --> Goes to low priority area in ALL.md
+  #LOW_PRIORITY_FILES: |
+  #  github.awesome-copilot.skills.md
+  #  anthropics.claude-for-legal.skills.md
+  #  NousResearch.hermes-agent.skills.md
 
 jobs:
   prepare:
@@ -276,14 +276,13 @@ jobs:
               find "$TARGET_DIR" -maxdepth 1 -type f -name "*.md" ! -name "ALL.md" | while IFS= read -r MD_FILE; do
                 FILENAME="$(basename "$MD_FILE")"
 
-                # NOTE: Low priority files are placed BEFORE others,
+                # NOTE: Large files are placed BEFORE others,
                 #       as AI prioritize later context.
                 PRIORITY=1
-                while IFS= read -r LOW_FILE; do
-                  if [[ "$LOW_FILE" == "$FILENAME" ]]; then
-                    PRIORITY=0
-                  fi
-                done <<< "$LOW_PRIORITY_FILES"
+                LINE_COUNT=$(wc -l < "$FILENAME")
+                if (( LINE_COUNT > 64 )); then
+                  PRIORITY=0
+                fi
 
                 printf "%d|%s\n" "$PRIORITY" "$MD_FILE"
               done | sort -n | cut -d'|' -f2- | while IFS= read -r MD_FILE; do
