@@ -105,10 +105,24 @@ export function parseMarkdownFrontMatterFields(markdown: string): MarkdownFrontM
   try {
     parsed = Bun.YAML.parse(normalizedFrontMatter);
   } catch (error) {
+    const parseError = error instanceof Error ? error.message : String(error);
+
+    if (parseError.includes("YAML Parse error") || parseError.includes("undefined is not an object")) {
+      const fallback = fallbackParseFrontMatter(frontMatter);
+      if (fallback.name !== null || fallback.description !== null) {
+        return {
+          description: normalizeFrontMatterField(fallback.description),
+          name: normalizeFrontMatterField(fallback.name),
+          parseError: null,
+          source: frontMatter,
+        };
+      }
+    }
+
     return {
       description: null,
       name: null,
-      parseError: error instanceof Error ? error.message : String(error),
+      parseError,
       source: frontMatter,
     };
   }
@@ -177,4 +191,56 @@ function collapseWhitespace(value: string): string {
 
 function stripTrailingCommas(value: string): string {
   return value.replace(/,(\s*[\]}])/gu, "$1");
+}
+
+function fallbackParseFrontMatter(frontMatter: string): {
+  name: string | null;
+  description: string | null;
+} {
+  const lines = frontMatter.split(/\r?\n/u);
+  let name: string | null = null;
+  let description: string | null = null;
+
+  for (const line of lines) {
+    const nameMatch = /^name:\s*(.+)$/u.exec(line);
+    if (nameMatch && name === null) {
+      const val = nameMatch[1].trim();
+      if (isValidFallbackValue(val)) {
+        name = unquote(val);
+      }
+    }
+
+    const descMatch = /^description:\s*(.+)$/u.exec(line);
+    if (descMatch && description === null) {
+      const val = descMatch[1].trim();
+      if (isValidFallbackValue(val)) {
+        description = unquote(val);
+      }
+    }
+  }
+
+  return { name, description };
+}
+
+function isValidFallbackValue(val: string): boolean {
+  if (val.startsWith(">") || val.startsWith("|")) {
+    return false;
+  }
+  if (val.startsWith("\"") && !val.endsWith("\"")) {
+    return false;
+  }
+  if (val.startsWith("'") && !val.endsWith("'")) {
+    return false;
+  }
+  return val !== "" && val !== "\"" && val !== "'";
+}
+
+function unquote(value: string): string {
+  if (
+    (value.startsWith("\"") && value.endsWith("\"")) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    return value.slice(1, -1);
+  }
+  return value;
 }
