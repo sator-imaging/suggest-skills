@@ -34,7 +34,7 @@ jobs:
     timeout-minutes: 10
     needs: prepare
     strategy:
-      max-parallel: 3   # To avoid GitHub API rate limit
+      max-parallel: 1   # Previously 3 is working but recently it fails continuously
       fail-fast: true
 
       # DO NOT forget to update url prefixes list
