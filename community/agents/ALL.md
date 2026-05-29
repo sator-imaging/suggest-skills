@@ -1,17 +1,3 @@
-# addyosmani.agent-skills.agents
-
-| Name | Description |
-| -----|-------------|
-| [code-reviewer](https://github.com/addyosmani/agent-skills/blob/main/agents/code-reviewer.md) | Senior code reviewer that evaluates changes across five dimensions — correctness, readability, architecture, security, and performance. Use for thorough code review before merge. |
-| [security-auditor](https://github.com/addyosmani/agent-skills/blob/main/agents/security-auditor.md) | Security engineer focused on vulnerability detection, threat modeling, and secure coding practices. Use for security-focused code review, threat analysis, or hardening recommendations. |
-| [test-engineer](https://github.com/addyosmani/agent-skills/blob/main/agents/test-engineer.md) | QA engineer specialized in test strategy, test writing, and coverage analysis. Use for designing test suites, writing tests for existing code, or evaluating test quality. |
-
-# garrytan.gstack.agents
-
-| Name | Description |
-| -----|-------------|
-| [gstack](https://github.com/garrytan/gstack/blob/main/SKILL.md) | Fast headless browser for QA testing and site dogfooding. Navigate pages, interact with elements, verify state, diff before/after, take annotated screenshots, test responsive layouts, forms, uploads, dialogs, and capture bug evidence. Use when asked to open or test a site, verify a deployment, dogfood a user flow, or file a bug with screenshots. (gstack) |
-
 # github.awesome-copilot.agents
 
 | Name | Description |
@@ -85,6 +71,7 @@
 | [Ember](https://github.com/github/awesome-copilot/blob/main/agents/ember.agent.md) | An AI partner, not an assistant. Ember carries fire from person to person — helping humans discover that AI partnership isn't something you learn, it's something you find. |
 | [C++ Expert](https://github.com/github/awesome-copilot/blob/main/agents/expert-cpp-software-engineer.agent.md) | Provide expert C++ software engineering guidance using modern C++ and industry best practices. |
 | [Expert .NET software engineer mode instructions](https://github.com/github/awesome-copilot/blob/main/agents/expert-dotnet-software-engineer.agent.md) | Provide expert .NET software engineering guidance using modern software design patterns. |
+| [expert-embedded-c-engineer](https://github.com/github/awesome-copilot/blob/main/agents/expert-embedded-c-engineer.agent.md) | Expert embedded C guidance for safety-critical systems — covers MISRA C:2012/2025 rule compliance, CERT C secure coding, static analysis tooling (Coverity, QAC, PC-lint), and defensive programming patterns that frontier models do not handle reliably by default. |
 | [Next.js Expert](https://github.com/github/awesome-copilot/blob/main/agents/expert-nextjs-developer.agent.md) | Expert Next.js 16 developer specializing in App Router, Server Components, Cache Components, Turbopack, and modern React patterns with TypeScript |
 | [Expert React Frontend Engineer](https://github.com/github/awesome-copilot/blob/main/agents/expert-react-frontend-engineer.agent.md) | Expert React 19.2 frontend engineer specializing in modern hooks, Server Components, Actions, TypeScript, and performance optimization |
 | [Fedora Linux Expert](https://github.com/github/awesome-copilot/blob/main/agents/fedora-linux-expert.agent.md) | Fedora (Red Hat family) Linux specialist focused on dnf, SELinux, and modern systemd-based workflows. |
@@ -229,6 +216,20 @@
 | [WG Code Alchemist](https://github.com/github/awesome-copilot/blob/main/agents/wg-code-alchemist.agent.md) | Ask WG Code Alchemist to transform your code with Clean Code principles and SOLID design |
 | [WG Code Sentinel](https://github.com/github/awesome-copilot/blob/main/agents/wg-code-sentinel.agent.md) | Ask WG Code Sentinel to review your code for security issues. |
 | [WinForms Expert](https://github.com/github/awesome-copilot/blob/main/agents/WinFormsExpert.agent.md) | Support development of .NET (OOP) WinForms Designer compatible Apps. |
+
+# addyosmani.agent-skills.agents
+
+| Name | Description |
+| -----|-------------|
+| [code-reviewer](https://github.com/addyosmani/agent-skills/blob/main/agents/code-reviewer.md) | Senior code reviewer that evaluates changes across five dimensions — correctness, readability, architecture, security, and performance. Use for thorough code review before merge. |
+| [security-auditor](https://github.com/addyosmani/agent-skills/blob/main/agents/security-auditor.md) | Security engineer focused on vulnerability detection, threat modeling, and secure coding practices. Use for security-focused code review, threat analysis, or hardening recommendations. |
+| [test-engineer](https://github.com/addyosmani/agent-skills/blob/main/agents/test-engineer.md) | QA engineer specialized in test strategy, test writing, and coverage analysis. Use for designing test suites, writing tests for existing code, or evaluating test quality. |
+
+# garrytan.gstack.agents
+
+| Name | Description |
+| -----|-------------|
+| [gstack](https://github.com/garrytan/gstack/blob/main/SKILL.md) | Fast headless browser for QA testing and site dogfooding. (gstack) |
 
 # runceel.ai-dev-template..github.agents
 
