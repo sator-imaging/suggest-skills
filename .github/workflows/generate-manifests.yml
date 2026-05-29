@@ -281,7 +281,7 @@ jobs:
                 # NOTE: Large files are placed BEFORE others,
                 #       as AI prioritize later context.
                 PRIORITY=1
-                LINE_COUNT=$(wc -l < "$FILENAME")
+                LINE_COUNT=$(wc -l < "$MD_FILE")
                 if (( LINE_COUNT > 64 )); then
                   PRIORITY=0
                 fi
