@@ -42,6 +42,7 @@
 | [swiftui-performance-audit](https://github.com/steipete/agent-scripts/tree/main/skills/swiftui-performance-audit) | SwiftUI performance: render, scroll, CPU/memory, updates, layout, Instruments. | `references` (4 files) |
 | [swiftui-view-refactor](https://github.com/steipete/agent-scripts/tree/main/skills/swiftui-view-refactor) | SwiftUI view refactor/review: layout, DI, Observation, view models. | `references/mv-patterns.md` |
 | [things-todo](https://github.com/steipete/agent-scripts/tree/main/skills/things-todo) | Things 3 via things CLI: add, list, search, update, delete, verify. | None |
+| [twilio-sms](https://github.com/steipete/agent-scripts/tree/main/skills/twilio-sms) | Twilio SMS CLI: buy/list/keep numbers, send/check messages, credential routing. | `agents/openai.yaml` |
 | [video-transcript-downloader](https://github.com/steipete/agent-scripts/tree/main/skills/video-transcript-downloader) | yt-dlp downloads: video, audio, subtitles, transcripts, clips, playlists. | `package-lock.json`, `package.json`, `scripts/vtd.js` |
 | [vm-lab](https://github.com/steipete/agent-scripts/tree/main/skills/vm-lab) | Parallels macOS VM lab: GUI automation, Peekaboo, TCC, Ghostty. | `agents/openai.yaml`, `scripts/parallels_type.py` |
 | [whatsapp](https://github.com/steipete/agent-scripts/tree/main/skills/whatsapp) | WhatsApp router: history/search/read/send; wacrawl read, wacli live. | None |
