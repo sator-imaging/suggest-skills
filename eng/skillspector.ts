@@ -5,6 +5,7 @@
  * 1. Build a list of skills and unique repos to clone.
  * 2. Clone repos (with submodules).
  * 3. Scan each skill directory.
+ * 4. Write "Security Risk" column back into each ALL.md (one write per file).
  *
  * Uses ts-fibers for concurrency with per-operation timeout.
  *
@@ -54,6 +55,8 @@ interface SkillEntry {
   repo: string;
   ref: string;
   skillPath: string;
+  /** Which manifest file this skill came from */
+  manifest: string;
 }
 
 interface CloneTarget {
@@ -104,6 +107,12 @@ function parseScore(md: string): string {
   return m?.[1] ?? "-";
 }
 
+/** Extract just the number from "XX/100" */
+function scoreNumber(score: string): string {
+  const m = score.match(/^(\d+)/);
+  return m?.[1] ?? "";
+}
+
 function parseSeverity(md: string): string {
   const m = md.match(/Severity \| (\w+)/);
   return m?.[1] ?? "-";
@@ -145,7 +154,7 @@ function buildLists(tmpBase: string) {
       const ref = slashIdx >= 0 ? refAndPath.slice(0, slashIdx) : refAndPath;
       const skillPath = slashIdx >= 0 ? refAndPath.slice(slashIdx + 1) : "";
 
-      skills.push({ name, url, repo, ref, skillPath });
+      skills.push({ name, url, repo, ref, skillPath, manifest });
     }
   }
 
@@ -296,6 +305,59 @@ async function scanSkills(
 }
 
 // ============================================================
+// Step 4: Update ALL.md files with Security Risk column
+// ============================================================
+
+function updateManifests(results: ScanResult[]) {
+  // Build a lookup: skill URL -> score number
+  const scoreByUrl = new Map<string, string>();
+  for (const r of results) {
+    if (!r) continue;
+    scoreByUrl.set(r.skill.url, scoreNumber(r.score));
+  }
+
+  for (const manifest of MANIFEST_FILES) {
+    const filepath = join(REPO_ROOT, manifest);
+    if (!existsSync(filepath)) continue;
+
+    const content = readFileSync(filepath, "utf-8");
+    const lines = content.split("\n");
+    const outLines: string[] = [];
+
+    for (const line of lines) {
+      // Detect header row: | Name | Description | Bundled Assets |
+      if (/^\|\s*Name\s*\|/.test(line)) {
+        // Add Security Risk column to header
+        outLines.push(line.replace(/\s*\|\s*$/, " | Security Risk |"));
+        continue;
+      }
+
+      // Detect separator row: | ----|-------------|----------------|
+      if (/^\|\s*-+/.test(line) && !/^\|\s*\[/.test(line)) {
+        outLines.push(line.replace(/\s*\|\s*$/, "---|"));
+        continue;
+      }
+
+      // Detect skill data row: | [name](url) | ... |
+      const urlMatch = line.match(/\|\s*\[([^\]]+)\]\((https:\/\/github\.com\/[^)]+)\)/);
+      if (urlMatch) {
+        const url = urlMatch[2];
+        const num = scoreByUrl.get(url) ?? "";
+        outLines.push(line.replace(/\s*\|\s*$/, ` | ${num} |`));
+        continue;
+      }
+
+      // Non-table lines pass through unchanged
+      outLines.push(line);
+    }
+
+    // Write the entire file at once
+    writeFileSync(filepath, outLines.join("\n"));
+    console.log(`[INFO] Updated: ${manifest}`);
+  }
+}
+
+// ============================================================
 // Report
 // ============================================================
 
@@ -403,7 +465,10 @@ async function main() {
   // 3. Scan
   const results = await scanSkills(skills, cloneTargets, failedClones);
 
-  // 4. Report
+  // 4. Update ALL.md files with Security Risk column
+  updateManifests(results);
+
+  // 5. Report
   writeReport(results);
 
   // Cleanup
