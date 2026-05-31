@@ -32,7 +32,8 @@ const { values: args } = parseArgs({
 const SARIF_OUTPUT  = resolve(args.sarif!);
 const MARKDOWN_OUTPUT = resolve(args.markdown!);
 const NO_LLM       = args["no-llm"]!;
-const TIMEOUT_MS   = Number(args.timeout ?? 180) * 1000;
+const TIMEOUT_SEC  = 180;
+const TIMEOUT_MS   = Number(args.timeout ?? TIMEOUT_SEC) * 1000;
 const CONCURRENCY  = Number(args.jobs ?? 3);
 
 const REPO_ROOT = resolve(import.meta.dir, "..");
