@@ -9,7 +9,7 @@
 - MCP server for recommending and downloading repository-specific AI agent skills
 - Supports `stdio` and HTTP runtime modes from the same codebase
 
-Note that this tool doesn't provide security checks. To find official skills repository, visit: https://skills.sh/official
+Security scanning is provided by [NVIDIA SkillSpector](https://github.com/NVIDIA/skillspector) via the [CI workflow](./.github/workflows/skillspector.yml). To find official skills repository, visit: https://skills.sh/official
 
 
 
