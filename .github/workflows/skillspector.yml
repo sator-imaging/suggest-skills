@@ -7,6 +7,8 @@ on:
   workflow_dispatch:
 
 permissions:
+  contents: write
+  pull-requests: write
   security-events: write
 
 jobs:
@@ -43,6 +45,28 @@ jobs:
             --sarif  skillspector.sarif \
             --markdown skillspector-report.md \
             --no-llm
+
+      - name: Create PR with updated ALL.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- '**/ALL.md'; then
+            echo "No changes to ALL.md files"
+            exit 0
+          fi
+          BRANCH="skillspector/update-security-risk"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add '**/ALL.md'
+          git commit -m "chore: update Security Risk scores in ALL.md"
+          git push --force origin "$BRANCH"
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "chore: update Security Risk scores" \
+            --body "Automated update of Security Risk column in ALL.md files via SkillSpector scan." \
+            || gh pr edit "$BRANCH" --body "Automated update of Security Risk column in ALL.md files via SkillSpector scan."
 
       - name: Post markdown to step summary
         run: cat skillspector-report.md >> $GITHUB_STEP_SUMMARY || true
