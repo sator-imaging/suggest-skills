@@ -129,6 +129,14 @@ function parseSeverity(md: string): string {
   return m?.[1] ?? "-";
 }
 
+/** Strip ## Components and ## Issues sections from skillspector markdown. */
+function stripDetailSections(md: string): string {
+  // Remove each section (heading + all content) until next same-or-upper level heading (# or ##) or end
+  return md
+    .replace(/\n## (?:Components|Issues)\b[^\n]*\n[\s\S]*?(?=\n#{1,2} (?!#)|\n*$)/g, "")
+    .trimEnd();
+}
+
 // --- Main ---
 
 async function main() {
@@ -222,13 +230,13 @@ async function main() {
     lines.push(`| ${r.index + 1} | ${r.url} | ${r.score} | ${r.severity} | ${r.status} |`);
   }
 
-  // Details for successful scans
+  // Details for successful scans (Risk Assessment only, no Components/Issues)
   for (const r of results) {
     if (!r || !r.markdown) continue;
     lines.push("");
     lines.push(`<details><summary><code>${r.url}</code> — ${r.severity} (${r.score})</summary>`);
     lines.push("");
-    lines.push(r.markdown);
+    lines.push(stripDetailSections(r.markdown));
     lines.push("");
     lines.push("</details>");
   }
