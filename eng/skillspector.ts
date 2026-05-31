@@ -1,7 +1,10 @@
 /**
  * eng/skillspector.ts
  *
- * Scans repositories listed in ALL.md manifests using NVIDIA SkillSpector.
+ * Scans individual skills listed in ALL.md manifests using NVIDIA SkillSpector.
+ * Each skill is installed via `gh skill install` into a temporary directory,
+ * then scanned locally with `skillspector`.
+ *
  * Uses ts-fibers for concurrent scanning with per-scan timeout (AbortController + process kill).
  *
  * Usage:
@@ -10,7 +13,7 @@
  */
 
 import { Fibers } from "ts-fibers";
-import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync } from "fs";
+import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join, resolve } from "path";
 import { spawn, type Subprocess } from "bun";
 import { parseArgs } from "util";
@@ -29,35 +32,48 @@ const { values: args } = parseArgs({
   strict: true,
 });
 
-const SARIF_OUTPUT  = resolve(args.sarif!);
+const SARIF_OUTPUT = resolve(args.sarif!);
 const MARKDOWN_OUTPUT = resolve(args.markdown!);
-const NO_LLM       = args["no-llm"]!;
+const NO_LLM = args["no-llm"]!;
 
 const DEFAULT_TIMEOUT_SEC = 180 as const;
 const DEFAULT_CONCURRENCY = 3 as const;
 
-const TIMEOUT_MS   = Number(args.timeout ?? DEFAULT_TIMEOUT_SEC) * 1000;
-const CONCURRENCY  = Number(args.jobs ?? DEFAULT_CONCURRENCY);
+const TIMEOUT_MS = Number(args.timeout ?? DEFAULT_TIMEOUT_SEC) * 1000;
+const CONCURRENCY = Number(args.jobs ?? DEFAULT_CONCURRENCY);
 
 const REPO_ROOT = resolve(import.meta.dir, "..");
 const MANIFEST_FILES = ["official/skills/ALL.md", "community/skills/ALL.md"];
 
 // --- Types ---
 
+interface SkillEntry {
+  /** Display name of the skill */
+  name: string;
+  /** Full GitHub URL to the skill (e.g. https://github.com/owner/repo/tree/ref/path/to/skill) */
+  url: string;
+  /** Repository in OWNER/REPO format */
+  repo: string;
+  /** Skill path within the repo (e.g. skills/my-skill or path/to/skills/my-skill) */
+  skillPath: string;
+}
+
 interface ScanResult {
   index: number;
-  url: string;
-  status: "OK" | "FAILED" | "TIMEOUT";
+  skill: SkillEntry;
+  status: "OK" | "FAILED" | "TIMEOUT" | "INSTALL_FAILED";
   markdown: string;
   score: string;
   severity: string;
   sarif: object | null;
 }
 
-// --- Extract repo URLs from manifests ---
+// --- Extract individual skill entries from manifests ---
 
-function extractRepoUrls(): string[] {
-  const urls = new Set<string>();
+function extractSkillEntries(): SkillEntry[] {
+  const entries: SkillEntry[] = [];
+  const seen = new Set<string>();
+
   for (const manifest of MANIFEST_FILES) {
     const filepath = join(REPO_ROOT, manifest);
     if (!existsSync(filepath)) {
@@ -65,32 +81,84 @@ function extractRepoUrls(): string[] {
       continue;
     }
     const content = readFileSync(filepath, "utf-8");
-    const matches = content.matchAll(/\(https:\/\/github\.com\/([^)]+)\)/g);
-    for (const m of matches) {
-      // Normalize to repo root: owner/repo
-      const parts = m[1].split("/");
-      if (parts.length >= 2) {
-        urls.add(`https://github.com/${parts[0]}/${parts[1]}`);
-      }
+
+    // Match skill table rows: | [name](url) | description | assets |
+    const rowPattern = /\|\s*\[([^\]]+)\]\((https:\/\/github\.com\/([^/]+\/[^/]+)\/tree\/([^)]+))\)/g;
+    for (const m of content.matchAll(rowPattern)) {
+      const name = m[1];
+      const url = m[2];
+      const repo = m[3];
+      const refAndPath = m[4]; // e.g. "main/skills/my-skill" or "main/ai-governance-legal/skills/ai-inventory"
+
+      // Skip duplicates
+      if (seen.has(url)) continue;
+      seen.add(url);
+
+      // Extract the skill path (everything after the ref, which is the first segment)
+      const slashIdx = refAndPath.indexOf("/");
+      const skillPath = slashIdx >= 0 ? refAndPath.slice(slashIdx + 1) : refAndPath;
+
+      entries.push({ name, url, repo, skillPath });
     }
   }
-  return [...urls].sort();
+
+  return entries;
 }
 
-// --- Run a single scan with timeout ---
+// --- Install a skill using `gh skill install` ---
+
+async function installSkill(
+  skill: SkillEntry,
+  installDir: string,
+  timeoutMs: number,
+): Promise<{ success: boolean; timedOut: boolean }> {
+  // gh skill install <owner/repo> --dir <dir> --force
+  // Use the skill path for efficient install (skips full tree discovery)
+  const cmdArgs = [
+    "skill", "install",
+    skill.repo,
+    skill.skillPath,
+    "--dir", installDir,
+    "--force",
+  ];
+
+  const ac = new AbortController();
+  let proc: Subprocess | undefined;
+
+  const timeoutPromise = Fibers.delay(timeoutMs, ac);
+
+  proc = spawn(["gh", ...cmdArgs], {
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+
+  const exitPromise = proc.exited.then((code) => ({ kind: "done" as const, code }));
+  const timeoutDone = timeoutPromise.then(() => ({ kind: "timeout" as const, code: -1 }));
+
+  const race = await Promise.race([exitPromise, timeoutDone]);
+
+  if (race.kind === "timeout") {
+    proc.kill(9);
+    return { success: false, timedOut: true };
+  }
+
+  ac.abort();
+  return { success: race.code === 0, timedOut: false };
+}
+
+// --- Run skillspector scan on a local directory ---
 
 async function runScan(
-  url: string,
+  dir: string,
   format: "markdown" | "sarif",
   timeoutMs: number,
 ): Promise<{ output: string; timedOut: boolean; exitCode: number }> {
-  const cmdArgs = ["scan", url, "--format", format];
+  const cmdArgs = ["scan", dir, "--format", format];
   if (NO_LLM) cmdArgs.push("--no-llm");
 
   const ac = new AbortController();
   let proc: Subprocess | undefined;
 
-  // Start timeout race
   const timeoutPromise = Fibers.delay(timeoutMs, ac);
 
   proc = spawn(["skillspector", ...cmdArgs], {
@@ -98,7 +166,6 @@ async function runScan(
     stderr: "pipe",
   });
 
-  // Read stdout — resolves when process closes its stdout (i.e. exits)
   const stdoutPromise = new Response(proc.stdout).text()
     .then((text) => ({ kind: "done" as const, text }));
   const timeoutDone = timeoutPromise
@@ -107,13 +174,11 @@ async function runScan(
   const race = await Promise.race([stdoutPromise, timeoutDone]);
 
   if (race.kind === "timeout") {
-    proc.kill(9); // SIGKILL — forcefully stop
+    proc.kill(9);
     return { output: "", timedOut: true, exitCode: -1 };
   }
 
-  // Process finished before timeout — cancel the timer
   ac.abort();
-
   return { output: race.text, timedOut: false, exitCode: proc.exitCode ?? 0 };
 }
 
@@ -131,7 +196,6 @@ function parseSeverity(md: string): string {
 
 /** Strip ## Components and ## Issues sections from skillspector markdown. */
 function stripDetailSections(md: string): string {
-  // Remove each section (heading + all content) until next same-or-upper level heading (# or ##) or end
   return md
     .replace(/\n## (?:Components|Issues)\b[^\n]*\n[\s\S]*?(?=\n#{1,2} (?!#)|\n*$)/g, "")
     .trimEnd();
@@ -140,26 +204,32 @@ function stripDetailSections(md: string): string {
 // --- Main ---
 
 async function main() {
-  const urls = extractRepoUrls();
-  const total = urls.length;
+  const skills = extractSkillEntries();
+  const total = skills.length;
 
   if (total === 0) {
-    console.warn("[WARN] No repositories found.");
+    console.warn("[WARN] No skills found in manifests.");
     process.exit(0);
   }
 
-  console.log(`[INFO] Found ${total} unique repositories to scan`);
+  console.log(`[INFO] Found ${total} individual skills to scan`);
   console.log(`[INFO] Concurrency: ${CONCURRENCY}, Timeout: ${TIMEOUT_MS / 1000}s per scan`);
 
   const results: ScanResult[] = new Array(total);
 
+  // Use a shared temp base for installations
+  const tmpBase = join(REPO_ROOT, ".skillspector-tmp");
+  const { mkdirSync, rmSync } = await import("fs");
+  rmSync(tmpBase, { recursive: true, force: true });
+  mkdirSync(tmpBase, { recursive: true });
+
   const fibers = Fibers.forEach(
     CONCURRENCY,
-    urls.map((url, i) => ({ url, index: i })),
+    skills.map((skill, i) => ({ skill, index: i })),
     async (item) => {
-      const { url, index } = item;
+      const { skill, index } = item;
       const num = index + 1;
-      console.log(`[${num}/${total}] ${url}`);
+      console.log(`[${num}/${total}] ${skill.repo} :: ${skill.name}`);
 
       let status: ScanResult["status"] = "OK";
       let markdown = "";
@@ -167,27 +237,43 @@ async function main() {
       let severity = "-";
       let sarif: object | null = null;
 
-      // Run markdown scan
-      const mdResult = await runScan(url, "markdown", TIMEOUT_MS);
+      // Install skill to a unique temp directory
+      const installDir = join(tmpBase, `${index}`);
+      mkdirSync(installDir, { recursive: true });
 
-      if (mdResult.timedOut) {
+      const installResult = await installSkill(skill, installDir, TIMEOUT_MS);
+
+      if (installResult.timedOut) {
         status = "TIMEOUT";
-        console.error(`  [TIMEOUT] Killed after ${TIMEOUT_MS / 1000}s: ${url}`);
-      } else if (mdResult.output) {
-        markdown = mdResult.output;
-        score = parseScore(markdown);
-        severity = parseSeverity(markdown);
-      } else {
-        status = "FAILED";
-        console.error(`  [FAILED] ${url}`);
+        console.error(`  [TIMEOUT] gh skill install killed after ${TIMEOUT_MS / 1000}s: ${skill.url}`);
+      } else if (!installResult.success) {
+        status = "INSTALL_FAILED";
+        console.error(`  [INSTALL_FAILED] gh skill install failed: ${skill.url}`);
       }
 
-      // Run SARIF scan only if not timed out
-      if (status !== "TIMEOUT") {
-        const sarifResult = await runScan(url, "sarif", TIMEOUT_MS);
+      // Run skillspector scan on the installed skill directory
+      if (status === "OK") {
+        const mdResult = await runScan(installDir, "markdown", TIMEOUT_MS);
+
+        if (mdResult.timedOut) {
+          status = "TIMEOUT";
+          console.error(`  [TIMEOUT] Scan killed after ${TIMEOUT_MS / 1000}s: ${skill.url}`);
+        } else if (mdResult.output) {
+          markdown = mdResult.output;
+          score = parseScore(markdown);
+          severity = parseSeverity(markdown);
+        } else {
+          status = "FAILED";
+          console.error(`  [FAILED] Scan returned no output: ${skill.url}`);
+        }
+      }
+
+      // Run SARIF scan only if not already failed/timed out
+      if (status === "OK") {
+        const sarifResult = await runScan(installDir, "sarif", TIMEOUT_MS);
         if (sarifResult.timedOut) {
           status = "TIMEOUT";
-          console.error(`  [TIMEOUT] SARIF scan killed after ${TIMEOUT_MS / 1000}s: ${url}`);
+          console.error(`  [TIMEOUT] SARIF scan killed after ${TIMEOUT_MS / 1000}s: ${skill.url}`);
         } else if (sarifResult.output) {
           try {
             sarif = JSON.parse(sarifResult.output);
@@ -197,7 +283,10 @@ async function main() {
         }
       }
 
-      const result: ScanResult = { index, url, status, markdown, score, severity, sarif };
+      // Clean up installed skill
+      rmSync(installDir, { recursive: true, force: true });
+
+      const result: ScanResult = { index, skill, status, markdown, score, severity, sarif };
       results[index] = result;
       return result;
     },
@@ -213,28 +302,32 @@ async function main() {
     // results are stored in the array by index inside the factory
   }
 
+  // Cleanup temp base
+  rmSync(tmpBase, { recursive: true, force: true });
+
   // --- Assemble markdown report ---
 
-  const timedOutRepos = results.filter((r) => r?.status === "TIMEOUT");
-  const failedRepos = results.filter((r) => r?.status === "FAILED");
-  const okRepos = results.filter((r) => r?.status === "OK");
+  const timedOutSkills = results.filter((r) => r?.status === "TIMEOUT");
+  const failedSkills = results.filter((r) => r?.status === "FAILED");
+  const installFailedSkills = results.filter((r) => r?.status === "INSTALL_FAILED");
+  const okSkills = results.filter((r) => r?.status === "OK");
 
   const lines: string[] = [];
   lines.push("## SkillSpector Scan Results");
   lines.push("");
-  lines.push("| # | Repository | Score | Severity | Status |");
-  lines.push("|---|-----------|-------|----------|--------|");
+  lines.push("| # | Repository | Skill | Score | Severity | Status |");
+  lines.push("|---|-----------|-------|-------|----------|--------|");
 
   for (const r of results) {
     if (!r) continue;
-    lines.push(`| ${r.index + 1} | ${r.url} | ${r.score} | ${r.severity} | ${r.status} |`);
+    lines.push(`| ${r.index + 1} | ${r.skill.repo} | ${r.skill.name} | ${r.score} | ${r.severity} | ${r.status} |`);
   }
 
   // Details for successful scans (Risk Assessment only, no Components/Issues)
   for (const r of results) {
     if (!r || !r.markdown) continue;
     lines.push("");
-    lines.push(`<details><summary><code>${r.url}</code> — ${r.severity} (${r.score})</summary>`);
+    lines.push(`<details><summary><code>${r.skill.repo} :: ${r.skill.name}</code> — ${r.severity} (${r.score})</summary>`);
     lines.push("");
     lines.push(stripDetailSections(r.markdown));
     lines.push("");
@@ -242,23 +335,37 @@ async function main() {
   }
 
   // Timeout report section
-  if (timedOutRepos.length > 0) {
+  if (timedOutSkills.length > 0) {
     lines.push("");
     lines.push("---");
     lines.push("");
-    lines.push("### Timed Out Repositories");
+    lines.push("### Timed Out Skills");
     lines.push("");
-    lines.push(`The following ${timedOutRepos.length} repositor${timedOutRepos.length === 1 ? "y" : "ies"} exceeded the ${TIMEOUT_MS / 1000}s timeout and ${timedOutRepos.length === 1 ? "was" : "were"} killed:`);
+    lines.push(`The following ${timedOutSkills.length} skill${timedOutSkills.length === 1 ? "" : "s"} exceeded the ${TIMEOUT_MS / 1000}s timeout:`);
     lines.push("");
-    for (const r of timedOutRepos) {
-      lines.push(`- ${r.url}`);
+    for (const r of timedOutSkills) {
+      lines.push(`- ${r.skill.repo} :: ${r.skill.name}`);
+    }
+  }
+
+  // Install failures section
+  if (installFailedSkills.length > 0) {
+    lines.push("");
+    lines.push("---");
+    lines.push("");
+    lines.push("### Install Failures");
+    lines.push("");
+    lines.push(`The following ${installFailedSkills.length} skill${installFailedSkills.length === 1 ? "" : "s"} failed to install via \`gh skill install\`:`);
+    lines.push("");
+    for (const r of installFailedSkills) {
+      lines.push(`- ${r.skill.repo} :: ${r.skill.name} — ${r.skill.url}`);
     }
   }
 
   // Summary
   lines.push("");
   lines.push("---");
-  lines.push(`**Scanned: ${results.filter((r) => r).length} | OK: ${okRepos.length} | Failed: ${failedRepos.length} | Timed out: ${timedOutRepos.length}**`);
+  lines.push(`**Scanned: ${results.filter((r) => r).length} | OK: ${okSkills.length} | Failed: ${failedSkills.length} | Install failed: ${installFailedSkills.length} | Timed out: ${timedOutSkills.length}**`);
 
   writeFileSync(MARKDOWN_OUTPUT, lines.join("\n") + "\n");
 
@@ -305,15 +412,23 @@ async function main() {
   // --- Summary ---
 
   console.log("");
-  console.log(`[INFO] Done. OK: ${okRepos.length}, Failed: ${failedRepos.length}, Timed out: ${timedOutRepos.length}`);
+  console.log(`[INFO] Done. OK: ${okSkills.length}, Failed: ${failedSkills.length}, Install failed: ${installFailedSkills.length}, Timed out: ${timedOutSkills.length}`);
   console.log(`[INFO] SARIF:    ${SARIF_OUTPUT}`);
   console.log(`[INFO] Markdown: ${MARKDOWN_OUTPUT}`);
 
-  if (timedOutRepos.length > 0) {
+  if (timedOutSkills.length > 0) {
     console.log("");
-    console.log(`[WARN] ${timedOutRepos.length} scan(s) were killed due to timeout:`);
-    for (const r of timedOutRepos) {
-      console.log(`       - ${r.url}`);
+    console.log(`[WARN] ${timedOutSkills.length} scan(s) were killed due to timeout:`);
+    for (const r of timedOutSkills) {
+      console.log(`       - ${r.skill.repo} :: ${r.skill.name}`);
+    }
+  }
+
+  if (installFailedSkills.length > 0) {
+    console.log("");
+    console.log(`[WARN] ${installFailedSkills.length} skill(s) failed to install:`);
+    for (const r of installFailedSkills) {
+      console.log(`       - ${r.skill.repo} :: ${r.skill.name}`);
     }
   }
 }
