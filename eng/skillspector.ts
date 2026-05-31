@@ -6,7 +6,7 @@
  *
  * Usage:
  *   bun eng/skillspector.ts [--sarif <path>] [--markdown <path>] [--no-llm]
- *                           [--timeout <ms>] [--jobs <n>]
+ *                           [--timeout <seconds>] [--jobs <n>]
  */
 
 import { Fibers } from "ts-fibers";
@@ -23,17 +23,17 @@ const { values: args } = parseArgs({
     sarif: { type: "string", default: "skillspector.sarif" },
     markdown: { type: "string", default: "skillspector-report.md" },
     "no-llm": { type: "boolean", default: false },
-    timeout: { type: "string", default: "180000" }, // 3 min in ms
-    jobs: { type: "string", default: "4" },
+    timeout: { type: "string", default: "180" }, // seconds
+    jobs: { type: "string", default: "3" },
   },
   strict: true,
 });
 
-const SARIF_OUTPUT = resolve(args.sarif!);
+const SARIF_OUTPUT  = resolve(args.sarif!);
 const MARKDOWN_OUTPUT = resolve(args.markdown!);
-const NO_LLM = args["no-llm"]!;
-const TIMEOUT_MS = parseInt(args.timeout!, 10);
-const CONCURRENCY = parseInt(args.jobs!, 10);
+const NO_LLM       = args["no-llm"]!;
+const TIMEOUT_MS   = Number(args.timeout!) * 1000;
+const CONCURRENCY  = Number(args.jobs!);
 
 const REPO_ROOT = resolve(import.meta.dir, "..");
 const MANIFEST_FILES = ["official/skills/ALL.md", "community/skills/ALL.md"];
@@ -139,7 +139,7 @@ async function main() {
   }
 
   console.log(`[INFO] Found ${total} unique repositories to scan`);
-  console.log(`[INFO] Concurrency: ${CONCURRENCY}, Timeout: ${TIMEOUT_MS}ms per scan`);
+  console.log(`[INFO] Concurrency: ${CONCURRENCY}, Timeout: ${TIMEOUT_MS / 1000}s per scan`);
 
   const results: ScanResult[] = new Array(total);
 
@@ -162,7 +162,7 @@ async function main() {
 
       if (mdResult.timedOut) {
         status = "TIMEOUT";
-        console.error(`  [TIMEOUT] Killed after ${TIMEOUT_MS}ms: ${url}`);
+        console.error(`  [TIMEOUT] Killed after ${TIMEOUT_MS / 1000}s: ${url}`);
       } else if (mdResult.output) {
         markdown = mdResult.output;
         score = parseScore(markdown);
@@ -177,7 +177,7 @@ async function main() {
         const sarifResult = await runScan(url, "sarif", TIMEOUT_MS);
         if (sarifResult.timedOut) {
           status = "TIMEOUT";
-          console.error(`  [TIMEOUT] SARIF scan killed after ${TIMEOUT_MS}ms: ${url}`);
+          console.error(`  [TIMEOUT] SARIF scan killed after ${TIMEOUT_MS / 1000}s: ${url}`);
         } else if (sarifResult.output) {
           try {
             sarif = JSON.parse(sarifResult.output);
@@ -238,7 +238,7 @@ async function main() {
     lines.push("");
     lines.push("### Timed Out Repositories");
     lines.push("");
-    lines.push(`The following ${timedOutRepos.length} repositor${timedOutRepos.length === 1 ? "y" : "ies"} exceeded the ${TIMEOUT_MS}ms timeout and ${timedOutRepos.length === 1 ? "was" : "were"} killed:`);
+    lines.push(`The following ${timedOutRepos.length} repositor${timedOutRepos.length === 1 ? "y" : "ies"} exceeded the ${TIMEOUT_MS / 1000}s timeout and ${timedOutRepos.length === 1 ? "was" : "were"} killed:`);
     lines.push("");
     for (const r of timedOutRepos) {
       lines.push(`- ${r.url}`);
