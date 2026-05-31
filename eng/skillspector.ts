@@ -23,8 +23,8 @@ const { values: args } = parseArgs({
     sarif: { type: "string", default: "skillspector.sarif" },
     markdown: { type: "string", default: "skillspector-report.md" },
     "no-llm": { type: "boolean", default: false },
-    timeout: { type: "string", default: "180" }, // seconds
-    jobs: { type: "string", default: "3" },
+    timeout: { type: "string" },
+    jobs: { type: "string" },
   },
   strict: true,
 });
@@ -32,8 +32,8 @@ const { values: args } = parseArgs({
 const SARIF_OUTPUT  = resolve(args.sarif!);
 const MARKDOWN_OUTPUT = resolve(args.markdown!);
 const NO_LLM       = args["no-llm"]!;
-const TIMEOUT_MS   = Number(args.timeout!) * 1000;
-const CONCURRENCY  = Number(args.jobs!);
+const TIMEOUT_MS   = Number(args.timeout ?? 180) * 1000;
+const CONCURRENCY  = Number(args.jobs ?? 3);
 
 const REPO_ROOT = resolve(import.meta.dir, "..");
 const MANIFEST_FILES = ["official/skills/ALL.md", "community/skills/ALL.md"];
