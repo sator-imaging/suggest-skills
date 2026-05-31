@@ -131,9 +131,9 @@ function parseSeverity(md: string): string {
 
 /** Strip ## Components and ## Issues sections from skillspector markdown. */
 function stripDetailSections(md: string): string {
-  // Remove each section (heading + all content including sub-headings) until next same-level ## heading or end
+  // Remove each section (heading + all content) until next same-or-upper level heading (# or ##) or end
   return md
-    .replace(/\n## (?:Components|Issues)\b[^\n]*\n[\s\S]*?(?=\n## (?!#)|\n*$)/g, "")
+    .replace(/\n## (?:Components|Issues)\b[^\n]*\n[\s\S]*?(?=\n#{1,2} (?!#)|\n*$)/g, "")
     .trimEnd();
 }
 
