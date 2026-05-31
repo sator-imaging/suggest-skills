@@ -3,7 +3,7 @@
 | [autoplan](https://github.com/garrytan/gstack/tree/main/autoplan) | Auto-review pipeline — reads the full CEO, design, eng, and DX review skills from disk and runs them sequentially with auto-decisions using 6 decision principles. (gstack) | `SKILL.md.tmpl` |
 | [benchmark](https://github.com/garrytan/gstack/tree/main/benchmark) | Performance regression detection using the browse daemon. (gstack) | `SKILL.md.tmpl` |
 | [benchmark-models](https://github.com/garrytan/gstack/tree/main/benchmark-models) | Cross-model benchmark for gstack skills. (gstack) | `SKILL.md.tmpl` |
-| [browse](https://github.com/garrytan/gstack/tree/main/browse) | Fast headless browser for QA testing and site dogfooding. (gstack) | `PLAN-snapshot-dropdown-interactive.md`, `SKILL.md.tmpl`, `bin` (2 files), `scripts/build-node-server.sh`, `src` (65 files), `test` (122 files), `test/fixtures` (22 files), `test/fixtures/mock-claude/claude` |
+| [browse](https://github.com/garrytan/gstack/tree/main/browse) | Fast headless browser for QA testing and site dogfooding. (gstack) | `PLAN-snapshot-dropdown-interactive.md`, `SKILL.md.tmpl`, `bin` (2 files), `scripts/build-node-server.sh`, `src` (65 files), `test` (123 files), `test/fixtures` (22 files), `test/fixtures/mock-claude/claude` |
 | [canary](https://github.com/garrytan/gstack/tree/main/canary) | Post-deploy canary monitoring. (gstack) | `SKILL.md.tmpl` |
 | [careful](https://github.com/garrytan/gstack/tree/main/careful) | Safety guardrails for destructive commands. (gstack) | `bin/check-careful.sh`, `SKILL.md.tmpl` |
 | [codex](https://github.com/garrytan/gstack/tree/main/codex) | OpenAI Codex CLI wrapper — three modes. (gstack) | `SKILL.md.tmpl` |
@@ -22,7 +22,7 @@
 | [guard](https://github.com/garrytan/gstack/tree/main/guard) | Full safety mode: destructive command warnings + directory-scoped edits. (gstack) | `SKILL.md.tmpl` |
 | [health](https://github.com/garrytan/gstack/tree/main/health) | Code quality dashboard. (gstack) | `SKILL.md.tmpl` |
 | [investigate](https://github.com/garrytan/gstack/tree/main/investigate) | Systematic debugging with root cause investigation. (gstack) | `SKILL.md.tmpl` |
-| [ios-clean](https://github.com/garrytan/gstack/tree/main/ios-clean) | Remove the DebugBridge SPM package and all | `SKILL.md.tmpl` |
+| [ios-clean](https://github.com/garrytan/gstack/tree/main/ios-clean) | Remove the DebugBridge SPM package and all #if DEBUG wiring from an iOS app. (gstack) | `SKILL.md.tmpl` |
 | [ios-design-review](https://github.com/garrytan/gstack/tree/main/ios-design-review) | Visual design audit for iOS apps on real hardware. (gstack) | `SKILL.md.tmpl` |
 | [ios-fix](https://github.com/garrytan/gstack/tree/main/ios-fix) | Autonomous iOS bug fixer. (gstack) | `SKILL.md.tmpl` |
 | [ios-qa](https://github.com/garrytan/gstack/tree/main/ios-qa) | Live-device iOS QA for SwiftUI apps. (gstack) | `SKILL.md.tmpl`, `daemon/src` (12 files), `daemon/test` (10 files), `docs/tailscale-acl-example.md`, `scripts` (2 files), `scripts/gen-accessors-tool/Package.swift`, `scripts/gen-accessors-tool/Sources/GenAccessors/main.swift`, `templates` (9 files) |
@@ -30,7 +30,7 @@
 | [land-and-deploy](https://github.com/garrytan/gstack/tree/main/land-and-deploy) | Land and deploy workflow. (gstack) | `SKILL.md.tmpl` |
 | [landing-report](https://github.com/garrytan/gstack/tree/main/landing-report) | Read-only queue dashboard for workspace-aware ship. (gstack) | `SKILL.md.tmpl` |
 | [learn](https://github.com/garrytan/gstack/tree/main/learn) | Manage project learnings. | `SKILL.md.tmpl` |
-| [make-pdf](https://github.com/garrytan/gstack/tree/main/make-pdf) | Turn any markdown file into a publication-quality PDF. (gstack) | `SKILL.md.tmpl`, `src` (10 files), `test` (3 files), `test/e2e/combined-gate.test.ts`, `test/fixtures` (2 files) |
+| [make-pdf](https://github.com/garrytan/gstack/tree/main/make-pdf) | Turn any markdown file into a publication-quality PDF. (gstack) | `SKILL.md.tmpl`, `src` (10 files), `test` (3 files), `test/e2e` (2 files), `test/fixtures` (3 files) |
 | [office-hours](https://github.com/garrytan/gstack/tree/main/office-hours) | YC Office Hours — two modes. (gstack) | `SKILL.md.tmpl` |
 | [open-gstack-browser](https://github.com/garrytan/gstack/tree/main/open-gstack-browser) | Launch GStack Browser — AI-controlled Chromium with the sidebar extension baked in. | `SKILL.md.tmpl` |
 | [pair-agent](https://github.com/garrytan/gstack/tree/main/pair-agent) | Pair a remote AI agent with your browser. (gstack) | `SKILL.md.tmpl` |
@@ -47,7 +47,7 @@
 | [setup-browser-cookies](https://github.com/garrytan/gstack/tree/main/setup-browser-cookies) | Import cookies from your real Chromium browser into the headless browse session. (gstack) | `SKILL.md.tmpl` |
 | [setup-deploy](https://github.com/garrytan/gstack/tree/main/setup-deploy) | Configure deployment settings for /land-and-deploy. | `SKILL.md.tmpl` |
 | [setup-gbrain](https://github.com/garrytan/gstack/tree/main/setup-gbrain) | Set up gbrain for this coding agent: install the CLI, initialize a local PGLite or Supabase brain, register MCP, capture per-remote trust policy. (gstack) | `memory.md`, `SKILL.md.tmpl` |
-| [ship](https://github.com/garrytan/gstack/tree/main/ship) | Ship workflow: detect + merge base branch, run tests, review diff, bump VERSION, update CHANGELOG, commit, push, create PR. (gstack) | `SKILL.md.tmpl` |
+| [ship](https://github.com/garrytan/gstack/tree/main/ship) | Ship workflow: detect + merge base branch, run tests, review diff, bump VERSION, update CHANGELOG, commit, push, create PR. (gstack) | `SKILL.md.tmpl`, `sections` (17 files) |
 | [skillify](https://github.com/garrytan/gstack/tree/main/skillify) | Codify the most recent successful /scrape flow into a permanent browser-skill on disk. (gstack) | `SKILL.md.tmpl` |
 | [spec](https://github.com/garrytan/gstack/tree/main/spec) | Turn vague intent into a precise, executable spec in five phases. (gstack) | `SKILL.md.tmpl` |
 | [sync-gbrain](https://github.com/garrytan/gstack/tree/main/sync-gbrain) | Keep gbrain current with this repo's code and refresh agent search guidance in CLAUDE.md. Wraps the gstack-gbrain-sync orchestrator with state (gstack) | `SKILL.md.tmpl` |
