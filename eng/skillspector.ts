@@ -2,8 +2,8 @@
  * eng/skillspector.ts
  *
  * Scans individual skills listed in ALL.md manifests using NVIDIA SkillSpector.
- * Repos are cloned locally (with submodules), then each skill's local path
- * (derived from the manifest URL) is scanned individually.
+ * Each skill is cloned (with submodules) into its own temp directory, then
+ * the skill path (derived from the URL) is scanned locally.
  *
  * Uses ts-fibers for concurrent scanning with per-scan timeout (AbortController + process kill).
  *
@@ -15,7 +15,7 @@
 import { Fibers } from "ts-fibers";
 import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from "fs";
 import { join, resolve } from "path";
-import { spawn, type Subprocess } from "bun";
+import { spawn } from "bun";
 import { parseArgs } from "util";
 
 // --- CLI ---
@@ -108,71 +108,16 @@ function extractSkillEntries(): SkillEntry[] {
   return entries;
 }
 
-// --- Clone a repository (with submodules) ---
+// --- Run a command with timeout ---
 
-async function cloneRepo(
-  repoSlug: string,
-  ref: string,
-  destDir: string,
+async function runCmd(
+  cmd: string[],
   timeoutMs: number,
-): Promise<{ success: boolean; timedOut: boolean }> {
-  const repoUrl = `https://github.com/${repoSlug}.git`;
-
-  // Clone with depth=1 for speed, then init submodules
-  const cloneArgs = [
-    "clone", "--depth=1", "--branch", ref,
-    "--recurse-submodules", "--shallow-submodules",
-    repoUrl, destDir,
-  ];
-
+): Promise<{ stdout: string; timedOut: boolean; exitCode: number }> {
   const ac = new AbortController();
   const timeoutPromise = Fibers.delay(timeoutMs, ac);
 
-  const proc = spawn(["git", ...cloneArgs], {
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-
-  const exitPromise = proc.exited.then((code) => ({ kind: "done" as const, code }));
-  const timeoutDone = timeoutPromise.then(() => ({ kind: "timeout" as const, code: -1 }));
-
-  const race = await Promise.race([exitPromise, timeoutDone]);
-
-  if (race.kind === "timeout") {
-    proc.kill(9);
-    return { success: false, timedOut: true };
-  }
-
-  ac.abort();
-  return { success: race.code === 0, timedOut: false };
-}
-
-// --- Resolve skill directory (direct path from URL) ---
-
-function getSkillDir(cloneDir: string, skillPath: string): string | null {
-  const target = join(cloneDir, skillPath);
-  if (!existsSync(target)) return null;
-  return target;
-}
-
-// --- Run skillspector scan on a local directory ---
-
-async function runScan(
-  dir: string,
-  format: "markdown" | "sarif",
-  timeoutMs: number,
-): Promise<{ output: string; timedOut: boolean; exitCode: number }> {
-  const cmdArgs = ["scan", dir, "--format", format];
-  if (NO_LLM) cmdArgs.push("--no-llm");
-
-  const ac = new AbortController();
-
-  const timeoutPromise = Fibers.delay(timeoutMs, ac);
-
-  const proc = spawn(["skillspector", ...cmdArgs], {
-    stdout: "pipe",
-    stderr: "pipe",
-  });
+  const proc = spawn(cmd, { stdout: "pipe", stderr: "pipe" });
 
   const stdoutPromise = new Response(proc.stdout).text()
     .then((text) => ({ kind: "done" as const, text }));
@@ -183,11 +128,11 @@ async function runScan(
 
   if (race.kind === "timeout") {
     proc.kill(9);
-    return { output: "", timedOut: true, exitCode: -1 };
+    return { stdout: "", timedOut: true, exitCode: -1 };
   }
 
   ac.abort();
-  return { output: race.text, timedOut: false, exitCode: proc.exitCode ?? 0 };
+  return { stdout: race.text, timedOut: false, exitCode: proc.exitCode ?? 0 };
 }
 
 // --- Parse score/severity from markdown output ---
@@ -223,66 +168,13 @@ async function main() {
   console.log(`[INFO] Found ${total} individual skills to scan`);
   console.log(`[INFO] Concurrency: ${CONCURRENCY}, Timeout: ${TIMEOUT_MS / 1000}s per scan`);
 
-  // --- Phase 1: Clone unique repos ---
-
   const tmpBase = join(REPO_ROOT, ".skillspector-tmp");
   rmSync(tmpBase, { recursive: true, force: true });
   mkdirSync(tmpBase, { recursive: true });
 
-  // Group skills by repo+ref to avoid redundant clones
-  const repoGroups = new Map<string, { repo: string; ref: string; skills: { skill: SkillEntry; index: number }[] }>();
-  for (let i = 0; i < skills.length; i++) {
-    const skill = skills[i]!;
-    const key = `${skill.repo}@${skill.ref}`;
-    if (!repoGroups.has(key)) {
-      repoGroups.set(key, { repo: skill.repo, ref: skill.ref, skills: [] });
-    }
-    repoGroups.get(key)!.skills.push({ skill, index: i });
-  }
-
-  console.log(`[INFO] Cloning ${repoGroups.size} unique repositories...`);
-
-  // Clone repos concurrently
-  const cloneResults = new Map<string, string | null>(); // key -> cloneDir or null on failure
-
-  const cloneFibers = Fibers.forEach(
-    CONCURRENCY,
-    [...repoGroups.entries()].map(([key, group]) => ({ key, group })),
-    async ({ key, group }) => {
-      const cloneDir = join(tmpBase, "repos", key.replace(/[/@]/g, "_"));
-      mkdirSync(cloneDir, { recursive: true });
-
-      console.log(`  [CLONE] ${group.repo}@${group.ref}`);
-      const result = await cloneRepo(group.repo, group.ref, cloneDir, TIMEOUT_MS);
-
-      if (result.timedOut) {
-        console.error(`  [TIMEOUT] Clone killed: ${group.repo}@${group.ref}`);
-        cloneResults.set(key, null);
-      } else if (!result.success) {
-        console.error(`  [FAILED] Clone failed: ${group.repo}@${group.ref}`);
-        cloneResults.set(key, null);
-      } else {
-        cloneResults.set(key, cloneDir);
-      }
-
-      return { key };
-    },
-  );
-
-  cloneFibers.setErrorHandler((e) => {
-    console.error(`  [CLONE ERROR] ${e?.message ?? e}`);
-    return "skip";
-  });
-
-  for await (const _ of cloneFibers) { /* drain */ }
-
-  // --- Phase 2: Scan each skill directory ---
-
-  console.log(`[INFO] Scanning ${total} skills...`);
-
   const results: ScanResult[] = new Array(total);
 
-  const scanFibers = Fibers.forEach(
+  const fibers = Fibers.forEach(
     CONCURRENCY,
     skills.map((skill, i) => ({ skill, index: i })),
     async (item) => {
@@ -296,55 +188,71 @@ async function main() {
       let severity = "-";
       let sarif: object | null = null;
 
-      const repoKey = `${skill.repo}@${skill.ref}`;
-      const cloneDir = cloneResults.get(repoKey);
+      // Clone the repo for this skill
+      const cloneDir = join(tmpBase, `${index}`);
 
-      if (!cloneDir) {
+      const cloneResult = await runCmd([
+        "git", "clone", "--depth=1", "--branch", skill.ref,
+        "--recurse-submodules", "--shallow-submodules",
+        `https://github.com/${skill.repo}.git`, cloneDir,
+      ], TIMEOUT_MS);
+
+      if (cloneResult.timedOut) {
         status = "CLONE_FAILED";
-        console.error(`  [CLONE_FAILED] Repo not available: ${skill.repo}`);
+        console.error(`  [TIMEOUT] Clone killed after ${TIMEOUT_MS / 1000}s`);
+      } else if (cloneResult.exitCode !== 0) {
+        status = "CLONE_FAILED";
+        console.error(`  [CLONE_FAILED] git clone exited ${cloneResult.exitCode}`);
       }
 
-      // Get the skill directory from the cloned repo
-      let scanDir: string | null = null;
-      if (status === "OK" && cloneDir) {
-        scanDir = getSkillDir(cloneDir, skill.skillPath);
-        if (!scanDir) {
-          status = "FAILED";
-          console.error(`  [FAILED] Skill path not found: ${skill.skillPath} in ${skill.repo}`);
-        }
+      // Derive local skill path from URL
+      const scanDir = join(cloneDir, skill.skillPath);
+
+      if (status === "OK" && !existsSync(scanDir)) {
+        status = "FAILED";
+        console.error(`  [FAILED] Skill path not found: ${skill.skillPath}`);
       }
 
       // Run markdown scan
-      if (status === "OK" && scanDir) {
-        const mdResult = await runScan(scanDir, "markdown", TIMEOUT_MS);
+      if (status === "OK") {
+        const scanArgs = ["skillspector", "scan", scanDir, "--format", "markdown"];
+        if (NO_LLM) scanArgs.push("--no-llm");
+
+        const mdResult = await runCmd(scanArgs, TIMEOUT_MS);
 
         if (mdResult.timedOut) {
           status = "TIMEOUT";
-          console.error(`  [TIMEOUT] Scan killed after ${TIMEOUT_MS / 1000}s: ${skill.url}`);
-        } else if (mdResult.output) {
-          markdown = mdResult.output;
+          console.error(`  [TIMEOUT] Scan killed after ${TIMEOUT_MS / 1000}s`);
+        } else if (mdResult.stdout) {
+          markdown = mdResult.stdout;
           score = parseScore(markdown);
           severity = parseSeverity(markdown);
         } else {
           status = "FAILED";
-          console.error(`  [FAILED] Scan returned no output: ${skill.url}`);
+          console.error(`  [FAILED] Scan returned no output`);
         }
       }
 
-      // Run SARIF scan only if not already failed/timed out
-      if (status === "OK" && scanDir) {
-        const sarifResult = await runScan(scanDir, "sarif", TIMEOUT_MS);
+      // Run SARIF scan
+      if (status === "OK") {
+        const sarifArgs = ["skillspector", "scan", scanDir, "--format", "sarif"];
+        if (NO_LLM) sarifArgs.push("--no-llm");
+
+        const sarifResult = await runCmd(sarifArgs, TIMEOUT_MS);
         if (sarifResult.timedOut) {
           status = "TIMEOUT";
-          console.error(`  [TIMEOUT] SARIF scan killed after ${TIMEOUT_MS / 1000}s: ${skill.url}`);
-        } else if (sarifResult.output) {
+          console.error(`  [TIMEOUT] SARIF scan killed after ${TIMEOUT_MS / 1000}s`);
+        } else if (sarifResult.stdout) {
           try {
-            sarif = JSON.parse(sarifResult.output);
+            sarif = JSON.parse(sarifResult.stdout);
           } catch {
             // ignore parse errors
           }
         }
       }
+
+      // Cleanup clone
+      rmSync(cloneDir, { recursive: true, force: true });
 
       const result: ScanResult = { index, skill, status, markdown, score, severity, sarif };
       results[index] = result;
@@ -352,12 +260,12 @@ async function main() {
     },
   );
 
-  scanFibers.setErrorHandler((e) => {
+  fibers.setErrorHandler((e) => {
     console.error(`  [ERROR] ${e?.message ?? e}`);
     return "skip";
   });
 
-  for await (const _ of scanFibers) { /* drain */ }
+  for await (const _ of fibers) { /* drain */ }
 
   // --- Cleanup ---
 
@@ -413,7 +321,7 @@ async function main() {
     lines.push("");
     lines.push("### Clone Failures");
     lines.push("");
-    lines.push(`The following ${cloneFailedSkills.length} skill${cloneFailedSkills.length === 1 ? "" : "s"} could not be scanned because their repo failed to clone:`);
+    lines.push(`The following ${cloneFailedSkills.length} skill${cloneFailedSkills.length === 1 ? "" : "s"} could not be scanned because clone failed:`);
     lines.push("");
     for (const r of cloneFailedSkills) {
       lines.push(`- ${r.skill.repo} :: ${r.skill.name} — ${r.skill.url}`);
