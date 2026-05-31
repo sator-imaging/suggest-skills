@@ -1,8 +1,9 @@
 name: SkillSpector Scan
 
 on:
-  schedule:
-    - cron: "30 23 * * *"
+  push:
+    branches: [ main ]
+    paths: [ '**/skills/ALL.md' ]
   workflow_dispatch:
 
 permissions:
