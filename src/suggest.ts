@@ -125,7 +125,11 @@ description: 'Brief description of what this skill provides and when to use it'
 There are 3 ways to download the skills.
 If the user has not stated a preference, ask which they prefer.
 
-- Use shell command \`gh skill\` (reference: https://github.blog/changelog/2026-04-16-manage-agent-skills-with-github-cli/)
+- Use shell command \`gh skill install\` (reference: https://github.blog/changelog/2026-04-16-manage-agent-skills-with-github-cli/)
+  - Install each skill individually by running \`gh skill install <skill-folder-url>\` for each skill
+  - The URL must be the GitHub folder URL for the specific skill (e.g., \`https://github.com/<owner>/<repo>/tree/<ref>/<path-to-skill-folder>\`)
+  - Do NOT install an entire registry at once; install one skill at a time
+  - After each install, run \`gh skill inspect\` to verify the installation was successful
 - Use shell command \`npx skills\` (reference: https://raw.githubusercontent.com/vercel-labs/skills/refs/heads/main/README.md)
 - Use MCP tool \`${DOWNLOAD_TOOL_NAME}\`
   - Pass a GitHub folder URL in the form \`https://github.com/<owner>/<repo>/tree/<ref>/<path>\`
