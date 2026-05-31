@@ -8,7 +8,7 @@ export function buildSuggestionResponse(
   const urls = manifestUrl ? [manifestUrl] : config.sourceUrls;
   const sourceUrlList = urls
     .map((url) => `- ${url}\n`)
-    .join();
+    .join("");
   return INSTRUCTIONS
     .replaceAll('###manifests###', sourceUrlList.trimEnd())
     .replaceAll('###outdir###', config.outputDirectory);
