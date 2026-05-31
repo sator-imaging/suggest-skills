@@ -16,15 +16,19 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-python@v5
         with:
-          node-version: 24
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pip install uv
 
       - name: Run SkillSpector via eng/skillspector.sh
         run: |
           ./eng/skillspector.sh \
             --sarif  skillspector.sarif \
-            --markdown skillspector-report.md
+            --markdown skillspector-report.md \
+            --no-llm
 
       - name: Post markdown to step summary
         run: cat skillspector-report.md >> $GITHUB_STEP_SUMMARY
