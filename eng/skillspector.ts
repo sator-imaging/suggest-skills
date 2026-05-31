@@ -129,11 +129,12 @@ function parseSeverity(md: string): string {
   return m?.[1] ?? "-";
 }
 
-/** Strip ## Components and ## Issues sections (and everything after them) from skillspector markdown. */
+/** Strip ## Components and ## Issues sections from skillspector markdown. */
 function stripDetailSections(md: string): string {
-  // Remove from the first occurrence of "## Components" or "## Issues" onward
-  const pattern = /\n## (?:Components|Issues)\b[\s\S]*/;
-  return md.replace(pattern, "").trimEnd();
+  // Remove each section individually (heading + content until next ## heading or end)
+  return md
+    .replace(/\n## (?:Components|Issues)\b[^\n]*\n[\s\S]*?(?=\n## |\n*$)/g, "")
+    .trimEnd();
 }
 
 // --- Main ---
