@@ -32,9 +32,12 @@ const { values: args } = parseArgs({
 const SARIF_OUTPUT  = resolve(args.sarif!);
 const MARKDOWN_OUTPUT = resolve(args.markdown!);
 const NO_LLM       = args["no-llm"]!;
-const TIMEOUT_SEC  = 180;
-const TIMEOUT_MS   = Number(args.timeout ?? TIMEOUT_SEC) * 1000;
-const CONCURRENCY  = Number(args.jobs ?? 3);
+
+const DEFAULT_TIMEOUT_SEC = 180 as const;
+const DEFAULT_CONCURRENCY = 3 as const;
+
+const TIMEOUT_MS   = Number(args.timeout ?? DEFAULT_TIMEOUT_SEC) * 1000;
+const CONCURRENCY  = Number(args.jobs ?? DEFAULT_CONCURRENCY);
 
 const REPO_ROOT = resolve(import.meta.dir, "..");
 const MANIFEST_FILES = ["official/skills/ALL.md", "community/skills/ALL.md"];
