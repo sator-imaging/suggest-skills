@@ -10,6 +10,7 @@ set -euo pipefail
 #
 # Usage:
 #   ./eng/skillspector.sh [--sarif <path>] [--markdown <path>] [--no-llm]
+#                         [--timeout <seconds>] [--jobs <n>]
 #
 # Environment:
 #   SKILLSPECTOR_BIN    - Path to existing skillspector command (skips install)
@@ -26,14 +27,18 @@ SKILLSPECTOR_BIN="${SKILLSPECTOR_BIN:-}"
 SARIF_OUTPUT=""
 MARKDOWN_OUTPUT=""
 NO_LLM=""
+SCAN_TIMEOUT=120  # Per-scan timeout in seconds (default: 2 minutes)
+MAX_JOBS=4        # Number of concurrent scans
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --sarif)    SARIF_OUTPUT="$2"; shift 2 ;;
     --markdown) MARKDOWN_OUTPUT="$2"; shift 2 ;;
     --no-llm)   NO_LLM="--no-llm"; shift ;;
+    --timeout)  SCAN_TIMEOUT="$2"; shift 2 ;;
+    --jobs)     MAX_JOBS="$2"; shift 2 ;;
     --help|-h)
-      echo "Usage: $0 [--sarif <path>] [--markdown <path>] [--no-llm]"
+      echo "Usage: $0 [--sarif <path>] [--markdown <path>] [--no-llm] [--timeout <seconds>] [--jobs <n>]"
       exit 0
       ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
@@ -134,6 +139,67 @@ print(f"[INFO] Merged {len(all_results)} results, {len(all_rules)} rules from {l
 PYTHON
 }
 
+# --- Scan a single repository (called in parallel) ---
+# Arguments: <index> <total> <url> <tmpdir>
+# Uses exported: SKILLSPECTOR_BIN, NO_LLM, SCAN_TIMEOUT
+scan_repo() {
+  local idx="$1" total="$2" url="$3" tmpdir="$4"
+
+  local sarif_file="$tmpdir/$idx.sarif"
+  local md_file="$tmpdir/$idx.md"
+  local status_file="$tmpdir/$idx.status"
+  local md_result=""
+  local status="OK"
+  local score="-"
+  local severity="-"
+
+  echo "[$idx/$total] $url"
+
+  # Run scan with markdown output (with timeout)
+  local exit_code=0
+  md_result=$(timeout "${SCAN_TIMEOUT}s" $SKILLSPECTOR_BIN scan "$url" --format markdown $NO_LLM 2>/dev/null) \
+    || exit_code=$?
+
+  if [[ $exit_code -eq 124 ]]; then
+    status="TIMEOUT"
+    echo "  [WARN] Timed out after ${SCAN_TIMEOUT}s: $url" >&2
+  elif [[ -n "$md_result" ]]; then
+    score=$(echo "$md_result" | grep -oP 'Score \| \K[0-9]+/100' | head -1) || score="-"
+    severity=$(echo "$md_result" | grep -oP 'Severity \| \K\w+' | head -1) || severity="-"
+  else
+    status="FAILED"
+    echo "  [WARN] Scan failed: $url" >&2
+  fi
+
+  # Save per-repo results to files for later assembly
+  echo "$status" > "$status_file"
+
+  {
+    echo "| $idx | $url | $score | $severity | $status |"
+  } > "$md_file.row"
+
+  if [[ -n "$md_result" ]]; then
+    {
+      echo ""
+      echo "<details><summary><code>$url</code> — $severity ($score)</summary>"
+      echo ""
+      echo "$md_result"
+      echo ""
+      echo "</details>"
+    } > "$md_file"
+  fi
+
+  # Run scan with SARIF output (with timeout)
+  if [[ "$status" != "TIMEOUT" ]]; then
+    timeout "${SCAN_TIMEOUT}s" $SKILLSPECTOR_BIN scan "$url" --format sarif $NO_LLM \
+      --output "$sarif_file" 2>/dev/null || true
+  fi
+
+  echo "  Report saved to: "
+  echo "  $sarif_file"
+}
+export -f scan_repo
+
 # --- Main ---
 main() {
   echo "[INFO] Extracting repository URLs from manifests..."
@@ -150,13 +216,24 @@ main() {
 
   setup_skillspector
 
-  local failed=0
-  local scanned=0
-  local score severity status md_result sarif_file
   local tmpdir="$REPO_ROOT/.skillspector-tmp"
   rm -rf "$tmpdir"
   mkdir -p "$tmpdir"
 
+  echo "[INFO] Scanning $total repositories (concurrency: $MAX_JOBS, timeout: ${SCAN_TIMEOUT}s per scan)..."
+
+  # Export variables needed by scan_repo
+  export SKILLSPECTOR_BIN NO_LLM SCAN_TIMEOUT
+
+  # Run scans in parallel using xargs
+  local idx=0
+  echo "$repo_urls" | while IFS= read -r url; do
+    [[ -n "$url" ]] || continue
+    idx=$((idx + 1))
+    echo "$idx $total $url $tmpdir"
+  done | xargs -P "$MAX_JOBS" -L 1 bash -c 'scan_repo "$@"' _
+
+  # Assemble markdown report in order
   {
     echo "## SkillSpector Scan Results"
     echo ""
@@ -164,53 +241,24 @@ main() {
     echo "|---|-----------|-------|----------|--------|"
   } > "$MARKDOWN_OUTPUT"
 
-  echo "[INFO] Scanning $total repositories..."
-
-  while IFS= read -r url; do
-    [[ -n "$url" ]] || continue
-    scanned=$((scanned + 1))
-
-    echo "::group::[$scanned/$total] $url"
-
-    sarif_file="$tmpdir/$scanned.sarif"
-    md_result=""
-    status="OK"
-    score="-"
-    severity="-"
-
-    # Run scan with markdown output
-    # Note: skillspector exits non-zero when findings exist, so we capture regardless
-    md_result=$($SKILLSPECTOR_BIN scan "$url" --format markdown $NO_LLM 2>/dev/null) || true
-
-    if [[ -n "$md_result" ]]; then
-      score=$(echo "$md_result" | grep -oP 'Score \| \K[0-9]+/100' | head -1) || score="-"
-      severity=$(echo "$md_result" | grep -oP 'Severity \| \K\w+' | head -1) || severity="-"
-    else
-      status="FAILED"
-      failed=$((failed + 1))
-      echo "[WARN] Scan failed: $url" >&2
+  local failed=0
+  local scanned=0
+  for i in $(seq 1 "$total"); do
+    if [[ -f "$tmpdir/$i.status" ]]; then
+      scanned=$((scanned + 1))
+      local st
+      st=$(cat "$tmpdir/$i.status")
+      if [[ "$st" == "FAILED" || "$st" == "TIMEOUT" ]]; then
+        failed=$((failed + 1))
+      fi
     fi
-
-    echo "| $scanned | $url | $score | $severity | $status |" >> "$MARKDOWN_OUTPUT"
-
-    # Append markdown details
-    if [[ -n "$md_result" ]]; then
-      {
-        echo ""
-        echo "<details><summary><code>$url</code> — $severity ($score)</summary>"
-        echo ""
-        echo "$md_result"
-        echo ""
-        echo "</details>"
-      } >> "$MARKDOWN_OUTPUT"
+    if [[ -f "$tmpdir/$i.md.row" ]]; then
+      cat "$tmpdir/$i.md.row" >> "$MARKDOWN_OUTPUT"
     fi
-
-    # Run scan with SARIF output
-    $SKILLSPECTOR_BIN scan "$url" --format sarif $NO_LLM \
-      --output "$sarif_file" 2>/dev/null || true
-
-    echo "::endgroup::"
-  done <<< "$repo_urls"
+    if [[ -f "$tmpdir/$i.md" ]]; then
+      cat "$tmpdir/$i.md" >> "$MARKDOWN_OUTPUT"
+    fi
+  done
 
   # Merge all SARIF files
   merge_sarif "$SARIF_OUTPUT" "$tmpdir"/*.sarif
