@@ -88,7 +88,6 @@ async function runScan(
   if (NO_LLM) cmdArgs.push("--no-llm");
 
   const ac = new AbortController();
-  let timedOut = false;
   let proc: Subprocess | undefined;
 
   // Start timeout race
@@ -99,18 +98,15 @@ async function runScan(
     stderr: "pipe",
   });
 
-  // Start reading stdout immediately to avoid pipe buffer deadlock
-  const stdoutPromise = new Response(proc.stdout).text();
+  // Read stdout — resolves when process closes its stdout (i.e. exits)
+  const stdoutPromise = new Response(proc.stdout).text()
+    .then((text) => ({ kind: "done" as const, text }));
+  const timeoutDone = timeoutPromise
+    .then(() => ({ kind: "timeout" as const, text: "" }));
 
-  // Race: process completion vs timeout
-  const procDone = proc.exited.then((code) => ({ kind: "done" as const, code }));
-  const timeoutDone = timeoutPromise.then(() => ({ kind: "timeout" as const, code: -1 }));
-
-  const race = await Promise.race([procDone, timeoutDone]);
+  const race = await Promise.race([stdoutPromise, timeoutDone]);
 
   if (race.kind === "timeout") {
-    timedOut = true;
-    // Kill the process tree
     proc.kill(9); // SIGKILL — forcefully stop
     return { output: "", timedOut: true, exitCode: -1 };
   }
@@ -118,8 +114,7 @@ async function runScan(
   // Process finished before timeout — cancel the timer
   ac.abort();
 
-  const stdout = await stdoutPromise;
-  return { output: stdout, timedOut: false, exitCode: race.code };
+  return { output: race.text, timedOut: false, exitCode: proc.exitCode ?? 0 };
 }
 
 // --- Parse score/severity from markdown output ---
