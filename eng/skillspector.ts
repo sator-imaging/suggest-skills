@@ -2,8 +2,8 @@
  * eng/skillspector.ts
  *
  * Scans individual skills listed in ALL.md manifests using NVIDIA SkillSpector.
- * Repos are cloned locally (with submodules, resolving symlinks), then each
- * skill directory is scanned individually.
+ * Repos are cloned locally (with submodules), then each skill's local path
+ * (derived from the manifest URL) is scanned individually.
  *
  * Uses ts-fibers for concurrent scanning with per-scan timeout (AbortController + process kill).
  *
@@ -13,7 +13,7 @@
  */
 
 import { Fibers } from "ts-fibers";
-import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, realpathSync, lstatSync } from "fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from "fs";
 import { join, resolve } from "path";
 import { spawn, type Subprocess } from "bun";
 import { parseArgs } from "util";
@@ -147,24 +147,12 @@ async function cloneRepo(
   return { success: race.code === 0, timedOut: false };
 }
 
-// --- Resolve skill directory (follows symlinks) ---
+// --- Resolve skill directory (direct path from URL) ---
 
-function resolveSkillDir(cloneDir: string, skillPath: string): string | null {
+function getSkillDir(cloneDir: string, skillPath: string): string | null {
   const target = join(cloneDir, skillPath);
-
   if (!existsSync(target)) return null;
-
-  // Resolve symlinks to get the real path
-  const resolved = realpathSync(target);
-
-  // Verify resolved path is still within the clone (security check)
-  const realClone = realpathSync(cloneDir);
-  if (!resolved.startsWith(realClone)) {
-    console.warn(`  [WARN] Symlink escapes clone: ${target} -> ${resolved}`);
-    return null;
-  }
-
-  return resolved;
+  return target;
 }
 
 // --- Run skillspector scan on a local directory ---
@@ -316,10 +304,10 @@ async function main() {
         console.error(`  [CLONE_FAILED] Repo not available: ${skill.repo}`);
       }
 
-      // Resolve the skill directory (symlink-aware)
+      // Get the skill directory from the cloned repo
       let scanDir: string | null = null;
       if (status === "OK" && cloneDir) {
-        scanDir = resolveSkillDir(cloneDir, skill.skillPath);
+        scanDir = getSkillDir(cloneDir, skill.skillPath);
         if (!scanDir) {
           status = "FAILED";
           console.error(`  [FAILED] Skill path not found: ${skill.skillPath} in ${skill.repo}`);
