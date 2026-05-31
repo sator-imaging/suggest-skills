@@ -45,8 +45,15 @@ jobs:
             --no-llm
 
       - name: Post markdown to step summary
-        run: cat skillspector-report.md >> $GITHUB_STEP_SUMMARY
+        run: cat skillspector-report.md >> $GITHUB_STEP_SUMMARY || true
         if: always()
+
+      - name: Upload markdown report
+        uses: actions/upload-artifact@v4
+        with:
+          path: skillspector-report.md
+          archive: false
+        if: always() && hashFiles('skillspector-report.md') != ''
 
       - name: Upload SARIF to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
