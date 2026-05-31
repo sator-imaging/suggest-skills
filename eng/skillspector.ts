@@ -99,6 +99,9 @@ async function runScan(
     stderr: "pipe",
   });
 
+  // Start reading stdout immediately to avoid pipe buffer deadlock
+  const stdoutPromise = new Response(proc.stdout).text();
+
   // Race: process completion vs timeout
   const procDone = proc.exited.then((code) => ({ kind: "done" as const, code }));
   const timeoutDone = timeoutPromise.then(() => ({ kind: "timeout" as const, code: -1 }));
@@ -115,7 +118,7 @@ async function runScan(
   // Process finished before timeout — cancel the timer
   ac.abort();
 
-  const stdout = await new Response(proc.stdout).text();
+  const stdout = await stdoutPromise;
   return { output: stdout, timedOut: false, exitCode: race.code };
 }
 
