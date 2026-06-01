@@ -1,5 +1,27 @@
 # Changelog
 
+## [2.1.0](https://github.com/sator-imaging/suggest-skills/releases/tag/v2.1.0) (2026-06-01)
+
+### 🚀 Features
+* feat: add SkillSpector CI workflow by [@kiro-agent](https://github.com/kiro-agent)[bot] in [#151](https://github.com/sator-imaging/suggest-skills/pull/151)
+* feat: add timeout and concurrency to skillspector scans by [@kiro-agent](https://github.com/kiro-agent)[bot] in [#153](https://github.com/sator-imaging/suggest-skills/pull/153)
+### ✨ Bug Fixes
+* Add YAML parse failure fallback by [@google-labs-jules](https://github.com/google-labs-jules)[bot] in [#147](https://github.com/sator-imaging/suggest-skills/pull/147)
+* Fix .join() inserting commas between URL list items by [@kiro-agent](https://github.com/kiro-agent)[bot] in [#152](https://github.com/sator-imaging/suggest-skills/pull/152)
+* fix: prevent pipe deadlock in runScan for proper concurrency by [@kiro-agent](https://github.com/kiro-agent)[bot] in [#154](https://github.com/sator-imaging/suggest-skills/pull/154)
+* fix: remove proc.exited, upload report as unzipped artifact by [@kiro-agent](https://github.com/kiro-agent)[bot] in [#156](https://github.com/sator-imaging/suggest-skills/pull/156)
+### 📚 Other Changes
+* chore(deps): Bump the "default" group with 2 updates across multiple ecosystems by [@dependabot](https://github.com/dependabot)[bot] in [#127](https://github.com/sator-imaging/suggest-skills/pull/127)
+* chore(deps): Bump the "default" group with 2 updates across multiple ecosystems by [@dependabot](https://github.com/dependabot)[bot] in [#128](https://github.com/sator-imaging/suggest-skills/pull/128)
+* Strip Components/Issues from step summary by [@kiro-agent](https://github.com/kiro-agent)[bot] in [#157](https://github.com/sator-imaging/suggest-skills/pull/157)
+
+### 🎉 New Contributors
+* [@dependabot](https://github.com/dependabot)[bot] made their first contribution in [#127](https://github.com/sator-imaging/suggest-skills/pull/127)
+* [@kiro-agent](https://github.com/kiro-agent)[bot] made their first contribution in [#152](https://github.com/sator-imaging/suggest-skills/pull/152)
+
+**Full Changelog**: https://github.com/sator-imaging/suggest-skills/compare/v2.0.1...v2.1.0
+
+
 ## [2.0.1](https://github.com/sator-imaging/suggest-skills/compare/v2.0.0...v2.0.1) (2026-05-15)
 
 
