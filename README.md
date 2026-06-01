@@ -9,7 +9,7 @@
 - MCP server for recommending and downloading repository-specific AI agent skills
 - Supports `stdio` and HTTP runtime modes from the same codebase
 
-Security scanning is provided by [NVIDIA SkillSpector](https://github.com/NVIDIA/skillspector) via the [CI workflow](https://github.com/sator-imaging/suggest-skills/actions/workflows/skillspector.yml). To find official skills repository, visit: https://skills.sh/official
+Security scanning is provided by [NVIDIA SkillSpector](https://github.com/NVIDIA/skillspector) via the [CI workflow](https://github.com/sator-imaging/suggest-skills/actions/workflows/skillspector.yml). Each skill is scanned individually and the resulting risk score is written to the `Security Risk` column in `ALL.md`. To find official skills repository, visit: https://skills.sh/official
 
 
 

@@ -118,12 +118,6 @@ function parseSeverity(md: string): string {
   return m?.[1] ?? "-";
 }
 
-function stripDetailSections(md: string): string {
-  return md
-    .replace(/\n## (?:Components|Issues)\b[^\n]*\n[\s\S]*?(?=\n#{1,2} (?!#)|\n*$)/g, "")
-    .trimEnd();
-}
-
 // ============================================================
 // Step 1: Build lists
 // ============================================================
@@ -308,12 +302,20 @@ async function scanSkills(
 // Step 4: Update ALL.md files with Security Risk column
 // ============================================================
 
+function riskCellValue(result: ScanResult | undefined): string {
+  if (!result) return "n/a";
+  if (result.status === "TIMEOUT") return "timeout";
+  if (result.status === "CLONE_FAILED" || result.status === "FAILED") return "n/a";
+  const num = scoreNumber(result.score);
+  return num || "n/a";
+}
+
 function updateManifests(results: ScanResult[]) {
-  // Build a lookup: skill URL -> score number
-  const scoreByUrl = new Map<string, string>();
+  // Build a lookup: skill URL -> result
+  const resultByUrl = new Map<string, ScanResult>();
   for (const r of results) {
     if (!r) continue;
-    scoreByUrl.set(r.skill.url, scoreNumber(r.score));
+    resultByUrl.set(r.skill.url, r);
   }
 
   for (const manifest of MANIFEST_FILES) {
@@ -327,7 +329,6 @@ function updateManifests(results: ScanResult[]) {
     for (const line of lines) {
       // Detect header row: | Name | Description | Bundled Assets |
       if (/^\|\s*Name\s*\|/.test(line)) {
-        // Add Security Risk column to header
         outLines.push(line.replace(/\s*\|\s*$/, " | Security Risk |"));
         continue;
       }
@@ -342,8 +343,8 @@ function updateManifests(results: ScanResult[]) {
       const urlMatch = line.match(/\|\s*\[([^\]]+)\]\((https:\/\/github\.com\/[^)]+)\)/);
       if (urlMatch) {
         const url = urlMatch[2];
-        const num = scoreByUrl.get(url) ?? "";
-        outLines.push(line.replace(/\s*\|\s*$/, ` | ${num} |`));
+        const value = riskCellValue(resultByUrl.get(url));
+        outLines.push(line.replace(/\s*\|\s*$/, ` | ${value} |`));
         continue;
       }
 
@@ -366,49 +367,30 @@ function writeReport(results: ScanResult[]) {
   const failed = results.filter((r) => r?.status === "FAILED");
   const cloneFailed = results.filter((r) => r?.status === "CLONE_FAILED");
   const ok = results.filter((r) => r?.status === "OK");
+  const nonZero = ok.filter((r) => scoreNumber(r.score) !== "0");
 
   const lines: string[] = [];
-  lines.push("## SkillSpector Scan Results");
-  lines.push("");
-  lines.push("| # | Repository | Skill | Score | Severity | Status |");
-  lines.push("|---|-----------|-------|-------|----------|--------|");
 
-  for (const r of results) {
-    if (!r) continue;
-    lines.push(`| ${r.index + 1} | ${r.skill.repo} | ${r.skill.name} | ${r.score} | ${r.severity} | ${r.status} |`);
-  }
-
-  for (const r of results) {
-    if (!r || !r.markdown) continue;
-    lines.push("");
-    lines.push(`<details><summary><code>${r.skill.repo} :: ${r.skill.name}</code> — ${r.severity} (${r.score})</summary>`);
-    lines.push("");
-    lines.push(stripDetailSections(r.markdown));
-    lines.push("");
-    lines.push("</details>");
-  }
-
-  if (timedOut.length > 0) {
-    lines.push("");
-    lines.push("---");
-    lines.push("");
-    lines.push("### Timed Out Skills");
-    lines.push("");
-    for (const r of timedOut) lines.push(`- ${r.skill.repo} :: ${r.skill.name}`);
-  }
-
-  if (cloneFailed.length > 0) {
-    lines.push("");
-    lines.push("---");
-    lines.push("");
-    lines.push("### Clone Failures");
-    lines.push("");
-    for (const r of cloneFailed) lines.push(`- ${r.skill.repo} :: ${r.skill.name} — ${r.skill.url}`);
-  }
-
-  lines.push("");
-  lines.push("---");
+  // Statistics at start (no heading)
   lines.push(`**Scanned: ${results.filter((r) => r).length} | OK: ${ok.length} | Failed: ${failed.length} | Clone failed: ${cloneFailed.length} | Timed out: ${timedOut.length}**`);
+  lines.push("");
+
+  // Table — exclude risk 0 skills
+  lines.push("| # | Repository | Skill | Risk | Status |");
+  lines.push("|---|-----------|-------|------|--------|");
+
+  for (const r of nonZero) {
+    if (!r) continue;
+    lines.push(`| ${r.index + 1} | ${r.skill.repo} | ${r.skill.name} | ${scoreNumber(r.score)} | ${r.status} |`);
+  }
+
+  // Include timed out and failed in table
+  for (const r of timedOut) {
+    lines.push(`| ${r.index + 1} | ${r.skill.repo} | ${r.skill.name} | timeout | ${r.status} |`);
+  }
+  for (const r of [...failed, ...cloneFailed]) {
+    lines.push(`| ${r.index + 1} | ${r.skill.repo} | ${r.skill.name} | n/a | ${r.status} |`);
+  }
 
   writeFileSync(MARKDOWN_OUTPUT, lines.join("\n") + "\n");
 
