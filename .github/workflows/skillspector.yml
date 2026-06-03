@@ -12,7 +12,7 @@ permissions:
   security-events: write
 
 jobs:
-  scan:
+  skillspector-scan:
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
@@ -54,19 +54,28 @@ jobs:
             echo "No changes to ALL.md files"
             exit 0
           fi
-          BRANCH="skillspector/update-security-risk"
-          git config user.name "github-actions[bot]"
+
+          BRANCH="bot/${{ github.job }}"
+          git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -b "$BRANCH"
+
+          # If remote branch exists → track it
+          git fetch origin
+          if git show-ref --verify --quiet "refs/remotes/origin/$BRANCH"; then
+            git checkout -B "$BRANCH" "origin/$BRANCH"
+          else
+            git checkout -b "$BRANCH"
+          fi
+
           git add '**/ALL.md'
-          git commit -m "chore: update Security Risk scores in ALL.md"
-          git push --force origin "$BRANCH"
+          git commit -m "[bot] Update Security Risk scores in ALL.md"
+          git push -u origin "$BRANCH"
+
           gh pr create \
             --base main \
             --head "$BRANCH" \
-            --title "chore: update Security Risk scores" \
-            --body "Automated update of Security Risk column in ALL.md files via SkillSpector scan." \
-            || gh pr edit "$BRANCH" --body "Automated update of Security Risk column in ALL.md files via SkillSpector scan."
+            --fill \
+            || echo "::warning title=PR already exists::Skipped"
 
       - name: Post markdown to step summary
         run: cat skillspector-report.md >> $GITHUB_STEP_SUMMARY || true
