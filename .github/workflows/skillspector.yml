@@ -50,9 +50,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          BRANCH="bot/${{ github.job }}"
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          BRANCH="bot/${{ github.job }}"
 
           # If remote branch exists → track it
           git fetch origin
