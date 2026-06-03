@@ -50,11 +50,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if git diff --quiet -- '**/ALL.md'; then
-            echo "No changes to ALL.md files"
-            exit 0
-          fi
-
           BRANCH="bot/${{ github.job }}"
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
