@@ -1,8 +1,13 @@
 /**
  * eng/skillspector.ts
  *
- * Scans repositories listed in ALL.md manifests using NVIDIA SkillSpector.
- * Uses ts-fibers for concurrent scanning with per-scan timeout (AbortController + process kill).
+ * Scans individual skills listed in ALL.md manifests using NVIDIA SkillSpector.
+ * 1. Build a list of skills and unique repos to clone.
+ * 2. Clone repos (with submodules).
+ * 3. Scan each skill directory.
+ * 4. Write "Security Risk" column back into each ALL.md (one write per file).
+ *
+ * Uses ts-fibers for concurrency with per-operation timeout.
  *
  * Usage:
  *   bun eng/skillspector.ts [--sarif <path>] [--markdown <path>] [--no-llm]
@@ -10,9 +15,9 @@
  */
 
 import { Fibers } from "ts-fibers";
-import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync } from "fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from "fs";
 import { join, resolve } from "path";
-import { spawn, type Subprocess } from "bun";
+import { spawn } from "bun";
 import { parseArgs } from "util";
 
 // --- CLI ---
@@ -29,76 +34,58 @@ const { values: args } = parseArgs({
   strict: true,
 });
 
-const SARIF_OUTPUT  = resolve(args.sarif!);
+const SARIF_OUTPUT = resolve(args.sarif!);
 const MARKDOWN_OUTPUT = resolve(args.markdown!);
-const NO_LLM       = args["no-llm"]!;
+const NO_LLM = args["no-llm"]!;
 
 const DEFAULT_TIMEOUT_SEC = 180 as const;
 const DEFAULT_CONCURRENCY = 3 as const;
 
-const TIMEOUT_MS   = Number(args.timeout ?? DEFAULT_TIMEOUT_SEC) * 1000;
-const CONCURRENCY  = Number(args.jobs ?? DEFAULT_CONCURRENCY);
+const TIMEOUT_MS = Number(args.timeout ?? DEFAULT_TIMEOUT_SEC) * 1000;
+const CONCURRENCY = Number(args.jobs ?? DEFAULT_CONCURRENCY);
 
 const REPO_ROOT = resolve(import.meta.dir, "..");
 const MANIFEST_FILES = ["official/skills/ALL.md", "community/skills/ALL.md"];
 
 // --- Types ---
 
+interface SkillEntry {
+  name: string;
+  url: string;
+  repo: string;
+  ref: string;
+  skillPath: string;
+  /** Which manifest file this skill came from */
+  manifest: string;
+}
+
+interface CloneTarget {
+  repo: string;
+  ref: string;
+  dir: string;
+}
+
 interface ScanResult {
   index: number;
-  url: string;
-  status: "OK" | "FAILED" | "TIMEOUT";
+  skill: SkillEntry;
+  status: "OK" | "FAILED" | "TIMEOUT" | "CLONE_FAILED";
   markdown: string;
   score: string;
   severity: string;
   sarif: object | null;
 }
 
-// --- Extract repo URLs from manifests ---
+// --- Helpers ---
 
-function extractRepoUrls(): string[] {
-  const urls = new Set<string>();
-  for (const manifest of MANIFEST_FILES) {
-    const filepath = join(REPO_ROOT, manifest);
-    if (!existsSync(filepath)) {
-      console.warn(`[WARN] Manifest not found: ${filepath}`);
-      continue;
-    }
-    const content = readFileSync(filepath, "utf-8");
-    const matches = content.matchAll(/\(https:\/\/github\.com\/([^)]+)\)/g);
-    for (const m of matches) {
-      // Normalize to repo root: owner/repo
-      const parts = m[1].split("/");
-      if (parts.length >= 2) {
-        urls.add(`https://github.com/${parts[0]}/${parts[1]}`);
-      }
-    }
-  }
-  return [...urls].sort();
-}
-
-// --- Run a single scan with timeout ---
-
-async function runScan(
-  url: string,
-  format: "markdown" | "sarif",
+async function runCmd(
+  cmd: string[],
   timeoutMs: number,
-): Promise<{ output: string; timedOut: boolean; exitCode: number }> {
-  const cmdArgs = ["scan", url, "--format", format];
-  if (NO_LLM) cmdArgs.push("--no-llm");
-
+): Promise<{ stdout: string; timedOut: boolean; exitCode: number }> {
   const ac = new AbortController();
-  let proc: Subprocess | undefined;
-
-  // Start timeout race
   const timeoutPromise = Fibers.delay(timeoutMs, ac);
 
-  proc = spawn(["skillspector", ...cmdArgs], {
-    stdout: "pipe",
-    stderr: "pipe",
-  });
+  const proc = spawn(cmd, { stdout: "pipe", stderr: "pipe" });
 
-  // Read stdout — resolves when process closes its stdout (i.e. exits)
   const stdoutPromise = new Response(proc.stdout).text()
     .then((text) => ({ kind: "done" as const, text }));
   const timeoutDone = timeoutPromise
@@ -107,21 +94,23 @@ async function runScan(
   const race = await Promise.race([stdoutPromise, timeoutDone]);
 
   if (race.kind === "timeout") {
-    proc.kill(9); // SIGKILL — forcefully stop
-    return { output: "", timedOut: true, exitCode: -1 };
+    proc.kill(9);
+    return { stdout: "", timedOut: true, exitCode: -1 };
   }
 
-  // Process finished before timeout — cancel the timer
   ac.abort();
-
-  return { output: race.text, timedOut: false, exitCode: proc.exitCode ?? 0 };
+  return { stdout: race.text, timedOut: false, exitCode: proc.exitCode ?? 0 };
 }
-
-// --- Parse score/severity from markdown output ---
 
 function parseScore(md: string): string {
   const m = md.match(/Score \| (\d+\/100)/);
   return m?.[1] ?? "-";
+}
+
+/** Extract just the number from "XX/100" */
+function scoreNumber(score: string): string {
+  const m = score.match(/^(\d+)/);
+  return m?.[1] ?? "";
 }
 
 function parseSeverity(md: string): string {
@@ -129,37 +118,120 @@ function parseSeverity(md: string): string {
   return m?.[1] ?? "-";
 }
 
-/** Strip ## Components and ## Issues sections from skillspector markdown. */
-function stripDetailSections(md: string): string {
-  // Remove each section (heading + all content) until next same-or-upper level heading (# or ##) or end
-  return md
-    .replace(/\n## (?:Components|Issues)\b[^\n]*\n[\s\S]*?(?=\n#{1,2} (?!#)|\n*$)/g, "")
-    .trimEnd();
-}
+// ============================================================
+// Step 1: Build lists
+// ============================================================
 
-// --- Main ---
+function buildLists(tmpBase: string) {
+  const skills: SkillEntry[] = [];
+  const seen = new Set<string>();
 
-async function main() {
-  const urls = extractRepoUrls();
-  const total = urls.length;
+  for (const manifest of MANIFEST_FILES) {
+    const filepath = join(REPO_ROOT, manifest);
+    if (!existsSync(filepath)) {
+      console.warn(`[WARN] Manifest not found: ${filepath}`);
+      continue;
+    }
+    const content = readFileSync(filepath, "utf-8");
 
-  if (total === 0) {
-    console.warn("[WARN] No repositories found.");
-    process.exit(0);
+    const rowPattern = /\|\s*\[([^\]]+)\]\((https:\/\/github\.com\/([^/]+\/[^/]+)\/tree\/([^)]+))\)/g;
+    for (const m of content.matchAll(rowPattern)) {
+      const name = m[1];
+      const url = m[2];
+      const repo = m[3];
+      const refAndPath = m[4];
+
+      if (seen.has(url)) continue;
+      seen.add(url);
+
+      const slashIdx = refAndPath.indexOf("/");
+      const ref = slashIdx >= 0 ? refAndPath.slice(0, slashIdx) : refAndPath;
+      const skillPath = slashIdx >= 0 ? refAndPath.slice(slashIdx + 1) : "";
+
+      skills.push({ name, url, repo, ref, skillPath, manifest });
+    }
   }
 
-  console.log(`[INFO] Found ${total} unique repositories to scan`);
-  console.log(`[INFO] Concurrency: ${CONCURRENCY}, Timeout: ${TIMEOUT_MS / 1000}s per scan`);
+  // Deduplicate repos to clone
+  const cloneMap = new Map<string, CloneTarget>();
+  for (const s of skills) {
+    const key = `${s.repo}@${s.ref}`;
+    if (!cloneMap.has(key)) {
+      const dir = join(tmpBase, key.replace(/[/@]/g, "_"));
+      cloneMap.set(key, { repo: s.repo, ref: s.ref, dir });
+    }
+  }
 
-  const results: ScanResult[] = new Array(total);
+  return { skills, cloneTargets: [...cloneMap.values()] };
+}
+
+// ============================================================
+// Step 2: Clone repos
+// ============================================================
+
+async function cloneRepos(targets: CloneTarget[]): Promise<Set<string>> {
+  const failed = new Set<string>();
+
+  console.log(`[INFO] Cloning ${targets.length} repos...`);
 
   const fibers = Fibers.forEach(
     CONCURRENCY,
-    urls.map((url, i) => ({ url, index: i })),
-    async (item) => {
-      const { url, index } = item;
+    targets,
+    async (t) => {
+      console.log(`  [CLONE] ${t.repo}@${t.ref}`);
+      mkdirSync(t.dir, { recursive: true });
+
+      const result = await runCmd([
+        "git", "clone", "--depth=1", "--branch", t.ref,
+        "--recurse-submodules", "--shallow-submodules",
+        `https://github.com/${t.repo}.git`, t.dir,
+      ], TIMEOUT_MS);
+
+      if (result.timedOut || result.exitCode !== 0) {
+        console.error(`  [FAILED] ${t.repo}@${t.ref}`);
+        failed.add(`${t.repo}@${t.ref}`);
+      }
+
+      return t;
+    },
+  );
+
+  fibers.setErrorHandler((e) => {
+    console.error(`  [CLONE ERROR] ${e?.message ?? e}`);
+    return "skip";
+  });
+
+  for await (const _ of fibers) { /* drain */ }
+
+  return failed;
+}
+
+// ============================================================
+// Step 3: Scan skills
+// ============================================================
+
+async function scanSkills(
+  skills: SkillEntry[],
+  cloneTargets: CloneTarget[],
+  failedClones: Set<string>,
+): Promise<ScanResult[]> {
+  const total = skills.length;
+  const results: ScanResult[] = new Array(total);
+
+  // Build a lookup: repo@ref -> dir
+  const dirMap = new Map<string, string>();
+  for (const t of cloneTargets) {
+    dirMap.set(`${t.repo}@${t.ref}`, t.dir);
+  }
+
+  console.log(`[INFO] Scanning ${total} skills...`);
+
+  const fibers = Fibers.forEach(
+    CONCURRENCY,
+    skills.map((skill, i) => ({ skill, index: i })),
+    async ({ skill, index }) => {
       const num = index + 1;
-      console.log(`[${num}/${total}] ${url}`);
+      console.log(`[${num}/${total}] ${skill.repo} :: ${skill.name}`);
 
       let status: ScanResult["status"] = "OK";
       let markdown = "";
@@ -167,104 +239,163 @@ async function main() {
       let severity = "-";
       let sarif: object | null = null;
 
-      // Run markdown scan
-      const mdResult = await runScan(url, "markdown", TIMEOUT_MS);
+      const key = `${skill.repo}@${skill.ref}`;
 
-      if (mdResult.timedOut) {
-        status = "TIMEOUT";
-        console.error(`  [TIMEOUT] Killed after ${TIMEOUT_MS / 1000}s: ${url}`);
-      } else if (mdResult.output) {
-        markdown = mdResult.output;
-        score = parseScore(markdown);
-        severity = parseSeverity(markdown);
+      if (failedClones.has(key)) {
+        status = "CLONE_FAILED";
       } else {
-        status = "FAILED";
-        console.error(`  [FAILED] ${url}`);
-      }
+        const scanDir = join(dirMap.get(key)!, skill.skillPath);
 
-      // Run SARIF scan only if not timed out
-      if (status !== "TIMEOUT") {
-        const sarifResult = await runScan(url, "sarif", TIMEOUT_MS);
-        if (sarifResult.timedOut) {
-          status = "TIMEOUT";
-          console.error(`  [TIMEOUT] SARIF scan killed after ${TIMEOUT_MS / 1000}s: ${url}`);
-        } else if (sarifResult.output) {
-          try {
-            sarif = JSON.parse(sarifResult.output);
-          } catch {
-            // ignore parse errors
+        if (!existsSync(scanDir)) {
+          status = "FAILED";
+          console.error(`  [FAILED] Path not found: ${skill.skillPath}`);
+        }
+
+        // Markdown scan
+        if (status === "OK") {
+          const cmd = ["skillspector", "scan", scanDir, "--format", "markdown"];
+          if (NO_LLM) cmd.push("--no-llm");
+
+          const r = await runCmd(cmd, TIMEOUT_MS);
+          if (r.timedOut) {
+            status = "TIMEOUT";
+          } else if (r.stdout) {
+            markdown = r.stdout;
+            score = parseScore(markdown);
+            severity = parseSeverity(markdown);
+          } else {
+            status = "FAILED";
+          }
+        }
+
+        // SARIF scan
+        if (status === "OK") {
+          const cmd = ["skillspector", "scan", scanDir, "--format", "sarif"];
+          if (NO_LLM) cmd.push("--no-llm");
+
+          const r = await runCmd(cmd, TIMEOUT_MS);
+          if (r.timedOut) {
+            status = "TIMEOUT";
+          } else if (r.stdout) {
+            try { sarif = JSON.parse(r.stdout); } catch { /* ignore */ }
           }
         }
       }
 
-      const result: ScanResult = { index, url, status, markdown, score, severity, sarif };
+      const result: ScanResult = { index, skill, status, markdown, score, severity, sarif };
       results[index] = result;
       return result;
     },
   );
 
-  fibers.setErrorHandler((e, _fibers, _reason) => {
+  fibers.setErrorHandler((e) => {
     console.error(`  [ERROR] ${e?.message ?? e}`);
     return "skip";
   });
 
-  // Consume all results
-  for await (const _result of fibers) {
-    // results are stored in the array by index inside the factory
-  }
+  for await (const _ of fibers) { /* drain */ }
 
-  // --- Assemble markdown report ---
+  return results;
+}
 
-  const timedOutRepos = results.filter((r) => r?.status === "TIMEOUT");
-  const failedRepos = results.filter((r) => r?.status === "FAILED");
-  const okRepos = results.filter((r) => r?.status === "OK");
+// ============================================================
+// Step 4: Update ALL.md files with Security Risk column
+// ============================================================
 
-  const lines: string[] = [];
-  lines.push("## SkillSpector Scan Results");
-  lines.push("");
-  lines.push("| # | Repository | Score | Severity | Status |");
-  lines.push("|---|-----------|-------|----------|--------|");
+function riskCellValue(result: ScanResult | undefined): string {
+  if (!result) return "n/a";
+  if (result.status === "TIMEOUT") return "timeout";
+  if (result.status === "CLONE_FAILED" || result.status === "FAILED") return "n/a";
+  const num = scoreNumber(result.score);
+  return num || "n/a";
+}
 
+function updateManifests(results: ScanResult[]) {
+  // Build a lookup: skill URL -> result
+  const resultByUrl = new Map<string, ScanResult>();
   for (const r of results) {
     if (!r) continue;
-    lines.push(`| ${r.index + 1} | ${r.url} | ${r.score} | ${r.severity} | ${r.status} |`);
+    resultByUrl.set(r.skill.url, r);
   }
 
-  // Details for successful scans (Risk Assessment only, no Components/Issues)
-  for (const r of results) {
-    if (!r || !r.markdown) continue;
-    lines.push("");
-    lines.push(`<details><summary><code>${r.url}</code> — ${r.severity} (${r.score})</summary>`);
-    lines.push("");
-    lines.push(stripDetailSections(r.markdown));
-    lines.push("");
-    lines.push("</details>");
-  }
+  for (const manifest of MANIFEST_FILES) {
+    const filepath = join(REPO_ROOT, manifest);
+    if (!existsSync(filepath)) continue;
 
-  // Timeout report section
-  if (timedOutRepos.length > 0) {
-    lines.push("");
-    lines.push("---");
-    lines.push("");
-    lines.push("### Timed Out Repositories");
-    lines.push("");
-    lines.push(`The following ${timedOutRepos.length} repositor${timedOutRepos.length === 1 ? "y" : "ies"} exceeded the ${TIMEOUT_MS / 1000}s timeout and ${timedOutRepos.length === 1 ? "was" : "were"} killed:`);
-    lines.push("");
-    for (const r of timedOutRepos) {
-      lines.push(`- ${r.url}`);
+    const content = readFileSync(filepath, "utf-8");
+    const lines = content.split("\n");
+    const outLines: string[] = [];
+
+    for (const line of lines) {
+      // Detect header row: | Name | Description | Bundled Assets |
+      if (/^\|\s*Name\s*\|/.test(line)) {
+        outLines.push(line.replace(/\s*\|\s*$/, " | Security Risk |"));
+        continue;
+      }
+
+      // Detect separator row: | ----|-------------|----------------|
+      if (/^\|\s*-+/.test(line) && !/^\|\s*\[/.test(line)) {
+        outLines.push(line.replace(/\s*\|\s*$/, "---|"));
+        continue;
+      }
+
+      // Detect skill data row: | [name](url) | ... |
+      const urlMatch = line.match(/\|\s*\[([^\]]+)\]\((https:\/\/github\.com\/[^)]+)\)/);
+      if (urlMatch) {
+        const url = urlMatch[2];
+        const value = riskCellValue(resultByUrl.get(url));
+        outLines.push(line.replace(/\s*\|\s*$/, ` | ${value} |`));
+        continue;
+      }
+
+      // Non-table lines pass through unchanged
+      outLines.push(line);
     }
+
+    // Write the entire file at once
+    writeFileSync(filepath, outLines.join("\n"));
+    console.log(`[INFO] Updated: ${manifest}`);
+  }
+}
+
+// ============================================================
+// Report
+// ============================================================
+
+function writeReport(results: ScanResult[]) {
+  const timedOut = results.filter((r) => r?.status === "TIMEOUT");
+  const failed = results.filter((r) => r?.status === "FAILED");
+  const cloneFailed = results.filter((r) => r?.status === "CLONE_FAILED");
+  const ok = results.filter((r) => r?.status === "OK");
+  const nonZero = ok.filter((r) => scoreNumber(r.score) !== "0");
+
+  const lines: string[] = [];
+
+  // Statistics at start (no heading)
+  lines.push(`**Scanned: ${results.filter((r) => r).length} | OK: ${ok.length} | Failed: ${failed.length} | Clone failed: ${cloneFailed.length} | Timed out: ${timedOut.length}**`);
+  lines.push("");
+
+  // Table — exclude risk 0 skills
+  lines.push("| # | Repository | Skill | Risk | Status |");
+  lines.push("|---|-----------|-------|------|--------|");
+
+  for (const r of nonZero) {
+    if (!r) continue;
+    lines.push(`| ${r.index + 1} | ${r.skill.repo} | ${r.skill.name} | ${scoreNumber(r.score)} | ${r.status} |`);
   }
 
-  // Summary
-  lines.push("");
-  lines.push("---");
-  lines.push(`**Scanned: ${results.filter((r) => r).length} | OK: ${okRepos.length} | Failed: ${failedRepos.length} | Timed out: ${timedOutRepos.length}**`);
+  // Include timed out and failed in table
+  for (const r of timedOut) {
+    lines.push(`| ${r.index + 1} | ${r.skill.repo} | ${r.skill.name} | timeout | ${r.status} |`);
+  }
+  for (const r of [...failed, ...cloneFailed]) {
+    lines.push(`| ${r.index + 1} | ${r.skill.repo} | ${r.skill.name} | n/a | ${r.status} |`);
+  }
 
   writeFileSync(MARKDOWN_OUTPUT, lines.join("\n") + "\n");
 
-  // --- Merge SARIF ---
-
-  const allResults: any[] = [];
+  // Merge SARIF
+  const allSarifResults: any[] = [];
   const allRules: any[] = [];
   const ruleIdsSeen = new Set<string>();
 
@@ -272,7 +403,7 @@ async function main() {
     if (!r?.sarif) continue;
     const sarif = r.sarif as any;
     for (const run of sarif.runs ?? []) {
-      allResults.push(...(run.results ?? []));
+      allSarifResults.push(...(run.results ?? []));
       for (const rule of run.tool?.driver?.rules ?? []) {
         if (!ruleIdsSeen.has(rule.id)) {
           ruleIdsSeen.add(rule.id);
@@ -282,40 +413,48 @@ async function main() {
     }
   }
 
-  const merged = {
-    $schema:
-      "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/sarif-2.1/schema/sarif-schema-2.1.0.json",
+  writeFileSync(SARIF_OUTPUT, JSON.stringify({
+    $schema: "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/sarif-2.1/schema/sarif-schema-2.1.0.json",
     version: "2.1.0",
-    runs: [
-      {
-        tool: {
-          driver: {
-            name: "SkillSpector",
-            informationUri: "https://github.com/NVIDIA/skillspector",
-            rules: allRules,
-          },
-        },
-        results: allResults,
-      },
-    ],
-  };
-
-  writeFileSync(SARIF_OUTPUT, JSON.stringify(merged, null, 2) + "\n");
-
-  // --- Summary ---
+    runs: [{
+      tool: { driver: { name: "SkillSpector", informationUri: "https://github.com/NVIDIA/skillspector", rules: allRules } },
+      results: allSarifResults,
+    }],
+  }, null, 2) + "\n");
 
   console.log("");
-  console.log(`[INFO] Done. OK: ${okRepos.length}, Failed: ${failedRepos.length}, Timed out: ${timedOutRepos.length}`);
+  console.log(`[INFO] Done. OK: ${ok.length}, Failed: ${failed.length}, Clone failed: ${cloneFailed.length}, Timed out: ${timedOut.length}`);
   console.log(`[INFO] SARIF:    ${SARIF_OUTPUT}`);
   console.log(`[INFO] Markdown: ${MARKDOWN_OUTPUT}`);
+}
 
-  if (timedOutRepos.length > 0) {
-    console.log("");
-    console.log(`[WARN] ${timedOutRepos.length} scan(s) were killed due to timeout:`);
-    for (const r of timedOutRepos) {
-      console.log(`       - ${r.url}`);
-    }
-  }
+// ============================================================
+// Main
+// ============================================================
+
+async function main() {
+  const tmpBase = join(REPO_ROOT, ".skillspector-tmp");
+  rmSync(tmpBase, { recursive: true, force: true });
+  mkdirSync(tmpBase, { recursive: true });
+
+  // 1. Build lists
+  const { skills, cloneTargets } = buildLists(tmpBase);
+  console.log(`[INFO] ${skills.length} skills, ${cloneTargets.length} repos, concurrency: ${CONCURRENCY}`);
+
+  // 2. Clone
+  const failedClones = await cloneRepos(cloneTargets);
+
+  // 3. Scan
+  const results = await scanSkills(skills, cloneTargets, failedClones);
+
+  // 4. Update ALL.md files with Security Risk column
+  updateManifests(results);
+
+  // 5. Report
+  writeReport(results);
+
+  // Cleanup
+  rmSync(tmpBase, { recursive: true, force: true });
 }
 
 main();

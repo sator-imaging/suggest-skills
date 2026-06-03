@@ -7,12 +7,14 @@ on:
   workflow_dispatch:
 
 permissions:
+  contents: write
+  pull-requests: write
   security-events: write
 
 jobs:
-  scan:
+  skillspector-scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v6
@@ -44,16 +46,36 @@ jobs:
             --markdown skillspector-report.md \
             --no-llm
 
+      - name: Create PR with updated ALL.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          BRANCH="bot/${{ github.job }}"
+
+          # If remote branch exists → track it
+          git fetch origin
+          if git show-ref --verify --quiet "refs/remotes/origin/$BRANCH"; then
+            git checkout -B "$BRANCH" "origin/$BRANCH"
+          else
+            git checkout -b "$BRANCH"
+          fi
+
+          git add '**/ALL.md'
+          git commit -m "[bot] Update Security Risk scores in ALL.md"
+          git push -u origin "$BRANCH"
+
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --fill \
+            || echo "::warning title=PR already exists::Skipped"
+
       - name: Post markdown to step summary
         run: cat skillspector-report.md >> $GITHUB_STEP_SUMMARY || true
         if: always()
-
-      - name: Upload markdown report
-        uses: actions/upload-artifact@v7
-        with:
-          path: skillspector-report.md
-          archive: false
-        if: always() && hashFiles('skillspector-report.md') != ''
 
       - name: Upload SARIF to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
