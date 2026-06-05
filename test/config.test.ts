@@ -22,6 +22,16 @@ describe("parseCli", () => {
     });
   });
 
+  test("strips embedded GitHub credentials from env manifest URLs", () => {
+    const runtimeMode = parseCli(["node", "index.js"], {
+      SUGGEST_SKILLS_MANIFEST_URLS: JSON.stringify([
+        "https://x-access-token:ghp_exampletoken@github.com/github/awesome-copilot/blob/main/docs/README.skills.md",
+      ]),
+    });
+
+    expect(runtimeMode.config.sourceUrls).toEqual([DEFAULT_RAW_SOURCE_URL]);
+  });
+
   test("uses positional arguments from argv", () => {
     const runtimeMode = parseCli(
       ["node", "index.js", "https://example.com/manifest.md"],

@@ -15,8 +15,24 @@ export type MarkdownFrontMatterFields = {
 const GITHUB_HOSTNAME = "github.com";
 const GITHUB_RAW_HOSTNAME = "raw.githubusercontent.com";
 
-export function normalizeGithubRawUrl(sourceUrl: string): string | undefined {
+export function sanitizeUrlCredentials(sourceUrl: string): string {
   const parsedUrl = parseUrl(sourceUrl);
+
+  if (!parsedUrl) {
+    return sourceUrl;
+  }
+
+  if (!parsedUrl.username && !parsedUrl.password) {
+    return sourceUrl;
+  }
+
+  parsedUrl.username = "";
+  parsedUrl.password = "";
+  return parsedUrl.toString();
+}
+
+export function normalizeGithubRawUrl(sourceUrl: string): string | undefined {
+  const parsedUrl = parseUrl(sanitizeUrlCredentials(sourceUrl));
 
   if (!parsedUrl) {
     return undefined;

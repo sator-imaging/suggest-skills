@@ -1,7 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
   extractMarkdownFrontMatter,
+  normalizeGithubRawUrl,
   parseMarkdownFrontMatterFields,
+  sanitizeUrlCredentials,
 } from "../src/utils.js";
 
 describe("extractMarkdownFrontMatter", () => {
@@ -173,5 +175,38 @@ name: "alpha
       parseError: expect.stringContaining("YAML Parse error"),
       source: 'name: "alpha',
     });
+  });
+});
+
+describe("sanitizeUrlCredentials", () => {
+  test("removes embedded GitHub tokens from raw manifest URLs", () => {
+    expect(
+      sanitizeUrlCredentials(
+        "https://ghp_exampletoken@raw.githubusercontent.com/octo/demo/main/docs/README.skills.md",
+      ),
+    ).toBe("https://raw.githubusercontent.com/octo/demo/main/docs/README.skills.md");
+  });
+
+  test("removes x-access-token credentials from GitHub blob URLs", () => {
+    expect(
+      sanitizeUrlCredentials(
+        "https://x-access-token:ghp_exampletoken@github.com/octo/demo/blob/main/docs/README.skills.md",
+      ),
+    ).toBe("https://github.com/octo/demo/blob/main/docs/README.skills.md");
+  });
+
+  test("leaves credential-free URLs unchanged", () => {
+    const url = "https://raw.githubusercontent.com/octo/demo/main/docs/README.skills.md";
+    expect(sanitizeUrlCredentials(url)).toBe(url);
+  });
+});
+
+describe("normalizeGithubRawUrl", () => {
+  test("strips embedded credentials while converting blob URLs", () => {
+    expect(
+      normalizeGithubRawUrl(
+        "https://x-access-token:ghp_exampletoken@github.com/octo/demo/blob/main/docs/README.skills.md",
+      ),
+    ).toBe("https://raw.githubusercontent.com/octo/demo/main/docs/README.skills.md");
   });
 });

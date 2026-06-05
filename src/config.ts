@@ -1,5 +1,5 @@
 import { cac } from "cac";
-import { logInfo, normalizeGithubRawUrl } from "./utils.js";
+import { logInfo, normalizeGithubRawUrl, sanitizeUrlCredentials } from "./utils.js";
 import pkg from "../package.json";
 
 export type SuggestSkillsConfig = {
@@ -199,7 +199,7 @@ function parseSourceUrls(rawValue: string | undefined): string[] {
 function normalizeAndFilterUrls(urls: readonly unknown[]): string[] {
   return urls
     .filter((url): url is string => typeof url === "string")
-    .map((url) => url.trim())
+    .map((url) => sanitizeUrlCredentials(url.trim()))
     .map((url) => {
       if (!url.toLowerCase().endsWith(".md")) {
         throw new ConfigError(`Manifest URL must end with .md: ${url}`);

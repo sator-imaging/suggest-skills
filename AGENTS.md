@@ -37,7 +37,7 @@ bun run server
 - MCP: `POST http://localhost:3100/mcp` (JSON-RPC; `accept: application/json, text/event-stream`)
 - MCP tools: `suggest_skills`, `fetch_manifest` (arg: `url`), `download_skill` (arg: `url`)
 
-`GITHUB_PAT` is optional; it only helps with GitHub API rate limits for `generate` / `download` against live repos.
+`GITHUB_PAT` is optional; it only helps with GitHub API rate limits for `generate` / `download` against live repos. Do not embed GitHub tokens in manifest or GitHub URLs (for example `https://token@raw.githubusercontent.com/...`); credentials in `SUGGEST_SKILLS_MANIFEST_URLS` are stripped automatically and will not be used for authentication.
 
 ### Testing notes
 

@@ -4,6 +4,7 @@ import {
   normalizeGithubRawUrl,
   parseGithubDirectoryUrl,
   parseUrl,
+  sanitizeUrlCredentials,
 } from "./utils.js";
 
 export type GithubContentEntry = {
@@ -37,14 +38,15 @@ export async function downloadGithubFolder(url: string): Promise<DownloadedFile[
 }
 
 export async function fetchManifestText(url: string): Promise<string> {
-  const cached = MANIFEST_CACHE.get(url);
+  const cacheKey = sanitizeUrlCredentials(normalizeGithubRawUrl(url) ?? url);
+  const cached = MANIFEST_CACHE.get(cacheKey);
 
   if (cached !== undefined) {
     return cached;
   }
 
   const content = await fetchTextContent(url, "Manifest");
-  MANIFEST_CACHE.set(url, content);
+  MANIFEST_CACHE.set(cacheKey, content);
 
   return content;
 }
@@ -457,7 +459,7 @@ async function fetchTextResponse(
   label: string,
   sourceIdentifier: string,
 ): Promise<{ response: Response; text: string }> {
-  const normalizedUrl = normalizeGithubRawUrl(url) ?? url;
+  const normalizedUrl = sanitizeUrlCredentials(normalizeGithubRawUrl(url) ?? url);
   const response = await fetch(normalizedUrl);
 
   if (!response.ok) {
@@ -668,6 +670,7 @@ function looksBinary(bytes: Uint8Array): boolean {
 }
 
 function fetchGithub(input: string): Promise<Response> {
+  const requestUrl = sanitizeUrlCredentials(input);
   const headers: Record<string, string> = {
     accept: "application/vnd.github+json",
     "user-agent": "suggest-skills-mcp",
@@ -675,14 +678,14 @@ function fetchGithub(input: string): Promise<Response> {
   const githubPat = process.env["GITHUB_PAT"];
 
   if (githubPat) {
-    const url = parseUrl(input);
+    const url = parseUrl(requestUrl);
 
     if (url?.hostname === GITHUB_API_HOSTNAME) {
       headers["authorization"] = `Bearer ${githubPat}`;
     }
   }
 
-  return fetch(input, {
+  return fetch(requestUrl, {
     headers,
   });
 }

@@ -3,7 +3,7 @@ import * as z from "zod/v4";
 import type { SuggestSkillsConfig } from "./config.js";
 import { buildSuggestionResponse } from "./suggest.js";
 import { downloadGithubFolder, fetchManifestText } from "./download.js";
-import { normalizeGithubRawUrl } from "./utils.js";
+import { normalizeGithubRawUrl, sanitizeUrlCredentials } from "./utils.js";
 import pkg from "../package.json";
 import { SUGGEST_TOOL_NAME, toolDescriptions, DOWNLOAD_TOOL_NAME, FETCH_MANIFEST_TOOL_NAME } from "./constants.js";
 
@@ -25,7 +25,9 @@ export function createServer(config: SuggestSkillsConfig): McpServer {
       },
     },
     async ({ manifestUrl }) => {
-      const normalizedUrl = manifestUrl ? (normalizeGithubRawUrl(manifestUrl) ?? manifestUrl) : undefined;
+      const normalizedUrl = manifestUrl
+        ? sanitizeUrlCredentials(normalizeGithubRawUrl(manifestUrl) ?? manifestUrl)
+        : undefined;
 
       return {
         content: [
