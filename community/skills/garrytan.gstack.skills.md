@@ -31,13 +31,13 @@
 | [landing-report](https://github.com/garrytan/gstack/tree/main/landing-report) | Read-only queue dashboard for workspace-aware ship. (gstack) | `SKILL.md.tmpl` |
 | [learn](https://github.com/garrytan/gstack/tree/main/learn) | Manage project learnings. | `SKILL.md.tmpl` |
 | [make-pdf](https://github.com/garrytan/gstack/tree/main/make-pdf) | Turn any markdown file into a publication-quality PDF. (gstack) | `SKILL.md.tmpl`, `src` (10 files), `test` (3 files), `test/e2e` (2 files), `test/fixtures` (3 files) |
-| [office-hours](https://github.com/garrytan/gstack/tree/main/office-hours) | YC Office Hours — two modes. (gstack) | `SKILL.md.tmpl` |
+| [office-hours](https://github.com/garrytan/gstack/tree/main/office-hours) | YC Office Hours — two modes. (gstack) | `SKILL.md.tmpl`, `sections` (3 files) |
 | [open-gstack-browser](https://github.com/garrytan/gstack/tree/main/open-gstack-browser) | Launch GStack Browser — AI-controlled Chromium with the sidebar extension baked in. | `SKILL.md.tmpl` |
 | [pair-agent](https://github.com/garrytan/gstack/tree/main/pair-agent) | Pair a remote AI agent with your browser. (gstack) | `SKILL.md.tmpl` |
-| [plan-ceo-review](https://github.com/garrytan/gstack/tree/main/plan-ceo-review) | CEO/founder-mode plan review. (gstack) | `SKILL.md.tmpl` |
-| [plan-design-review](https://github.com/garrytan/gstack/tree/main/plan-design-review) | Designer's eye plan review — interactive, like CEO and Eng review. (gstack) | `SKILL.md.tmpl` |
-| [plan-devex-review](https://github.com/garrytan/gstack/tree/main/plan-devex-review) | Interactive developer experience plan review. (gstack) | `dx-hall-of-fame.md`, `SKILL.md.tmpl` |
-| [plan-eng-review](https://github.com/garrytan/gstack/tree/main/plan-eng-review) | Eng manager-mode plan review. (gstack) | `SKILL.md.tmpl` |
+| [plan-ceo-review](https://github.com/garrytan/gstack/tree/main/plan-ceo-review) | CEO/founder-mode plan review. (gstack) | `SKILL.md.tmpl`, `sections` (3 files) |
+| [plan-design-review](https://github.com/garrytan/gstack/tree/main/plan-design-review) | Designer's eye plan review — interactive, like CEO and Eng review. (gstack) | `SKILL.md.tmpl`, `sections` (3 files) |
+| [plan-devex-review](https://github.com/garrytan/gstack/tree/main/plan-devex-review) | Interactive developer experience plan review. (gstack) | `dx-hall-of-fame.md`, `SKILL.md.tmpl`, `sections` (3 files) |
+| [plan-eng-review](https://github.com/garrytan/gstack/tree/main/plan-eng-review) | Eng manager-mode plan review. (gstack) | `SKILL.md.tmpl`, `sections` (3 files) |
 | [plan-tune](https://github.com/garrytan/gstack/tree/main/plan-tune) | Self-tuning question sensitivity + developer psychographic for gstack (v1: observational). (gstack) | `SKILL.md.tmpl` |
 | [qa](https://github.com/garrytan/gstack/tree/main/qa) | Systematically QA test a web application and fix bugs found. (gstack) | `references/issue-taxonomy.md`, `SKILL.md.tmpl`, `templates/qa-report-template.md` |
 | [qa-only](https://github.com/garrytan/gstack/tree/main/qa-only) | Report-only QA testing. (gstack) | `SKILL.md.tmpl` |
