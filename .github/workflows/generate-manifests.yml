@@ -211,7 +211,7 @@ jobs:
           git add -f "$OFFICIAL_DIR"/skills
           git add -f "$OFFICIAL_DIR"/designs
 
-          git commit -m "[bot] Generate manifests for ${{ matrix.url }}" || {
+          git commit -m "[bot] ${{ matrix.url }}" || {
             echo "No changes to commit."
             exit 0
           }
@@ -300,7 +300,7 @@ jobs:
               done
 
               git add -f "$ALL_MD" || true
-              git commit -m "[bot] Merged manifests $ALL_MD" || true
+              git commit -m "[bot] $ALL_MD" || true
             done
           done
 
@@ -309,5 +309,10 @@ jobs:
           gh pr create \
             --base main \
             --head "$BRANCH_NAME" \
-            --title "[bot] ${BRANCH_NAME#bot/}" \
+            --title "[bot] ${{ github.workflow }}" \
             --fill
+
+  scan:
+    name: Security Scan
+    needs: collect-and-pr
+    uses: ./.github/workflows/skillspector.yml

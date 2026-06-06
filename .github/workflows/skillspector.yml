@@ -1,10 +1,11 @@
 name: SkillSpector Scan
 
 on:
-  push:
-    branches: [ main ]
-    paths: [ '**/skills/ALL.md' ]
+  #push:
+  #  branches: [ main ]
+  #  paths: [ '**/skills/ALL.md' ]
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: write
@@ -39,12 +40,12 @@ jobs:
           make -C .skillspector install
           echo "${{ github.workspace }}/.skillspector/.venv/bin" >> $GITHUB_PATH
 
+      - run: echo "BRANCH=bot/${{ github.job }}" >> $GITHUB_ENV
+
       - name: Branch setup
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          BRANCH="bot/${{ github.job }}"
 
           # If remote branch exists → track it
           git fetch origin
@@ -55,8 +56,8 @@ jobs:
           fi
 
           # Cleanup
-          git fetch origin
-          git reset --hard origin/main
+          git fetch origin "${{ github.ref_name }}"
+          git reset --hard "origin/${{ github.ref_name }}"
           git clean -fd
 
       - name: Run SkillSpector scan
