@@ -310,6 +310,43 @@ function riskCellValue(result: ScanResult | undefined): string {
   return num || "n/a";
 }
 
+const SECURITY_RISK_HEADER = "Security Risk";
+const TABLE_SEPARATOR_4COL = "| -----|-------------|----------------|---|";
+
+function trimLineEnd(line: string): string {
+  return line.replace(/\s*$/, "");
+}
+
+/** Append a new table cell before the closing pipe. */
+export function appendTableCell(line: string, cell: string): string {
+  const trimmed = trimLineEnd(line);
+  if (trimmed.endsWith("|")) {
+    return `${trimmed} ${cell} |`;
+  }
+  return `${trimmed} | ${cell} |`;
+}
+
+/** Append the separator cell for a new column (literal `---|` suffix). */
+export function appendSeparatorCell(line: string): string {
+  const trimmed = trimLineEnd(line);
+  if (trimmed.endsWith("|")) {
+    return `${trimmed}---|`;
+  }
+  return `${trimmed}|---|`;
+}
+
+function replaceLastTableCell(line: string, cell: string): string {
+  return trimLineEnd(line).replace(/\|[^|]*\|\s*$/, `| ${cell} |`);
+}
+
+function tableColumnCount(line: string): number {
+  return line.split("|").map((part) => part.trim()).filter((part) => part.length > 0).length;
+}
+
+export function manifestHasSecurityRisk(content: string): boolean {
+  return /^\|\s*Name\s*\|.*Security Risk\s*\|/m.test(content);
+}
+
 function updateManifests(results: ScanResult[]) {
   // Build a lookup: skill URL -> result
   const resultByUrl = new Map<string, ScanResult>();
@@ -323,19 +360,24 @@ function updateManifests(results: ScanResult[]) {
     if (!existsSync(filepath)) continue;
 
     const content = readFileSync(filepath, "utf-8");
+    const hasSecurityRisk = manifestHasSecurityRisk(content);
     const lines = content.split("\n");
     const outLines: string[] = [];
 
     for (const line of lines) {
       // Detect header row: | Name | Description | Bundled Assets |
       if (/^\|\s*Name\s*\|/.test(line)) {
-        outLines.push(line.replace(/\s*\|\s*$/, " | Security Risk |"));
+        if (hasSecurityRisk) {
+          outLines.push(line);
+        } else {
+          outLines.push(appendTableCell(line, SECURITY_RISK_HEADER));
+        }
         continue;
       }
 
       // Detect separator row: | ----|-------------|----------------|
       if (/^\|\s*-+/.test(line) && !/^\|\s*\[/.test(line)) {
-        outLines.push(line.replace(/\|\s*$/, "|---|"));
+        outLines.push(hasSecurityRisk ? TABLE_SEPARATOR_4COL : appendSeparatorCell(line));
         continue;
       }
 
@@ -344,7 +386,11 @@ function updateManifests(results: ScanResult[]) {
       if (urlMatch) {
         const url = urlMatch[2];
         const value = riskCellValue(resultByUrl.get(url));
-        outLines.push(line.replace(/\s*\|\s*$/, ` | ${value} |`));
+        if (hasSecurityRisk && tableColumnCount(line) >= 4) {
+          outLines.push(replaceLastTableCell(line, value));
+        } else {
+          outLines.push(appendTableCell(line, value));
+        }
         continue;
       }
 
@@ -408,6 +454,10 @@ function sortReportResults(results: ScanResult[]): ScanResult[] {
   });
 }
 
+function isReportable(result: ScanResult): boolean {
+  return scanLabel(result) !== "no problem";
+}
+
 function writeReport(results: ScanResult[]) {
   const valid = results.filter((r): r is ScanResult => !!r);
   const timedOut = valid.filter((r) => r.status === "TIMEOUT");
@@ -421,7 +471,7 @@ function writeReport(results: ScanResult[]) {
   lines.push(formatStats(valid));
   lines.push("");
 
-  // Per-repo sections
+  // Per-repo sections (only repos with reportable findings)
   const byRepo = new Map<string, ScanResult[]>();
   for (const r of valid) {
     const repo = r.skill.repo;
@@ -431,6 +481,9 @@ function writeReport(results: ScanResult[]) {
 
   for (const repo of [...byRepo.keys()].sort()) {
     const repoResults = byRepo.get(repo)!;
+    const reportable = sortReportResults(repoResults.filter(isReportable));
+    if (reportable.length === 0) continue;
+
     lines.push(`### ${repo}`);
     lines.push("");
     lines.push(formatStats(repoResults));
@@ -438,7 +491,7 @@ function writeReport(results: ScanResult[]) {
     lines.push("| Scan | Risk | Skill |");
     lines.push("|------|------|-------|");
 
-    for (const r of sortReportResults(repoResults)) {
+    for (const r of reportable) {
       lines.push(`| ${scanLabel(r)} | ${riskDisplay(r)} | ${r.skill.name} |`);
     }
 
@@ -510,4 +563,6 @@ async function main() {
   rmSync(tmpBase, { recursive: true, force: true });
 }
 
-main();
+if (import.meta.main) {
+  main();
+}
