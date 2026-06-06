@@ -464,11 +464,29 @@ function riskSortValue(result: ScanResult): number {
 }
 
 export function formatStats(results: ScanResult[]): string {
-  const timedOut = results.filter((r) => r?.status === "TIMEOUT");
-  const failed = results.filter((r) => r?.status === "FAILED");
-  const cloneFailed = results.filter((r) => r?.status === "CLONE_FAILED");
-  const succeeded = results.filter((r) => r?.status === "OK");
-  return `📊 Scanned: **${results.length}** | Succeeded: **${succeeded.length}** | Failed: **${failed.length}** | Clone failed: **${cloneFailed.length}** | Timed out: **${timedOut.length}**`;
+  let timedOut = 0;
+  let failed = 0;
+  let cloneFailed = 0;
+  let succeeded = 0;
+
+  for (const r of results) {
+    switch (r?.status) {
+      case "TIMEOUT":
+        timedOut++;
+        break;
+      case "FAILED":
+        failed++;
+        break;
+      case "CLONE_FAILED":
+        cloneFailed++;
+        break;
+      case "OK":
+        succeeded++;
+        break;
+    }
+  }
+
+  return `📊 Scanned: **${results.length}** | Succeeded: **${succeeded}** | Failed: **${failed}** | Clone failed: **${cloneFailed}** | Timed out: **${timedOut}**`;
 }
 
 function sortReportResults(results: ScanResult[]): ScanResult[] {
