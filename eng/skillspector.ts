@@ -310,6 +310,46 @@ function riskCellValue(result: ScanResult | undefined): string {
   return num || "n/a";
 }
 
+const SECURITY_RISK_HEADER = "Security Risk";
+const TABLE_SEPARATOR_4COL = "| -----|-------------|----------------|---|";
+
+function trimLineEnd(line: string): string {
+  return line.replace(/\s*$/, "");
+}
+
+/** Append a new table cell before the closing pipe. */
+export function appendTableCell(line: string, cell: string): string {
+  const trimmed = trimLineEnd(line);
+  if (trimmed.endsWith("|")) {
+    return `${trimmed} ${cell} |`;
+  }
+  return `${trimmed} | ${cell} |`;
+}
+
+/** Normalize or append the Security Risk separator cell (literal `---|` suffix). */
+export function appendSeparatorCell(line: string): string {
+  const trimmed = trimLineEnd(line);
+  if (/^\|\s*-----\|-------------\|----------------/.test(trimmed)) {
+    return TABLE_SEPARATOR_4COL;
+  }
+  if (trimmed.endsWith("|")) {
+    return `${trimmed}---|`;
+  }
+  return `${trimmed}|---|`;
+}
+
+function replaceLastTableCell(line: string, cell: string): string {
+  return trimLineEnd(line).replace(/\|[^|]*\|\s*$/, `| ${cell} |`);
+}
+
+function tableColumnCount(line: string): number {
+  return line.split("|").map((part) => part.trim()).filter((part) => part.length > 0).length;
+}
+
+export function manifestHasSecurityRisk(headerLine: string): boolean {
+  return /^\|\s*Name\s*\|.*Security Risk\s*\|/.test(headerLine);
+}
+
 function updateManifests(results: ScanResult[]) {
   // Build a lookup: skill URL -> result
   const resultByUrl = new Map<string, ScanResult>();
@@ -325,27 +365,43 @@ function updateManifests(results: ScanResult[]) {
     const content = readFileSync(filepath, "utf-8");
     const lines = content.split("\n");
     const outLines: string[] = [];
+    let inSkillsTable = false;
 
     for (const line of lines) {
       // Detect header row: | Name | Description | Bundled Assets |
       if (/^\|\s*Name\s*\|/.test(line)) {
-        outLines.push(line.replace(/\s*\|\s*$/, " | Security Risk |"));
+        inSkillsTable = true;
+        if (manifestHasSecurityRisk(line)) {
+          outLines.push(line);
+        } else {
+          outLines.push(appendTableCell(line, SECURITY_RISK_HEADER));
+        }
         continue;
       }
 
       // Detect separator row: | ----|-------------|----------------|
-      if (/^\|\s*-+/.test(line) && !/^\|\s*\[/.test(line)) {
-        outLines.push(line.replace(/\s*\|\s*$/, "---|"));
+      if (inSkillsTable && /^\|\s*-+/.test(line) && !/^\|\s*\[/.test(line)) {
+        outLines.push(appendSeparatorCell(line));
         continue;
       }
 
       // Detect skill data row: | [name](url) | ... |
-      const urlMatch = line.match(/\|\s*\[([^\]]+)\]\((https:\/\/github\.com\/[^)]+)\)/);
+      const urlMatch = inSkillsTable
+        ? line.match(/\|\s*\[([^\]]+)\]\((https:\/\/github\.com\/[^)]+)\)/)
+        : null;
       if (urlMatch) {
         const url = urlMatch[2];
         const value = riskCellValue(resultByUrl.get(url));
-        outLines.push(line.replace(/\s*\|\s*$/, ` | ${value} |`));
+        if (tableColumnCount(line) >= 4) {
+          outLines.push(replaceLastTableCell(line, value));
+        } else {
+          outLines.push(appendTableCell(line, value));
+        }
         continue;
+      }
+
+      if (inSkillsTable && !/^\|/.test(line)) {
+        inSkillsTable = false;
       }
 
       // Non-table lines pass through unchanged
@@ -362,34 +418,96 @@ function updateManifests(results: ScanResult[]) {
 // Report
 // ============================================================
 
-function writeReport(results: ScanResult[]) {
+function scanLabel(result: ScanResult): string {
+  if (result.status === "CLONE_FAILED") return "Clone failed";
+  if (result.status === "FAILED") return "Failed";
+  if (result.status === "TIMEOUT") return "Timed out";
+  if (scoreNumber(result.score) === "0") return "no problem";
+  return "Succeeded";
+}
+
+/** Lower sorts earlier; "no problem" is last among scan outcomes. */
+function scanSortOrder(result: ScanResult): number {
+  if (result.status === "CLONE_FAILED") return 0;
+  if (result.status === "FAILED") return 1;
+  if (result.status === "TIMEOUT") return 2;
+  if (scoreNumber(result.score) === "0") return 4;
+  return 3;
+}
+
+function riskDisplay(result: ScanResult): string {
+  if (result.status === "TIMEOUT") return "timeout";
+  if (result.status === "CLONE_FAILED" || result.status === "FAILED") return "n/a";
+  return scoreNumber(result.score) || "n/a";
+}
+
+function riskSortValue(result: ScanResult): number {
+  const risk = riskDisplay(result);
+  if (risk === "n/a" || risk === "timeout") return -1;
+  const n = Number(risk);
+  return Number.isFinite(n) ? n : -1;
+}
+
+function formatStats(results: ScanResult[]): string {
   const timedOut = results.filter((r) => r?.status === "TIMEOUT");
   const failed = results.filter((r) => r?.status === "FAILED");
   const cloneFailed = results.filter((r) => r?.status === "CLONE_FAILED");
-  const ok = results.filter((r) => r?.status === "OK");
-  const nonZero = ok.filter((r) => scoreNumber(r.score) !== "0");
+  const succeeded = results.filter((r) => r?.status === "OK");
+  return `**Scanned: ${results.length} | Succeeded: ${succeeded.length} | Failed: ${failed.length} | Clone failed: ${cloneFailed.length} | Timed out: ${timedOut.length}**`;
+}
+
+function sortReportResults(results: ScanResult[]): ScanResult[] {
+  return [...results].sort((a, b) => {
+    const byScan = scanSortOrder(a) - scanSortOrder(b);
+    if (byScan !== 0) return byScan;
+    return riskSortValue(b) - riskSortValue(a);
+  });
+}
+
+function isReportable(result: ScanResult): boolean {
+  return scanLabel(result) !== "no problem";
+}
+
+function writeReport(results: ScanResult[]) {
+  const valid = results.filter((r): r is ScanResult => !!r);
+  const timedOut = valid.filter((r) => r.status === "TIMEOUT");
+  const failed = valid.filter((r) => r.status === "FAILED");
+  const cloneFailed = valid.filter((r) => r.status === "CLONE_FAILED");
+  const succeeded = valid.filter((r) => r.status === "OK");
 
   const lines: string[] = [];
 
-  // Statistics at start (no heading)
-  lines.push(`**Scanned: ${results.filter((r) => r).length} | OK: ${ok.length} | Failed: ${failed.length} | Clone failed: ${cloneFailed.length} | Timed out: ${timedOut.length}**`);
+  // Total statistics at start (no heading)
+  lines.push(formatStats(valid));
   lines.push("");
 
-  // Table — exclude risk 0 skills
-  lines.push("| # | Repository | Skill | Risk | Status |");
-  lines.push("|---|-----------|-------|------|--------|");
-
-  for (const r of nonZero) {
-    if (!r) continue;
-    lines.push(`| ${r.index + 1} | ${r.skill.repo} | ${r.skill.name} | ${scoreNumber(r.score)} | ${r.status} |`);
+  // Per-repo sections (only repos with reportable findings)
+  const byRepo = new Map<string, { display: string; results: ScanResult[] }>();
+  for (const r of valid) {
+    const key = r.skill.repo.toLowerCase();
+    if (!byRepo.has(key)) {
+      byRepo.set(key, { display: r.skill.repo, results: [] });
+    }
+    byRepo.get(key)!.results.push(r);
   }
 
-  // Include timed out and failed in table
-  for (const r of timedOut) {
-    lines.push(`| ${r.index + 1} | ${r.skill.repo} | ${r.skill.name} | timeout | ${r.status} |`);
-  }
-  for (const r of [...failed, ...cloneFailed]) {
-    lines.push(`| ${r.index + 1} | ${r.skill.repo} | ${r.skill.name} | n/a | ${r.status} |`);
+  for (const key of [...byRepo.keys()].sort()) {
+    const { display: repo, results: repoResults } = byRepo.get(key)!;
+    const reportable = sortReportResults(repoResults.filter(isReportable));
+    if (reportable.length === 0) continue;
+
+    lines.push(`### ${repo}`);
+    lines.push("");
+    lines.push(formatStats(repoResults));
+    lines.push("");
+    lines.push("| Scan | Risk | Skill |");
+    lines.push("|------|------|-------|");
+
+    for (const r of reportable) {
+      lines.push(`| ${scanLabel(r)} | ${riskDisplay(r)} | ${r.skill.name} |`);
+    }
+
+    lines.push("");
   }
 
   writeFileSync(MARKDOWN_OUTPUT, lines.join("\n") + "\n");
@@ -423,7 +541,7 @@ function writeReport(results: ScanResult[]) {
   }, null, 2) + "\n");
 
   console.log("");
-  console.log(`[INFO] Done. OK: ${ok.length}, Failed: ${failed.length}, Clone failed: ${cloneFailed.length}, Timed out: ${timedOut.length}`);
+  console.log(`[INFO] Done. Succeeded: ${succeeded.length}, Failed: ${failed.length}, Clone failed: ${cloneFailed.length}, Timed out: ${timedOut.length}`);
   console.log(`[INFO] SARIF:    ${SARIF_OUTPUT}`);
   console.log(`[INFO] Markdown: ${MARKDOWN_OUTPUT}`);
 }
@@ -457,4 +575,6 @@ async function main() {
   rmSync(tmpBase, { recursive: true, force: true });
 }
 
-main();
+if (import.meta.main) {
+  main();
+}
