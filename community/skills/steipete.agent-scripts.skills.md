@@ -14,7 +14,7 @@
 | [github-author-context](https://github.com/steipete/agent-scripts/tree/main/skills/github-author-context) | GitHub contributor context: identity, activity, trust, company/team signal. | `agents/openai.yaml` |
 | [github-cache-hygiene](https://github.com/steipete/agent-scripts/tree/main/skills/github-cache-hygiene) | GitHub quota/cache hygiene: gh, ghx, xcache, gitcrawl, mirrors, limits. | `agents/openai.yaml` |
 | [github-deep-review](https://github.com/steipete/agent-scripts/tree/main/skills/github-deep-review) | GitHub deep review: bugs, PRs, best fix, stale-or-real, read code first. | `agents/openai.yaml` |
-| [github-project-triage](https://github.com/steipete/agent-scripts/tree/main/skills/github-project-triage) | GitHub issue/PR triage: summarize, assess risk/testability, inspect CI/diffs/trust. | `agents/openai.yaml`, `scripts/github-activity.sh` |
+| [github-project-triage](https://github.com/steipete/agent-scripts/tree/main/skills/github-project-triage) | Use whenever the user types triage or asks to triage GitHub issues, PRs, queues, CI, blockers, risk, proof, or next actions. | `agents/openai.yaml`, `scripts/github-activity.sh` |
 | [hopper-debugger](https://github.com/steipete/agent-scripts/tree/main/skills/hopper-debugger) | Hopper debugging: macOS/iOS binaries, ObjC/Swift symbols, dyld, LLDB. | `agents/openai.yaml` |
 | [instruments-profiling](https://github.com/steipete/agent-scripts/tree/main/skills/instruments-profiling) | Instruments/xctrace profiling: macOS/iOS traces, binaries, args, exports. | None |
 | [mac-maintenance](https://github.com/steipete/agent-scripts/tree/main/skills/mac-maintenance) | Mac upkeep: brew update/upgrade, pull clean repos, empty Trash. | None |
