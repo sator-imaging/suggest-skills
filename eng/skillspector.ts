@@ -77,6 +77,17 @@ interface ScanResult {
 
 // --- Helpers ---
 
+async function drainStream(stream: ReadableStream<Uint8Array>): Promise<void> {
+  const reader = stream.getReader();
+  try {
+    while (!(await reader.read()).done) {
+      // discard
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
 async function runCmd(
   cmd: string[],
   timeoutMs: number,
@@ -87,17 +98,19 @@ async function runCmd(
   const proc = spawn(cmd, { stdout: "pipe", stderr: "pipe" });
 
   const stdoutPromise = new Response(proc.stdout).text();
-  // Consume stderr even when unused to avoid pipe deadlock.
-  const stderrPromise = new Response(proc.stderr).text();
+  // Consume stderr even when unused to avoid pipe deadlock, but do not
+  // buffer it or block successful completion on it.
+  const stderrPromise = drainStream(proc.stderr);
 
   const resultPromise = Promise.all([
     proc.exited,
     stdoutPromise,
-    stderrPromise,
   ]).then(([exitCode, stdout]) => ({
     kind: "done" as const,
     exitCode,
     stdout,
+  })).catch(() => ({
+    kind: "error" as const,
   }));
 
   const race = await Promise.race([
@@ -108,11 +121,17 @@ async function runCmd(
   if (race.kind === "timeout") {
     proc.kill(9);
     ac.abort();
-    void Promise.allSettled([proc.exited, stdoutPromise, stderrPromise]);
+    void Promise.allSettled([stderrPromise]);
     return { stdout: "", timedOut: true, exitCode: -1 };
   }
 
   ac.abort();
+  void Promise.allSettled([stderrPromise]);
+
+  if (race.kind === "error") {
+    return { stdout: "", timedOut: false, exitCode: -1 };
+  }
+
   return { stdout: race.stdout, timedOut: false, exitCode: race.exitCode };
 }
 
