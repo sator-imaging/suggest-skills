@@ -39,7 +39,7 @@ const MARKDOWN_OUTPUT = resolve(args.markdown!);
 const NO_LLM = args["no-llm"]!;
 
 const DEFAULT_TIMEOUT_SEC = 180 as const;
-const DEFAULT_CONCURRENCY = 10 as const;
+const DEFAULT_CONCURRENCY = 7 as const;  // 4 CPUs x2, 1 for dispatcher
 
 const TIMEOUT_MS = Number(args.timeout ?? DEFAULT_TIMEOUT_SEC) * 1000;
 const CONCURRENCY = Number(args.jobs ?? DEFAULT_CONCURRENCY);
