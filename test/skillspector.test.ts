@@ -35,15 +35,16 @@ describe("skillspector manifest table helpers", () => {
 
 describe("skillspector report formatting", () => {
   test("riskEmojiPrefix maps score ranges to emojis", () => {
-    expect(riskEmojiPrefix("10")).toBe("🟡 ");
-    expect(riskEmojiPrefix("25")).toBe("🟡 ");
-    expect(riskEmojiPrefix("26")).toBe("🟠 ");
-    expect(riskEmojiPrefix("50")).toBe("🟠 ");
-    expect(riskEmojiPrefix("51")).toBe("🔥 ");
-    expect(riskEmojiPrefix("75")).toBe("🔥 ");
-    expect(riskEmojiPrefix("76")).toBe("☠️ ");
+    expect(riskEmojiPrefix("0")).toBe("");
+    expect(riskEmojiPrefix("1")).toBe("🟡 ");
+    expect(riskEmojiPrefix("29")).toBe("🟡 ");
+    expect(riskEmojiPrefix("30")).toBe("🟠 ");
+    expect(riskEmojiPrefix("59")).toBe("🟠 ");
+    expect(riskEmojiPrefix("60")).toBe("🔥 ");
+    expect(riskEmojiPrefix("89")).toBe("🔥 ");
     expect(riskEmojiPrefix("90")).toBe("☠️ ");
-    expect(riskEmojiPrefix("95")).toBe("☠️ ");
+    expect(riskEmojiPrefix("100")).toBe("☠️ ");
+    expect(riskEmojiPrefix("1000")).toBe("☠️ ");
     expect(riskEmojiPrefix("n/a")).toBe("");
     expect(riskEmojiPrefix("timeout")).toBe("");
   });
