@@ -316,3 +316,7 @@ jobs:
     name: Security Scan
     needs: collect-and-pr
     uses: ./.github/workflows/skillspector.yml
+    permissions:
+      contents: write
+      pull-requests: write
+      security-events: write
