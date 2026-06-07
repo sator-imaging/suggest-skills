@@ -441,6 +441,21 @@ function riskDisplay(result: ScanResult): string {
   return scoreNumber(result.score) || "n/a";
 }
 
+export function riskEmojiPrefix(risk: string): string {
+  if (risk === "n/a" || risk === "timeout" || !risk) return "";
+  const n = Number(risk);
+  if (!Number.isFinite(n) || n <= 0) return "";
+  if (n >= 90) return "☠️ ";
+  if (n >= 60) return "🔥 ";
+  if (n >= 30) return "🟠 ";
+  return "🟡 ";
+}
+
+function formatRiskCell(result: ScanResult): string {
+  const risk = riskDisplay(result);
+  return `${riskEmojiPrefix(risk)}${risk}`;
+}
+
 function riskSortValue(result: ScanResult): number {
   const risk = riskDisplay(result);
   if (risk === "n/a" || risk === "timeout") return -1;
@@ -448,12 +463,30 @@ function riskSortValue(result: ScanResult): number {
   return Number.isFinite(n) ? n : -1;
 }
 
-function formatStats(results: ScanResult[]): string {
-  const timedOut = results.filter((r) => r?.status === "TIMEOUT");
-  const failed = results.filter((r) => r?.status === "FAILED");
-  const cloneFailed = results.filter((r) => r?.status === "CLONE_FAILED");
-  const succeeded = results.filter((r) => r?.status === "OK");
-  return `**Scanned: ${results.length} | Succeeded: ${succeeded.length} | Failed: ${failed.length} | Clone failed: ${cloneFailed.length} | Timed out: ${timedOut.length}**`;
+export function formatStats(results: ScanResult[]): string {
+  let timedOut = 0;
+  let failed = 0;
+  let cloneFailed = 0;
+  let succeeded = 0;
+
+  for (const r of results) {
+    switch (r?.status) {
+      case "TIMEOUT":
+        timedOut++;
+        break;
+      case "FAILED":
+        failed++;
+        break;
+      case "CLONE_FAILED":
+        cloneFailed++;
+        break;
+      case "OK":
+        succeeded++;
+        break;
+    }
+  }
+
+  return `📊 Scanned: **${results.length}** | Succeeded: **${succeeded}** | Failed: **${failed}** | Clone failed: **${cloneFailed}** | Timed out: **${timedOut}**`;
 }
 
 function sortReportResults(results: ScanResult[]): ScanResult[] {
@@ -496,15 +529,15 @@ function writeReport(results: ScanResult[]) {
     const reportable = sortReportResults(repoResults.filter(isReportable));
     if (reportable.length === 0) continue;
 
-    lines.push(`### ${repo}`);
+    lines.push(`# ${repo}`);
     lines.push("");
     lines.push(formatStats(repoResults));
     lines.push("");
-    lines.push("| Scan | Risk | Skill |");
-    lines.push("|------|------|-------|");
+    lines.push("| Risk | Skill | Scan |");
+    lines.push("|------|-------|------|");
 
     for (const r of reportable) {
-      lines.push(`| ${scanLabel(r)} | ${riskDisplay(r)} | ${r.skill.name} |`);
+      lines.push(`| ${formatRiskCell(r)} | ${r.skill.name} | ${scanLabel(r)} |`);
     }
 
     lines.push("");
