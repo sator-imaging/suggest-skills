@@ -39,7 +39,7 @@ const MARKDOWN_OUTPUT = resolve(args.markdown!);
 const NO_LLM = args["no-llm"]!;
 
 const DEFAULT_TIMEOUT_SEC = 180 as const;
-const DEFAULT_CONCURRENCY = 7 as const;
+const DEFAULT_CONCURRENCY = 5 as const;
 
 const TIMEOUT_MS = Number(args.timeout ?? DEFAULT_TIMEOUT_SEC) * 1000;
 const CONCURRENCY = Number(args.jobs ?? DEFAULT_CONCURRENCY);
@@ -211,7 +211,6 @@ async function cloneRepos(targets: CloneTarget[]): Promise<Set<string>> {
     CONCURRENCY,
     targets,
     async (t) => {
-      console.log(`  [CLONE] ${t.repo}@${t.ref}`);
       mkdirSync(t.dir, { recursive: true });
 
       const result = await runCmd([
@@ -234,7 +233,9 @@ async function cloneRepos(targets: CloneTarget[]): Promise<Set<string>> {
     return "skip";
   });
 
-  for await (const _ of fibers) { /* drain */ }
+  for await (const result of fibers) {
+    console.log(`  [CLONE] ${result.repo}@${result.ref}`);
+  }
 
   return failed;
 }
@@ -323,8 +324,7 @@ async function scanSkills(
     return "skip";
   });
 
-  for await (const result of fibers)
-  {
+  for await (const result of fibers) {
     const num = result.index + 1;
     console.log(`[${num}/${total}] ${result.skill.repo} :: ${result.skill.name}`);
   }
