@@ -86,20 +86,34 @@ async function runCmd(
 
   const proc = spawn(cmd, { stdout: "pipe", stderr: "pipe" });
 
-  const stdoutPromise = new Response(proc.stdout).text()
-    .then((text) => ({ kind: "done" as const, text }));
-  const timeoutDone = timeoutPromise
-    .then(() => ({ kind: "timeout" as const, text: "" }));
+  const stdoutPromise = new Response(proc.stdout).text();
+  // Consume stderr even when unused to avoid pipe deadlock.
+  const stderrPromise = new Response(proc.stderr).text();
 
-  const race = await Promise.race([stdoutPromise, timeoutDone]);
+  const resultPromise = Promise.all([
+    proc.exited,
+    stdoutPromise,
+    stderrPromise,
+  ]).then(([exitCode, stdout]) => ({
+    kind: "done" as const,
+    exitCode,
+    stdout,
+  }));
+
+  const race = await Promise.race([
+    resultPromise,
+    timeoutPromise.then(() => ({ kind: "timeout" as const })),
+  ]);
 
   if (race.kind === "timeout") {
     proc.kill(9);
+    ac.abort();
+    void Promise.allSettled([proc.exited, stdoutPromise, stderrPromise]);
     return { stdout: "", timedOut: true, exitCode: -1 };
   }
 
   ac.abort();
-  return { stdout: race.text, timedOut: false, exitCode: proc.exitCode ?? 0 };
+  return { stdout: race.stdout, timedOut: false, exitCode: race.exitCode };
 }
 
 function parseScore(md: string): string {
