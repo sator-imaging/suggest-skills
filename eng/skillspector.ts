@@ -444,11 +444,11 @@ function riskDisplay(result: ScanResult): string {
 export function riskEmojiPrefix(risk: string): string {
   if (risk === "n/a" || risk === "timeout" || !risk) return "";
   const n = Number(risk);
-  if (!Number.isFinite(n)) return "";
-  if (n <= 25) return "🟡 ";
-  if (n <= 50) return "🟠 ";
-  if (n <= 75) return "🔥 ";
-  return "☠️ ";
+  if (!Number.isFinite(n) || n <= 0) return "";
+  if (n >= 90) return "☠️ ";
+  if (n >= 60) return "🔥 ";
+  if (n >= 30) return "🟠 ";
+  return "🟡 ";
 }
 
 function formatRiskCell(result: ScanResult): string {
