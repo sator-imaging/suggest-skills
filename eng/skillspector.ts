@@ -19,6 +19,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from "fs";
 import { join, resolve } from "path";
 import { spawn } from "bun";
 import { parseArgs } from "util";
+import { os } from "node:os";
 
 // --- CLI ---
 
@@ -39,7 +40,7 @@ const MARKDOWN_OUTPUT = resolve(args.markdown!);
 const NO_LLM = args["no-llm"]!;
 
 const DEFAULT_TIMEOUT_SEC = 180 as const;
-const DEFAULT_CONCURRENCY = 7 as const;  // 4 CPUs x2, 1 for dispatcher
+const DEFAULT_CONCURRENCY = os.availableParallelism();
 
 const TIMEOUT_MS = Number(args.timeout ?? DEFAULT_TIMEOUT_SEC) * 1000;
 const CONCURRENCY = Number(args.jobs ?? DEFAULT_CONCURRENCY);
