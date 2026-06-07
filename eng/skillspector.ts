@@ -263,9 +263,6 @@ async function scanSkills(
     CONCURRENCY,
     skills.map((skill, i) => ({ skill, index: i })),
     async ({ skill, index }) => {
-      const num = index + 1;
-      console.log(`[${num}/${total}] ${skill.repo} :: ${skill.name}`);
-
       let status: ScanResult["status"] = "OK";
       let markdown = "";
       let score = "-";
@@ -326,7 +323,11 @@ async function scanSkills(
     return "skip";
   });
 
-  for await (const _ of fibers) { /* drain */ }
+  for await (const result of fibers)
+  {
+    const num = result.index + 1;
+    console.log(`[${num}/${total}] ${result.skill.repo} :: ${result.skill.name}`);
+  }
 
   return results;
 }
