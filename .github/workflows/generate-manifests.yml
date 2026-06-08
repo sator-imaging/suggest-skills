@@ -246,24 +246,11 @@ jobs:
 
           exit 1
 
-  scan:
-    name: Security Scan
-    needs: 
-      - prepare  # For needs.outputs
-      - generate
-    uses: ./.github/workflows/skillspector.yml
-    with:
-      branch: ${{ needs.prepare.outputs.branch }}
-    permissions:
-      contents: write
-      pull-requests: write
-      security-events: write
-
-  collect-and-pr:
-    name: Create PR
+  collect:
+    name: Collect Skills
     needs:
       - prepare  # For needs.outputs
-      - scan
+      - generate
 
     runs-on: ubuntu-latest
     steps:
@@ -271,21 +258,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Create pull request with gh
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Create ALL.md
         run: |
           set -euo pipefail
 
           BRANCH_NAME="${{ needs.prepare.outputs.branch }}"
 
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          git fetch origin main:refs/remotes/origin/main
+          git fetch origin main
           git fetch origin "$BRANCH_NAME" \
             || exit 0  # No changes
           git checkout -B "$BRANCH_NAME" "origin/$BRANCH_NAME"
+
+          # Create and commit
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
           for BASE_DIR in "$COMMUNITY_DIR" "$OFFICIAL_DIR"; do
             for SUB_DIR in agents skills designs; do
@@ -324,6 +311,44 @@ jobs:
           done
 
           git push --set-upstream origin "$BRANCH_NAME" || true
+
+  scan:
+    name: Security Scan
+    needs: 
+      - prepare  # For needs.outputs
+      - collect
+    uses: ./.github/workflows/skillspector.yml
+    with:
+      branch: ${{ needs.prepare.outputs.branch }}
+    permissions:
+      contents: write
+      pull-requests: write
+      security-events: write
+
+  pr:
+    name: Create PR
+    needs:
+      - prepare  # For needs.outputs
+      - scan
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Create PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          BRANCH_NAME="${{ needs.prepare.outputs.branch }}"
+
+          git fetch origin main
+          git fetch origin "$BRANCH_NAME" \
+            || exit 0  # No changes
+          git checkout -B "$BRANCH_NAME" "origin/$BRANCH_NAME"
+
+          # Create PR
 
           gh pr create \
             --base main \
