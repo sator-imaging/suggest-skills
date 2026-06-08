@@ -70,6 +70,7 @@
 | [plan](https://github.com/NousResearch/hermes-agent/tree/main/skills/software-development/plan) | Plan mode: write an actionable markdown plan to .hermes/plans/, no execution. Bite-sized tasks, exact paths, complete code. | None |
 | [python-debugpy](https://github.com/NousResearch/hermes-agent/tree/main/skills/software-development/python-debugpy) | Debug Python: pdb REPL + debugpy remote (DAP). | None |
 | [requesting-code-review](https://github.com/NousResearch/hermes-agent/tree/main/skills/software-development/requesting-code-review) | Pre-commit review: security scan, quality gates, auto-fix. | None |
+| [simplify-code](https://github.com/NousResearch/hermes-agent/tree/main/skills/software-development/simplify-code) | Parallel 3-agent cleanup of recent code changes. | None |
 | [spike](https://github.com/NousResearch/hermes-agent/tree/main/skills/software-development/spike) | Throwaway experiments to validate an idea before build. | None |
 | [systematic-debugging](https://github.com/NousResearch/hermes-agent/tree/main/skills/software-development/systematic-debugging) | 4-phase root cause debugging: understand bugs before fixing. | None |
 | [test-driven-development](https://github.com/NousResearch/hermes-agent/tree/main/skills/software-development/test-driven-development) | TDD: enforce RED-GREEN-REFACTOR, tests before code. | None |
