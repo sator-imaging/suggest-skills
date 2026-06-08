@@ -204,16 +204,16 @@ function fallbackParseFrontMatter(frontMatter: string): {
   for (const line of lines) {
     const nameMatch = /^name:\s*(.+)$/u.exec(line);
     if (nameMatch && name === null) {
-      const val = nameMatch[1].trim();
-      if (isValidFallbackValue(val)) {
+      const val = nameMatch[1]?.trim();
+      if (val && isValidFallbackValue(val)) {
         name = unquote(val);
       }
     }
 
     const descMatch = /^description:\s*(.+)$/u.exec(line);
     if (descMatch && description === null) {
-      const val = descMatch[1].trim();
-      if (isValidFallbackValue(val)) {
+      const val = descMatch[1]?.trim();
+      if (val && isValidFallbackValue(val)) {
         description = unquote(val);
       }
     }

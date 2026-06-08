@@ -175,6 +175,8 @@ function buildLists(tmpBase: string) {
       const repo = m[3];
       const refAndPath = m[4];
 
+      if (!name || !url || !repo || !refAndPath) continue;
+
       if (seen.has(url)) continue;
       seen.add(url);
 
@@ -251,7 +253,7 @@ async function scanSkills(
   failedClones: Set<string>,
 ): Promise<ScanResult[]> {
   const total = skills.length;
-  const results: ScanResult[] = new Array(total);
+  const results: ScanResult[] = Array.from({ length: total });
 
   // Build a lookup: repo@ref -> dir
   const dirMap = new Map<string, string>();
@@ -426,6 +428,7 @@ function updateManifests(results: ScanResult[]) {
         : null;
       if (urlMatch) {
         const url = urlMatch[2];
+        if (!url) continue;
         const value = riskCellValue(resultByUrl.get(url));
         if (tableColumnCount(line) >= 4) {
           outLines.push(replaceLastTableCell(line, value));
@@ -435,7 +438,7 @@ function updateManifests(results: ScanResult[]) {
         continue;
       }
 
-      if (inSkillsTable && !/^\|/.test(line)) {
+      if (inSkillsTable && !line.startsWith("|")) {
         inSkillsTable = false;
       }
 
