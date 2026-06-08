@@ -251,7 +251,7 @@ jobs:
     needs: generate
     uses: ./.github/workflows/skillspector.yml
     with:
-      direct-push: true
+      branch: ${{ needs.prepare.outputs.branch }}
     permissions:
       contents: write
       pull-requests: write

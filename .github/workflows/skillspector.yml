@@ -7,8 +7,8 @@ on:
   workflow_dispatch:
   workflow_call:
     inputs:
-      direct-push:
-        type: boolean
+      branch:
+        type: string
 
 permissions:
   contents: write
@@ -37,23 +37,27 @@ jobs:
 
       - run: pip install uv
 
-      - name: Clone & install NVIDIA/skillspector
+      - name: Install NVIDIA/skillspector
         run: |
           git clone --depth=1 https://github.com/NVIDIA/skillspector.git .skillspector
           make -C .skillspector install
           echo "${{ github.workspace }}/.skillspector/.venv/bin" >> $GITHUB_PATH
 
-      - run: echo "BRANCH=bot/${{ github.job }}" >> $GITHUB_ENV
+      - name: Target branch
+        run: |
+          TARGET="${{ inputs.branch }}"
 
-      - name: Bot identity
+          if [ -n "$TARGET" ]; then
+            echo "BRANCH=$TARGET" >> $GITHUB_ENV
+          else
+            echo "BRANCH=bot/${{ github.job }}" >> $GITHUB_ENV
+          fi
+
+      - name: Branch setup
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Branch setup
-        if: |
-          !inputs.direct-push
-        run: |
           # If remote branch exists → track it
           git fetch origin
           if git show-ref --verify --quiet "refs/remotes/origin/$BRANCH"; then
@@ -74,14 +78,14 @@ jobs:
             --markdown skillspector-report.md \
             --no-llm
 
-      - name: Create PR with updated ALL.md
-        if: |
-          !inputs.direct-push
-        run: |
           git add '**/ALL.md'
           git commit -m "[bot] Update Security Risk scores in ALL.md"
           git push -u origin "$BRANCH"
 
+      - name: Create PR with updated ALL.md
+        if: |
+          !inputs.branch
+        run: |
           gh pr create \
             --base main \
             --head "$BRANCH" \
