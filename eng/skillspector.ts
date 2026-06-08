@@ -14,8 +14,8 @@
  *                           [--timeout <seconds>] [--jobs <n>]
  *                           [--target <glob>]...
  *
- * --target replaces the default manifest list (official/skills/ALL.md,
- * community/skills/ALL.md); pass multiple --target flags to scan several paths.
+ * --target replaces the default manifest glob; pass multiple --target
+ * flags to scan several paths or patterns.
  */
 
 import { Fibers } from "ts-fibers";
@@ -51,7 +51,7 @@ const TIMEOUT_MS = Number(args.timeout ?? DEFAULT_TIMEOUT_SEC) * 1000;
 const CONCURRENCY = Number(args.jobs ?? DEFAULT_CONCURRENCY);
 
 const REPO_ROOT = resolve(import.meta.dir, "..");
-const DEFAULT_MANIFEST_TARGETS = ["official/skills/ALL.md", "community/skills/ALL.md"];
+const DEFAULT_MANIFEST_TARGETS = ["**/skills/ALL.md"];
 
 // --- Types ---
 
