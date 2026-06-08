@@ -61,7 +61,7 @@ describe("skillspector report formatting", () => {
     ] as Parameters<typeof formatStats>[0];
 
     expect(formatStats(results)).toBe(
-      "📊 Scanned: **5** | Succeeded: **2** | No risk: **1** | Failed: **1** | Clone failed: **1** | Timed out: **1**",
+      "📊 Scanned: **5** | Succeeded: **2** | Risky Skills: **1** | Failed: **1** | Clone failed: **1** | Timed out: **1**",
     );
   });
 });

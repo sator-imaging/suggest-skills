@@ -13,6 +13,9 @@
  *   bun eng/skillspector.ts [--sarif <path>] [--markdown <path>] [--no-llm]
  *                           [--timeout <seconds>] [--jobs <n>]
  *                           [--target <glob>]...
+ *
+ * --target replaces the default manifest list (official/skills/ALL.md,
+ * community/skills/ALL.md); pass multiple --target flags to scan several paths.
  */
 
 import { Fibers } from "ts-fibers";
@@ -595,7 +598,7 @@ export function formatStats(results: ScanResult[]): string {
   let failed = 0;
   let cloneFailed = 0;
   let succeeded = 0;
-  let noRisk = 0;
+  let riskySkills = 0;
 
   for (const r of results) {
     switch (r?.status) {
@@ -610,14 +613,17 @@ export function formatStats(results: ScanResult[]): string {
         break;
       case "OK":
         succeeded++;
-        if (scoreNumber(r.score) === "0") {
-          noRisk++;
+        {
+          const n = Number(scoreNumber(r.score));
+          if (Number.isFinite(n) && n > 0) {
+            riskySkills++;
+          }
         }
         break;
     }
   }
 
-  return `📊 Scanned: **${results.length}** | Succeeded: **${succeeded}** | No risk: **${noRisk}** | Failed: **${failed}** | Clone failed: **${cloneFailed}** | Timed out: **${timedOut}**`;
+  return `📊 Scanned: **${results.length}** | Succeeded: **${succeeded}** | Risky Skills: **${riskySkills}** | Failed: **${failed}** | Clone failed: **${cloneFailed}** | Timed out: **${timedOut}**`;
 }
 
 function sortReportResults(results: ScanResult[]): ScanResult[] {
