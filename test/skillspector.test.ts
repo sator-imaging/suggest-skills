@@ -5,7 +5,7 @@ import {
   formatStats,
   manifestHasSecurityRisk,
   riskEmojiPrefix,
-} from "../eng/skillspector.ts";
+} from "../eng/skillspector";
 
 describe("skillspector manifest table helpers", () => {
   test("appendSeparatorCell appends ---| after trailing pipe", () => {
