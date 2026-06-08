@@ -9,14 +9,14 @@
 | [codex](https://github.com/garrytan/gstack/tree/main/codex) | OpenAI Codex CLI wrapper — three modes. (gstack) | `SKILL.md.tmpl` |
 | [context-restore](https://github.com/garrytan/gstack/tree/main/context-restore) | Restore working context saved earlier by /context-save. (gstack) | `SKILL.md.tmpl` |
 | [context-save](https://github.com/garrytan/gstack/tree/main/context-save) | Save working context. (gstack) | `SKILL.md.tmpl` |
-| [cso](https://github.com/garrytan/gstack/tree/main/cso) | Chief Security Officer mode. (gstack) | `ACKNOWLEDGEMENTS.md`, `SKILL.md.tmpl` |
-| [design-consultation](https://github.com/garrytan/gstack/tree/main/design-consultation) | Design consultation: understands your product, researches the landscape, proposes a complete design system (aesthetic, typography, color, layout, spacing, motion), and generates font+color preview... (gstack) | `SKILL.md.tmpl` |
+| [cso](https://github.com/garrytan/gstack/tree/main/cso) | Chief Security Officer mode. (gstack) | `ACKNOWLEDGEMENTS.md`, `SKILL.md.tmpl`, `sections` (3 files) |
+| [design-consultation](https://github.com/garrytan/gstack/tree/main/design-consultation) | Design consultation: understands your product, researches the landscape, proposes a complete design system (aesthetic, typography, color, layout, spacing, motion), and generates font+color preview... (gstack) | `SKILL.md.tmpl`, `sections` (3 files) |
 | [design-html](https://github.com/garrytan/gstack/tree/main/design-html) | Design finalization: generates production-quality Pretext-native HTML/CSS. (gstack) | `SKILL.md.tmpl`, `vendor/pretext.js` |
 | [design-review](https://github.com/garrytan/gstack/tree/main/design-review) | Designer's eye QA: finds visual inconsistency, spacing issues, hierarchy problems, AI slop patterns, and slow interactions — then fixes them. (gstack) | `SKILL.md.tmpl` |
 | [design-shotgun](https://github.com/garrytan/gstack/tree/main/design-shotgun) | Design shotgun: generate multiple AI design variants, open a comparison board, collect structured feedback, and iterate. (gstack) | `SKILL.md.tmpl` |
 | [devex-review](https://github.com/garrytan/gstack/tree/main/devex-review) | Live developer experience audit. (gstack) | `SKILL.md.tmpl` |
 | [document-generate](https://github.com/garrytan/gstack/tree/main/document-generate) | Generate missing documentation from scratch for a feature, module, or entire project. (gstack) | `SKILL.md.tmpl` |
-| [document-release](https://github.com/garrytan/gstack/tree/main/document-release) | Post-ship documentation update. (gstack) | `SKILL.md.tmpl` |
+| [document-release](https://github.com/garrytan/gstack/tree/main/document-release) | Post-ship documentation update. (gstack) | `SKILL.md.tmpl`, `sections` (3 files) |
 | [freeze](https://github.com/garrytan/gstack/tree/main/freeze) | Restrict file edits to a specific directory for the session. (gstack) | `bin/check-freeze.sh`, `SKILL.md.tmpl` |
 | [gstack-upgrade](https://github.com/garrytan/gstack/tree/main/gstack-upgrade) | Upgrade gstack to the latest version. | `SKILL.md.tmpl`, `migrations` (9 files) |
 | [guard](https://github.com/garrytan/gstack/tree/main/guard) | Full safety mode: destructive command warnings + directory-scoped edits. (gstack) | `SKILL.md.tmpl` |
