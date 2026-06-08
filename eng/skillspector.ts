@@ -12,12 +12,13 @@
  * Usage:
  *   bun eng/skillspector.ts [--sarif <path>] [--markdown <path>] [--no-llm]
  *                           [--timeout <seconds>] [--jobs <n>]
+ *                           [--target <glob>]...
  */
 
 import { Fibers } from "ts-fibers";
 import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from "fs";
-import { join, resolve } from "path";
-import { spawn } from "bun";
+import { join, relative, resolve } from "path";
+import { Glob, spawn } from "bun";
 import { parseArgs } from "util";
 import { availableParallelism } from "node:os";
 
@@ -31,6 +32,7 @@ const { values: args } = parseArgs({
     "no-llm": { type: "boolean", default: false },
     timeout: { type: "string" },
     jobs: { type: "string" },
+    target: { type: "string", multiple: true },
   },
   strict: true,
 });
@@ -46,7 +48,7 @@ const TIMEOUT_MS = Number(args.timeout ?? DEFAULT_TIMEOUT_SEC) * 1000;
 const CONCURRENCY = Number(args.jobs ?? DEFAULT_CONCURRENCY);
 
 const REPO_ROOT = resolve(import.meta.dir, "..");
-const MANIFEST_FILES = ["official/skills/ALL.md", "community/skills/ALL.md"];
+const DEFAULT_MANIFEST_TARGETS = ["official/skills/ALL.md", "community/skills/ALL.md"];
 
 // --- Types ---
 
@@ -152,41 +154,125 @@ function parseSeverity(md: string): string {
   return m?.[1] ?? "-";
 }
 
+function hasGlobChars(pattern: string): boolean {
+  return /[*?[\]{}]/.test(pattern);
+}
+
+function manifestBasename(manifestPath: string): string {
+  const filename = manifestPath.split("/").pop() ?? manifestPath;
+  return filename.replace(/\.md$/i, "");
+}
+
+/** Expand CLI target patterns (literal paths or globs) to repo-relative manifest files. */
+export function resolveManifestTargets(patterns: readonly string[]): string[] {
+  const paths = new Set<string>();
+
+  for (const pattern of patterns) {
+    const trimmed = pattern.trim();
+    if (!trimmed) continue;
+
+    if (hasGlobChars(trimmed)) {
+      const glob = new Glob(trimmed);
+      const matches = [...glob.scanSync(REPO_ROOT)];
+      if (matches.length === 0) {
+        console.warn(`[WARN] No files matched pattern: ${trimmed}`);
+      }
+      for (const match of matches) {
+        const rel = relative(REPO_ROOT, match);
+        if (rel && !rel.startsWith("..")) {
+          paths.add(rel);
+        }
+      }
+      continue;
+    }
+
+    const filepath = join(REPO_ROOT, trimmed);
+    if (existsSync(filepath)) {
+      paths.add(trimmed);
+    } else {
+      console.warn(`[WARN] Manifest not found: ${filepath}`);
+    }
+  }
+
+  return [...paths].sort();
+}
+
+/** Concatenate manifest files into one virtual document (large files first). */
+export function buildVirtualManifest(manifestFiles: readonly string[]): string {
+  const entries = manifestFiles.map((manifest) => {
+    const filepath = join(REPO_ROOT, manifest);
+    const content = readFileSync(filepath, "utf-8");
+    const lineCount = content.split("\n").length;
+    return {
+      manifest,
+      content,
+      priority: lineCount > 64 ? 0 : 1,
+    };
+  });
+
+  return entries
+    .sort((a, b) => a.priority - b.priority || a.manifest.localeCompare(b.manifest))
+    .map(({ manifest, content }) => `# ${manifestBasename(manifest)}\n\n${content}\n`)
+    .join("\n");
+}
+
+function parseSkillsFromVirtualManifest(
+  virtualContent: string,
+  manifestByBasename: ReadonlyMap<string, string>,
+): SkillEntry[] {
+  const skills: SkillEntry[] = [];
+  const seen = new Set<string>();
+  let currentManifest = "";
+
+  const rowPattern = /\|\s*\[([^\]]+)\]\((https:\/\/github\.com\/([^/]+\/[^/]+)\/tree\/([^)]+))\)/;
+
+  for (const line of virtualContent.split("\n")) {
+    const headerMatch = line.match(/^# (.+)$/);
+    if (headerMatch) {
+      const label = headerMatch[1];
+      if (label) {
+        currentManifest = manifestByBasename.get(label) ?? currentManifest;
+      }
+      continue;
+    }
+
+    const m = line.match(rowPattern);
+    if (!m || !currentManifest) continue;
+
+    const name = m[1];
+    const url = m[2];
+    const repo = m[3];
+    const refAndPath = m[4];
+
+    if (!name || !url || !repo || !refAndPath) continue;
+    if (seen.has(url)) continue;
+    seen.add(url);
+
+    const slashIdx = refAndPath.indexOf("/");
+    const ref = slashIdx >= 0 ? refAndPath.slice(0, slashIdx) : refAndPath;
+    const skillPath = slashIdx >= 0 ? refAndPath.slice(slashIdx + 1) : "";
+
+    skills.push({ name, url, repo, ref, skillPath, manifest: currentManifest });
+  }
+
+  return skills;
+}
+
 // ============================================================
 // Step 1: Build lists
 // ============================================================
 
-function buildLists(tmpBase: string) {
-  const skills: SkillEntry[] = [];
-  const seen = new Set<string>();
-
-  for (const manifest of MANIFEST_FILES) {
-    const filepath = join(REPO_ROOT, manifest);
-    if (!existsSync(filepath)) {
-      console.warn(`[WARN] Manifest not found: ${filepath}`);
-      continue;
-    }
-    const content = readFileSync(filepath, "utf-8");
-
-    const rowPattern = /\|\s*\[([^\]]+)\]\((https:\/\/github\.com\/([^/]+\/[^/]+)\/tree\/([^)]+))\)/g;
-    for (const m of content.matchAll(rowPattern)) {
-      const name = m[1];
-      const url = m[2];
-      const repo = m[3];
-      const refAndPath = m[4];
-
-      if (!name || !url || !repo || !refAndPath) continue;
-
-      if (seen.has(url)) continue;
-      seen.add(url);
-
-      const slashIdx = refAndPath.indexOf("/");
-      const ref = slashIdx >= 0 ? refAndPath.slice(0, slashIdx) : refAndPath;
-      const skillPath = slashIdx >= 0 ? refAndPath.slice(slashIdx + 1) : "";
-
-      skills.push({ name, url, repo, ref, skillPath, manifest });
-    }
+function buildLists(tmpBase: string, manifestFiles: readonly string[]) {
+  if (manifestFiles.length === 0) {
+    console.warn("[WARN] No manifest files to scan");
+    return { skills: [], cloneTargets: [] };
   }
+
+  const manifestByBasename = new Map(
+    manifestFiles.map((manifest) => [manifestBasename(manifest), manifest]),
+  );
+  const virtualContent = buildVirtualManifest(manifestFiles);
+  const skills = parseSkillsFromVirtualManifest(virtualContent, manifestByBasename);
 
   // Deduplicate repos to clone
   const cloneMap = new Map<string, CloneTarget>();
@@ -387,7 +473,7 @@ export function manifestHasSecurityRisk(headerLine: string): boolean {
   return /^\|\s*Name\s*\|.*Security Risk\s*\|/.test(headerLine);
 }
 
-function updateManifests(results: ScanResult[]) {
+function updateManifests(results: ScanResult[], manifestFiles: readonly string[]) {
   // Build a lookup: skill URL -> result
   const resultByUrl = new Map<string, ScanResult>();
   for (const r of results) {
@@ -395,7 +481,7 @@ function updateManifests(results: ScanResult[]) {
     resultByUrl.set(r.skill.url, r);
   }
 
-  for (const manifest of MANIFEST_FILES) {
+  for (const manifest of manifestFiles) {
     const filepath = join(REPO_ROOT, manifest);
     if (!existsSync(filepath)) continue;
 
@@ -509,6 +595,7 @@ export function formatStats(results: ScanResult[]): string {
   let failed = 0;
   let cloneFailed = 0;
   let succeeded = 0;
+  let noRisk = 0;
 
   for (const r of results) {
     switch (r?.status) {
@@ -523,11 +610,14 @@ export function formatStats(results: ScanResult[]): string {
         break;
       case "OK":
         succeeded++;
+        if (scoreNumber(r.score) === "0") {
+          noRisk++;
+        }
         break;
     }
   }
 
-  return `📊 Scanned: **${results.length}** | Succeeded: **${succeeded}** | Failed: **${failed}** | Clone failed: **${cloneFailed}** | Timed out: **${timedOut}**`;
+  return `📊 Scanned: **${results.length}** | Succeeded: **${succeeded}** | No risk: **${noRisk}** | Failed: **${failed}** | Clone failed: **${cloneFailed}** | Timed out: **${timedOut}**`;
 }
 
 function sortReportResults(results: ScanResult[]): ScanResult[] {
@@ -625,12 +715,17 @@ function writeReport(results: ScanResult[]) {
 // ============================================================
 
 async function main() {
+  const manifestFiles = resolveManifestTargets(
+    args.target?.length ? args.target : DEFAULT_MANIFEST_TARGETS,
+  );
+  console.log(`[INFO] Manifest targets (${manifestFiles.length}): ${manifestFiles.join(", ")}`);
+
   const tmpBase = join(REPO_ROOT, ".skillspector-tmp");
   rmSync(tmpBase, { recursive: true, force: true });
   mkdirSync(tmpBase, { recursive: true });
 
   // 1. Build lists
-  const { skills, cloneTargets } = buildLists(tmpBase);
+  const { skills, cloneTargets } = buildLists(tmpBase, manifestFiles);
   console.log(`[INFO] ${skills.length} skills, ${cloneTargets.length} repos, concurrency: ${CONCURRENCY}`);
 
   // 2. Clone
@@ -640,7 +735,7 @@ async function main() {
   const results = await scanSkills(skills, cloneTargets, failedClones);
 
   // 4. Update ALL.md files with Security Risk column
-  updateManifests(results);
+  updateManifests(results, manifestFiles);
 
   // 5. Report
   writeReport(results);

@@ -2,8 +2,10 @@ import { describe, expect, test } from "bun:test";
 import {
   appendSeparatorCell,
   appendTableCell,
+  buildVirtualManifest,
   formatStats,
   manifestHasSecurityRisk,
+  resolveManifestTargets,
   riskEmojiPrefix,
 } from "../eng/skillspector";
 
@@ -51,15 +53,41 @@ describe("skillspector report formatting", () => {
 
   test("formatStats bolds numbers and adds a chart emoji prefix", () => {
     const results = [
-      { status: "OK" },
-      { status: "OK" },
+      { status: "OK", score: "0/100" },
+      { status: "OK", score: "42/100" },
       { status: "FAILED" },
       { status: "CLONE_FAILED" },
       { status: "TIMEOUT" },
     ] as Parameters<typeof formatStats>[0];
 
     expect(formatStats(results)).toBe(
-      "📊 Scanned: **5** | Succeeded: **2** | Failed: **1** | Clone failed: **1** | Timed out: **1**",
+      "📊 Scanned: **5** | Succeeded: **2** | No risk: **1** | Failed: **1** | Clone failed: **1** | Timed out: **1**",
     );
+  });
+});
+
+describe("skillspector manifest targets", () => {
+  test("resolveManifestTargets expands globs and accepts literal paths", () => {
+    const files = resolveManifestTargets([
+      "official/skills/ALL.md",
+      "community/skills/ALL.md",
+    ]);
+
+    expect(files).toEqual(["community/skills/ALL.md", "official/skills/ALL.md"]);
+  });
+
+  test("resolveManifestTargets matches glob patterns", () => {
+    const files = resolveManifestTargets(["**/skills/ALL.md"]);
+
+    expect(files).toContain("official/skills/ALL.md");
+    expect(files).toContain("community/skills/ALL.md");
+  });
+
+  test("buildVirtualManifest concatenates files with section headers", () => {
+    const files = resolveManifestTargets(["official/skills/ALL.md"]);
+    const virtual = buildVirtualManifest(files);
+
+    expect(virtual.startsWith("# ALL\n\n")).toBe(true);
+    expect(virtual).toContain("| Name | Description |");
   });
 });
