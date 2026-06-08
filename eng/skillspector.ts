@@ -161,10 +161,7 @@ function hasGlobChars(pattern: string): boolean {
   return /[*?[\]{}]/.test(pattern);
 }
 
-function manifestBasename(manifestPath: string): string {
-  const filename = manifestPath.split("/").pop() ?? manifestPath;
-  return filename.replace(/\.md$/i, "");
-}
+const SKILL_ROW_PATTERN = /\|\s*\[([^\]]+)\]\((https:\/\/github\.com\/([^/]+\/[^/]+)\/tree\/([^)]+))\)/g;
 
 /** Expand CLI target patterns (literal paths or globs) to repo-relative manifest files. */
 export function resolveManifestTargets(patterns: readonly string[]): string[] {
@@ -200,62 +197,23 @@ export function resolveManifestTargets(patterns: readonly string[]): string[] {
   return [...paths].sort();
 }
 
-/** Concatenate manifest files into one virtual document (large files first). */
-export function buildVirtualManifest(manifestFiles: readonly string[]): string {
-  const entries = manifestFiles.map((manifest) => {
-    const filepath = join(REPO_ROOT, manifest);
-    const content = readFileSync(filepath, "utf-8");
-    const lineCount = content.split("\n").length;
-    return {
-      manifest,
-      content,
-      priority: lineCount > 64 ? 0 : 1,
-    };
-  });
-
-  return entries
-    .sort((a, b) => a.priority - b.priority || a.manifest.localeCompare(b.manifest))
-    .map(({ manifest, content }) => `# ${manifestBasename(manifest)}\n\n${content}\n`)
-    .join("\n");
-}
-
-function parseSkillsFromVirtualManifest(
-  virtualContent: string,
-  manifestByBasename: ReadonlyMap<string, string>,
-): SkillEntry[] {
+/** Parse skill rows from a single manifest file. */
+export function parseSkillsFromManifest(content: string, manifest: string): SkillEntry[] {
   const skills: SkillEntry[] = [];
-  const seen = new Set<string>();
-  let currentManifest = "";
 
-  const rowPattern = /\|\s*\[([^\]]+)\]\((https:\/\/github\.com\/([^/]+\/[^/]+)\/tree\/([^)]+))\)/;
-
-  for (const line of virtualContent.split("\n")) {
-    const headerMatch = line.match(/^# (.+)$/);
-    if (headerMatch) {
-      const label = headerMatch[1];
-      if (label) {
-        currentManifest = manifestByBasename.get(label) ?? currentManifest;
-      }
-      continue;
-    }
-
-    const m = line.match(rowPattern);
-    if (!m || !currentManifest) continue;
-
+  for (const m of content.matchAll(SKILL_ROW_PATTERN)) {
     const name = m[1];
     const url = m[2];
     const repo = m[3];
     const refAndPath = m[4];
 
     if (!name || !url || !repo || !refAndPath) continue;
-    if (seen.has(url)) continue;
-    seen.add(url);
 
     const slashIdx = refAndPath.indexOf("/");
     const ref = slashIdx >= 0 ? refAndPath.slice(0, slashIdx) : refAndPath;
     const skillPath = slashIdx >= 0 ? refAndPath.slice(slashIdx + 1) : "";
 
-    skills.push({ name, url, repo, ref, skillPath, manifest: currentManifest });
+    skills.push({ name, url, repo, ref, skillPath, manifest });
   }
 
   return skills;
@@ -271,11 +229,23 @@ function buildLists(tmpBase: string, manifestFiles: readonly string[]) {
     return { skills: [], cloneTargets: [] };
   }
 
-  const manifestByBasename = new Map(
-    manifestFiles.map((manifest) => [manifestBasename(manifest), manifest]),
-  );
-  const virtualContent = buildVirtualManifest(manifestFiles);
-  const skills = parseSkillsFromVirtualManifest(virtualContent, manifestByBasename);
+  const skills: SkillEntry[] = [];
+  const seen = new Set<string>();
+
+  for (const manifest of manifestFiles) {
+    const filepath = join(REPO_ROOT, manifest);
+    if (!existsSync(filepath)) {
+      console.warn(`[WARN] Manifest not found: ${filepath}`);
+      continue;
+    }
+
+    const content = readFileSync(filepath, "utf-8");
+    for (const skill of parseSkillsFromManifest(content, manifest)) {
+      if (seen.has(skill.url)) continue;
+      seen.add(skill.url);
+      skills.push(skill);
+    }
+  }
 
   // Deduplicate repos to clone
   const cloneMap = new Map<string, CloneTarget>();

@@ -2,12 +2,14 @@ import { describe, expect, test } from "bun:test";
 import {
   appendSeparatorCell,
   appendTableCell,
-  buildVirtualManifest,
   formatStats,
   manifestHasSecurityRisk,
+  parseSkillsFromManifest,
   resolveManifestTargets,
   riskEmojiPrefix,
 } from "../eng/skillspector";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 describe("skillspector manifest table helpers", () => {
   test("appendSeparatorCell appends ---| after trailing pipe", () => {
@@ -83,11 +85,12 @@ describe("skillspector manifest targets", () => {
     expect(files).toContain("community/skills/ALL.md");
   });
 
-  test("buildVirtualManifest concatenates files with section headers", () => {
-    const files = resolveManifestTargets(["official/skills/ALL.md"]);
-    const virtual = buildVirtualManifest(files);
+  test("parseSkillsFromManifest reads skills from a single manifest file", () => {
+    const manifest = "official/skills/ALL.md";
+    const content = readFileSync(join(import.meta.dir, "..", manifest), "utf-8");
+    const skills = parseSkillsFromManifest(content, manifest);
 
-    expect(virtual.startsWith("# ALL\n\n")).toBe(true);
-    expect(virtual).toContain("| Name | Description |");
+    expect(skills.length).toBeGreaterThan(0);
+    expect(skills.every((skill) => skill.manifest === manifest)).toBe(true);
   });
 });
