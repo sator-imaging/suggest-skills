@@ -1,34 +1,5 @@
 # Changelog
 
-## [2.0.2](https://github.com/sator-imaging/suggest-skills/releases/tag/v2.0.2) (2026-06-08)
-
-### 🚀 Features
-* feat: add SkillSpector CI workflow by [@kiro-agent](https://github.com/kiro-agent)[bot] in [#151](https://github.com/sator-imaging/suggest-skills/pull/151)
-* feat: add timeout and concurrency to skillspector scans by [@kiro-agent](https://github.com/kiro-agent)[bot] in [#153](https://github.com/sator-imaging/suggest-skills/pull/153)
-### ✨ Bug Fixes
-* Add YAML parse failure fallback by [@google-labs-jules](https://github.com/google-labs-jules)[bot] in [#147](https://github.com/sator-imaging/suggest-skills/pull/147)
-* Fix .join() inserting commas between URL list items by [@kiro-agent](https://github.com/kiro-agent)[bot] in [#152](https://github.com/sator-imaging/suggest-skills/pull/152)
-* fix: prevent pipe deadlock in runScan for proper concurrency by [@kiro-agent](https://github.com/kiro-agent)[bot] in [#154](https://github.com/sator-imaging/suggest-skills/pull/154)
-* fix: remove proc.exited, upload report as unzipped artifact by [@kiro-agent](https://github.com/kiro-agent)[bot] in [#156](https://github.com/sator-imaging/suggest-skills/pull/156)
-### 📚 Other Changes
-* chore(deps): Bump the "default" group with 2 updates across multiple ecosystems by [@dependabot](https://github.com/dependabot)[bot] in [#127](https://github.com/sator-imaging/suggest-skills/pull/127)
-* chore(deps): Bump the "default" group with 2 updates across multiple ecosystems by [@dependabot](https://github.com/dependabot)[bot] in [#128](https://github.com/sator-imaging/suggest-skills/pull/128)
-* Strip Components/Issues from step summary by [@kiro-agent](https://github.com/kiro-agent)[bot] in [#157](https://github.com/sator-imaging/suggest-skills/pull/157)
-* refactor: scan per skill via gh skill install by [@kiro-agent](https://github.com/kiro-agent)[bot] in [#159](https://github.com/sator-imaging/suggest-skills/pull/159)
-* Fix skillspector table separator and improve GitHub Actions report by [@sator-ai-dev](https://github.com/sator-ai-dev) in [#183](https://github.com/sator-imaging/suggest-skills/pull/183)
-* Update SkillSpector report formatting for scanned repos by [@sator-ai-dev](https://github.com/sator-ai-dev) in [#184](https://github.com/sator-imaging/suggest-skills/pull/184)
-* Fix runCmd pipe deadlock and timeout cleanup by [@sator-ai-dev](https://github.com/sator-ai-dev) in [#189](https://github.com/sator-imaging/suggest-skills/pull/189)
-* chore: logging by [@sator-imaging](https://github.com/sator-imaging) in [#190](https://github.com/sator-imaging/suggest-skills/pull/190)
-* chore: logging by [@sator-imaging](https://github.com/sator-imaging) in [#191](https://github.com/sator-imaging/suggest-skills/pull/191)
-
-### 🎉 New Contributors
-* [@dependabot](https://github.com/dependabot)[bot] made their first contribution in [#127](https://github.com/sator-imaging/suggest-skills/pull/127)
-* [@kiro-agent](https://github.com/kiro-agent)[bot] made their first contribution in [#152](https://github.com/sator-imaging/suggest-skills/pull/152)
-* [@sator-ai-dev](https://github.com/sator-ai-dev) made their first contribution in [#183](https://github.com/sator-imaging/suggest-skills/pull/183)
-
-**Full Changelog**: https://github.com/sator-imaging/suggest-skills/compare/v2.0.1...v2.0.2
-
-
 ## [2.0.1](https://github.com/sator-imaging/suggest-skills/compare/v2.0.0...v2.0.1) (2026-05-15)
 
 
