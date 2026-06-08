@@ -428,7 +428,10 @@ function updateManifests(results: ScanResult[]) {
         : null;
       if (urlMatch) {
         const url = urlMatch[2];
-        if (!url) continue;
+        if (!url) {
+          outLines.push(line);
+          continue;
+        }
         const value = riskCellValue(resultByUrl.get(url));
         if (tableColumnCount(line) >= 4) {
           outLines.push(replaceLastTableCell(line, value));
