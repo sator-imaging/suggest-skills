@@ -248,7 +248,9 @@ jobs:
 
   scan:
     name: Security Scan
-    needs: generate
+    needs: 
+      - prepare  # For needs.outputs
+      - generate
     uses: ./.github/workflows/skillspector.yml
     with:
       branch: ${{ needs.prepare.outputs.branch }}
@@ -259,13 +261,14 @@ jobs:
 
   collect-and-pr:
     name: Create PR
-    needs: scan
+    needs:
+      - prepare  # For needs.outputs
+      - scan
 
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
-          ##ref: ${{ needs.prepare.outputs.branch }}
           fetch-depth: 0
 
       - name: Create pull request with gh
