@@ -2,7 +2,7 @@
 | -----|-------------|----------------|
 | [agent-transcript](https://github.com/steipete/agent-scripts/tree/main/skills/agent-transcript) | Add a redacted agent transcript section to GitHub PR or issue bodies during OpenClaw agent-created PR/issue workflows. | `scripts/agent-transcript` |
 | [beeper](https://github.com/steipete/agent-scripts/tree/main/skills/beeper) | Beeper cache: contact hints, room lookup, WhatsApp/iMessage traces, FTS. | None |
-| [browser-use](https://github.com/steipete/agent-scripts/tree/main/skills/browser-use) | Chrome DevTools MCP automation: existing Chrome tabs, no AppleScript. | `mcporter-config.md` |
+| [browser-use](https://github.com/steipete/agent-scripts/tree/main/skills/browser-use) | Existing Chrome automation: Chrome plugin first, mcporter fallback. | `mcporter-config.md` |
 | [clawsweeper-status](https://github.com/steipete/agent-scripts/tree/main/skills/clawsweeper-status) | ClawSweeper status: URLs, workflow health, active workers, ops snapshot. | `agents/openai.yaml`, `scripts/clawsweeper-status.sh` |
 | [clickclack](https://github.com/steipete/agent-scripts/tree/main/skills/clickclack) | ClickClack ops: chat app, Hetzner deploy, DNS/docs/app, Docker rollout. | `agents/openai.yaml` |
 | [cloudflare-registrar](https://github.com/steipete/agent-scripts/tree/main/skills/cloudflare-registrar) | Cloudflare Registrar: domain availability, prices, registration via mcporter. | None |
