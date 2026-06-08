@@ -173,7 +173,7 @@ export function resolveManifestTargets(patterns: readonly string[]): string[] {
 
     if (hasGlobChars(trimmed)) {
       const glob = new Glob(trimmed);
-      const matches = [...glob.scanSync(REPO_ROOT)];
+      const matches = [...glob.scanSync({ cwd: REPO_ROOT, absolute: true })];
       if (matches.length === 0) {
         console.warn(`[WARN] No files matched pattern: ${trimmed}`);
       }
