@@ -87,6 +87,7 @@ jobs:
           - GoogleChrome/modern-web-guidance/tree/main/skills
           - NousResearch/hermes-agent/tree/main/skills
           - steipete/agent-scripts/tree/main/skills
+          - google/skills
     env:
       # DO NOT forget add '/' at the end
       OFFICIAL_URL_PREFIXES: |
@@ -108,6 +109,7 @@ jobs:
         android/
         aws/
         GoogleChrome/
+        google/skills/
       RECURSIVE_URL_PREFIXES: |
         android/skills
         aws/agent-toolkit-for-aws/tree/main/skills
@@ -117,6 +119,7 @@ jobs:
         google-labs-code/stitch-skills/tree/main/plugins
         multica-ai/andrej-karpathy-skills
         NousResearch/hermes-agent/tree/main/skills
+        google/skills
       GENERATED_DIR: generate/${{ strategy.job-index }}
       BRANCH: ${{ needs.prepare.outputs.branch }}
 
