@@ -84,8 +84,8 @@ jobs:
             --no-llm \
             --target '**/skills/*.md'
 
-          git add '**/skills/*.md'
-          git commit -m "[bot] Update Security Risk scores"
+          git add -f '**/skills/*.md'
+          git commit -m "[bot] Update Security Risk Scores"
           git push -u origin "$BRANCH"
 
       - name: Create PR

@@ -323,6 +323,25 @@ jobs:
             done
           done
 
+          for BASE_DIR in "$COMMUNITY_DIR" "$OFFICIAL_DIR"; do
+            for file in "$BASE_DIR"/*.md; do
+              [ -e "$file" ] || continue
+
+              filename=$(basename "$file")
+              out="$BASE_DIR/safe-$filename"
+
+              if [[ "$filename" == safe-* ]]; then
+                continue
+              fi
+
+              sed -E '/\|[[:space:]]*[1-9][0-9]*[[:space:]]*\|$/d' \
+                "$file" > "$out"
+
+              git add -f "$out" || true
+              git commit -m "[bot] $out" || true
+            done
+          done
+
           git push --set-upstream origin "$BRANCH_NAME" || true
 
       - name: Create PR
