@@ -76,36 +76,32 @@ describe("skillspector report formatting", () => {
 });
 
 describe("skillspector manifest targets", () => {
-  test("resolveManifestTargets expands globs and accepts literal paths", () => {
-    const files = resolveManifestTargets([
-      "official/skills/ALL.md",
-      "community/skills/ALL.md",
-    ]);
+  const officialManifest = "official/skills/anthropics.skills.md";
+  const communityManifest = "community/skills/mattpocock.skills.md";
 
-    expect(files).toEqual(["community/skills/ALL.md", "official/skills/ALL.md"]);
+  test("resolveManifestTargets expands globs and accepts literal paths", () => {
+    const files = resolveManifestTargets([officialManifest, communityManifest]);
+
+    expect(files).toEqual([communityManifest, officialManifest]);
   });
 
   test("resolveManifestTargets matches glob patterns", () => {
-    const files = resolveManifestTargets(["**/skills/ALL.md"]);
+    const files = resolveManifestTargets(["**/skills/*.skills.md"]);
 
-    expect(files).toContain("official/skills/ALL.md");
-    expect(files).toContain("community/skills/ALL.md");
+    expect(files).toContain(officialManifest);
+    expect(files).toContain(communityManifest);
   });
 
   test("parseSkillsFromManifest reads skills from a single manifest file", () => {
-    const manifest = "official/skills/ALL.md";
-    const content = readFileSync(join(import.meta.dir, "..", manifest), "utf-8");
-    const skills = parseSkillsFromManifest(content, manifest);
+    const content = readFileSync(join(import.meta.dir, "..", officialManifest), "utf-8");
+    const skills = parseSkillsFromManifest(content, officialManifest);
 
     expect(skills.length).toBeGreaterThan(0);
-    expect(skills.every((skill) => skill.manifest === manifest)).toBe(true);
+    expect(skills.every((skill) => skill.manifest === officialManifest)).toBe(true);
   });
 
-  test("parseSkillsFromManifest preserves distinct manifest attribution for ALL.md basenames", () => {
-    const files = resolveManifestTargets([
-      "official/skills/ALL.md",
-      "community/skills/ALL.md",
-    ]);
+  test("parseSkillsFromManifest preserves distinct manifest attribution across files", () => {
+    const files = resolveManifestTargets([officialManifest, communityManifest]);
 
     for (const manifest of files) {
       const content = readFileSync(join(import.meta.dir, "..", manifest), "utf-8");
@@ -139,21 +135,18 @@ describe("skillspector manifest targets", () => {
   });
 
   test("resolveManifestTargets continues after unmatched glob patterns", () => {
-    const files = resolveManifestTargets([
-      "no-match-{a,b}.md",
-      "official/skills/ALL.md",
-    ]);
+    const files = resolveManifestTargets(["no-match-{a,b}.md", officialManifest]);
 
-    expect(files).toEqual(["official/skills/ALL.md"]);
+    expect(files).toEqual([officialManifest]);
   });
 
   test("resolveManifestTargets resolves globs from any working directory", () => {
     const cwd = process.cwd();
     try {
       process.chdir(join(import.meta.dir, "..", "eng"));
-      const files = resolveManifestTargets(["**/skills/ALL.md"]);
-      expect(files).toContain("official/skills/ALL.md");
-      expect(files).toContain("community/skills/ALL.md");
+      const files = resolveManifestTargets(["**/skills/*.skills.md"]);
+      expect(files).toContain(officialManifest);
+      expect(files).toContain(communityManifest);
     } finally {
       process.chdir(cwd);
     }
