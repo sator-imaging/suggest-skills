@@ -51,10 +51,7 @@ const TIMEOUT_MS = Number(args.timeout ?? DEFAULT_TIMEOUT_SEC) * 1000;
 const CONCURRENCY = Number(args.jobs ?? DEFAULT_CONCURRENCY);
 
 const REPO_ROOT = resolve(import.meta.dir, "..");
-const DEFAULT_MANIFEST_TARGETS = [
-  "official/skills/ALL.md",
-  "community/skills/ALL.md",
-];
+const DEFAULT_MANIFEST_TARGETS = ["**/skills/ALL.md"];
 
 // --- Types ---
 
@@ -169,11 +166,11 @@ const SKILL_ROW_PATTERN = /\|\s*\[([^\]]+)\]\((https:\/\/github\.com\/([^/]+\/[^
 /** Return a repo-relative path when filepath is inside REPO_ROOT. */
 function toRepoRelativePath(filepath: string): string | null {
   const resolved = resolve(filepath);
-  const rel = relative(REPO_ROOT, resolved);
-  if (!rel || rel.startsWith("..") || isAbsolute(rel)) {
+  const rel = relative(REPO_ROOT, resolved).replace(/\\/g, "/");
+  if (!rel || rel === ".." || rel.startsWith("../") || isAbsolute(rel)) {
     return null;
   }
-  return rel.replace(/\\/g, "/");
+  return rel;
 }
 
 function addManifestTarget(filepath: string, label: string, paths: Set<string>): void {
@@ -203,13 +200,18 @@ export function resolveManifestTargets(patterns: readonly string[]): string[] {
     if (!trimmed) continue;
 
     if (hasGlobChars(trimmed)) {
-      const glob = new Glob(trimmed);
-      const matches = [...glob.scanSync({ cwd: REPO_ROOT, absolute: true })];
-      if (matches.length === 0) {
-        console.warn(`[WARN] No files matched pattern: ${trimmed}`);
-      }
-      for (const match of matches) {
-        addManifestTarget(match, match, paths);
+      try {
+        const glob = new Glob(trimmed);
+        const matches = [...glob.scanSync({ cwd: REPO_ROOT, absolute: true })];
+        if (matches.length === 0) {
+          console.warn(`[WARN] No files matched pattern: ${trimmed}`);
+        }
+        for (const match of matches) {
+          addManifestTarget(match, match, paths);
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.warn(`[WARN] Failed to scan glob pattern "${trimmed}": ${message}`);
       }
       continue;
     }

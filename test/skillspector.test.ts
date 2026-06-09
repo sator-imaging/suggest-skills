@@ -117,6 +117,15 @@ describe("skillspector manifest targets", () => {
     expect(resolveManifestTargets(["official/skills"])).toEqual([]);
   });
 
+  test("resolveManifestTargets continues after unmatched glob patterns", () => {
+    const files = resolveManifestTargets([
+      "no-match-{a,b}.md",
+      "official/skills/ALL.md",
+    ]);
+
+    expect(files).toEqual(["official/skills/ALL.md"]);
+  });
+
   test("resolveManifestTargets resolves globs from any working directory", () => {
     const cwd = process.cwd();
     try {
