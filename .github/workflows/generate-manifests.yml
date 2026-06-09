@@ -294,7 +294,7 @@ jobs:
 
               rm -f "$ALL_MD"
 
-              find "$TARGET_DIR" -maxdepth 1 -type f -name "*.md" ! -name "ALL.md" | while IFS= read -r MD_FILE; do
+              find "$TARGET_DIR" -maxdepth 1 -type f -name "*.md" | while IFS= read -r MD_FILE; do
                 FILENAME="$(basename "$MD_FILE")"
 
                 # NOTE: Large files are placed BEFORE others,

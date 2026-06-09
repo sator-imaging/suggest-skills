@@ -3,7 +3,7 @@ name: SkillSpector Scan
 on:
   #push:
   #  branches: [ main ]
-  #  paths: [ '**/skills/ALL.md' ]
+  #  paths: [ '**/skills/*.md' ]
   workflow_dispatch:
   workflow_call:
     inputs:
@@ -84,11 +84,11 @@ jobs:
             --no-llm \
             --target '**/skills/*.md'
 
-          git add '**/ALL.md'
-          git commit -m "[bot] Update Security Risk scores in ALL.md"
+          git add -f '**/*.md'
+          git commit -m "[bot] Update Security Risk scores"
           git push -u origin "$BRANCH"
 
-      - name: Create PR with updated ALL.md
+      - name: Create PR
         if: |
           !inputs.branch
         run: |

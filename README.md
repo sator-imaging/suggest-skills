@@ -9,7 +9,8 @@
 - MCP server for recommending and downloading repository-specific AI agent skills
 - Supports `stdio` and HTTP runtime modes from the same codebase
 
-Security scanning is provided by [NVIDIA SkillSpector](https://github.com/NVIDIA/skillspector) via the [CI workflow](https://github.com/sator-imaging/suggest-skills/actions/workflows/skillspector.yml). Each skill is scanned individually and the resulting risk score is written to the `Security Risk` column in `ALL.md`. To find official skills repository, visit: https://skills.sh/official
+> [!TIP]
+> To find official skills repository, visit: https://skills.sh/official
 
 
 
@@ -29,8 +30,8 @@ Security scanning is provided by [NVIDIA SkillSpector](https://github.com/NVIDIA
         "suggest-skills",
         "--",
         "--output=.agents/skills",
-        "https://github.com/sator-imaging/suggest-skills/blob/main/official/skills/ALL.md",
-        "https://github.com/sator-imaging/suggest-skills/blob/main/community/skills/ALL.md"
+        "https://github.com/sator-imaging/suggest-skills/blob/main/official/official-skills.md",
+        "https://github.com/sator-imaging/suggest-skills/blob/main/community/community-skills.md"
       ],
       "env": {
         "SUGGEST_SKILLS_MANIFEST_URLS": [
@@ -50,8 +51,8 @@ Prebuilt skill manifests can be found in this repository:
 - [Official Skills, Agents and Designs](./official/)
 - [Community Skills, Agents and Designs](./community/)
 
-> Automatically updated everyday by [cron workflow](./.github/workflows/generate-manifests.yml).
-
+> [!TIP]
+> Security scanning is provided by [NVIDIA SkillSpector](https://github.com/NVIDIA/skillspector) via the [CI workflow](https://github.com/sator-imaging/suggest-skills/actions/workflows/generate-manifests.yml). Each skill is scanned individually and the resulting risk score is written to the `Security Risk` column.
 
 
 ## Generate a Manifest

@@ -1,11 +1,11 @@
 /**
  * eng/skillspector.ts
  *
- * Scans individual skills listed in ALL.md manifests using NVIDIA SkillSpector.
+ * Scans individual skills listed in manifests using NVIDIA SkillSpector.
  * 1. Build a list of skills and unique repos to clone.
  * 2. Clone repos (with submodules).
  * 3. Scan each skill directory.
- * 4. Write "Security Risk" column back into each ALL.md (one write per file).
+ * 4. Write "Security Risk" column back into each .md file (one write per file).
  *
  * Uses ts-fibers for concurrency with per-operation timeout.
  *
@@ -51,7 +51,7 @@ const TIMEOUT_MS = Number(args.timeout ?? DEFAULT_TIMEOUT_SEC) * 1000;
 const CONCURRENCY = Number(args.jobs ?? DEFAULT_CONCURRENCY);
 
 const REPO_ROOT = resolve(import.meta.dir, "..");
-const DEFAULT_MANIFEST_TARGETS = ["**/skills/ALL.md"];
+const DEFAULT_MANIFEST_TARGETS = ["**/skills/*.md"];
 
 // --- Types ---
 
@@ -434,7 +434,7 @@ async function scanSkills(
 }
 
 // ============================================================
-// Step 4: Update ALL.md files with Security Risk column
+// Step 4: Update .md files with Security Risk column
 // ============================================================
 
 function riskCellValue(result: ScanResult | undefined): string {
@@ -749,7 +749,7 @@ async function main() {
   // 3. Scan
   const results = await scanSkills(skills, cloneTargets, failedClones);
 
-  // 4. Update ALL.md files with Security Risk column
+  // 4. Update .md files with Security Risk column
   updateManifests(results, manifestFiles);
 
   // 5. Report
