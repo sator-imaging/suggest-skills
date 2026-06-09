@@ -93,4 +93,35 @@ describe("skillspector manifest targets", () => {
     expect(skills.length).toBeGreaterThan(0);
     expect(skills.every((skill) => skill.manifest === manifest)).toBe(true);
   });
+
+  test("parseSkillsFromManifest preserves distinct manifest attribution for ALL.md basenames", () => {
+    const files = resolveManifestTargets([
+      "official/skills/ALL.md",
+      "community/skills/ALL.md",
+    ]);
+
+    for (const manifest of files) {
+      const content = readFileSync(join(import.meta.dir, "..", manifest), "utf-8");
+      const skills = parseSkillsFromManifest(content, manifest);
+
+      expect(skills.length).toBeGreaterThan(0);
+      expect(skills.every((skill) => skill.manifest === manifest)).toBe(true);
+    }
+  });
+
+  test("resolveManifestTargets rejects paths outside repository root", () => {
+    expect(resolveManifestTargets(["../../../package.json"])).toEqual([]);
+  });
+
+  test("resolveManifestTargets resolves globs from any working directory", () => {
+    const cwd = process.cwd();
+    try {
+      process.chdir(join(import.meta.dir, "..", "eng"));
+      const files = resolveManifestTargets(["**/skills/ALL.md"]);
+      expect(files).toContain("official/skills/ALL.md");
+      expect(files).toContain("community/skills/ALL.md");
+    } finally {
+      process.chdir(cwd);
+    }
+  });
 });

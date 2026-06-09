@@ -14,13 +14,13 @@
  *                           [--timeout <seconds>] [--jobs <n>]
  *                           [--target <glob>]...
  *
- * --target replaces the default manifest glob; pass multiple --target
- * flags to scan several paths or patterns.
+ * --target replaces the default manifest list; pass multiple --target
+ * flags to scan several paths or glob patterns.
  */
 
 import { Fibers } from "ts-fibers";
 import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from "fs";
-import { join, relative, resolve } from "path";
+import { isAbsolute, join, relative, resolve } from "path";
 import { Glob, spawn } from "bun";
 import { parseArgs } from "util";
 import { availableParallelism } from "node:os";
@@ -51,7 +51,10 @@ const TIMEOUT_MS = Number(args.timeout ?? DEFAULT_TIMEOUT_SEC) * 1000;
 const CONCURRENCY = Number(args.jobs ?? DEFAULT_CONCURRENCY);
 
 const REPO_ROOT = resolve(import.meta.dir, "..");
-const DEFAULT_MANIFEST_TARGETS = ["**/skills/ALL.md"];
+const DEFAULT_MANIFEST_TARGETS = [
+  "official/skills/ALL.md",
+  "community/skills/ALL.md",
+];
 
 // --- Types ---
 
@@ -163,6 +166,16 @@ function hasGlobChars(pattern: string): boolean {
 
 const SKILL_ROW_PATTERN = /\|\s*\[([^\]]+)\]\((https:\/\/github\.com\/([^/]+\/[^/]+)\/tree\/([^)]+))\)/g;
 
+/** Return a repo-relative path when filepath is inside REPO_ROOT. */
+function toRepoRelativePath(filepath: string): string | null {
+  const resolved = resolve(filepath);
+  const rel = relative(REPO_ROOT, resolved);
+  if (!rel || rel.startsWith("..") || isAbsolute(rel)) {
+    return null;
+  }
+  return rel;
+}
+
 /** Expand CLI target patterns (literal paths or globs) to repo-relative manifest files. */
 export function resolveManifestTargets(patterns: readonly string[]): string[] {
   const paths = new Set<string>();
@@ -178,17 +191,22 @@ export function resolveManifestTargets(patterns: readonly string[]): string[] {
         console.warn(`[WARN] No files matched pattern: ${trimmed}`);
       }
       for (const match of matches) {
-        const rel = relative(REPO_ROOT, match);
-        if (rel && !rel.startsWith("..")) {
+        const rel = toRepoRelativePath(match);
+        if (rel) {
           paths.add(rel);
         }
       }
       continue;
     }
 
-    const filepath = join(REPO_ROOT, trimmed);
+    const filepath = resolve(REPO_ROOT, trimmed);
+    const rel = toRepoRelativePath(filepath);
+    if (!rel) {
+      console.warn(`[WARN] Target must be inside repository root: ${trimmed}`);
+      continue;
+    }
     if (existsSync(filepath)) {
-      paths.add(trimmed);
+      paths.add(rel);
     } else {
       console.warn(`[WARN] Manifest not found: ${filepath}`);
     }
@@ -584,7 +602,7 @@ export function formatStats(results: ScanResult[]): string {
       case "OK":
         succeeded++;
         {
-          const n = Number(scoreNumber(r.score));
+          const n = Number(scoreNumber(r.score ?? ""));
           if (Number.isFinite(n) && n > 0) {
             riskySkills++;
           }
