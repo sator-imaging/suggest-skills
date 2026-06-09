@@ -99,7 +99,7 @@ async function runCmd(
   timeoutMs: number,
 ): Promise<{ stdout: string; timedOut: boolean; exitCode: number }> {
   const ac = new AbortController();
-  const timeoutPromise = Fibers.delay(timeoutMs, ac.signal);
+  const timeoutPromise = Fibers.delay(timeoutMs, ac);
 
   const proc = spawn(cmd, { stdout: "pipe", stderr: "pipe" });
 
