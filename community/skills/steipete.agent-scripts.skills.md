@@ -1,50 +1,50 @@
-| Name | Description | Bundled Assets | Security Risk |
-| -----|-------------|----------------|---|
-| [agent-transcript](https://github.com/steipete/agent-scripts/tree/main/skills/agent-transcript) | Add a redacted agent transcript section to GitHub PR or issue bodies during OpenClaw agent-created PR/issue workflows. | `scripts/agent-transcript` | 0 |
-| [beeper](https://github.com/steipete/agent-scripts/tree/main/skills/beeper) | Beeper cache: contact hints, room lookup, WhatsApp/iMessage traces, FTS. | None | 0 |
-| [browser-use](https://github.com/steipete/agent-scripts/tree/main/skills/browser-use) | Existing Chrome automation: Chrome plugin first, mcporter fallback. | `mcporter-config.md` | 0 |
-| [clawsweeper-status](https://github.com/steipete/agent-scripts/tree/main/skills/clawsweeper-status) | ClawSweeper status: URLs, workflow health, active workers, ops snapshot. | `agents/openai.yaml`, `scripts/clawsweeper-status.sh` | 0 |
-| [clickclack](https://github.com/steipete/agent-scripts/tree/main/skills/clickclack) | ClickClack ops: chat app, Hetzner deploy, DNS/docs/app, Docker rollout. | `agents/openai.yaml` | 50 |
-| [cloudflare-registrar](https://github.com/steipete/agent-scripts/tree/main/skills/cloudflare-registrar) | Cloudflare Registrar: domain availability, prices, registration via mcporter. | None | 0 |
-| [codex-debugging](https://github.com/steipete/agent-scripts/tree/main/skills/codex-debugging) | Codex debugging: codex-rs core/tui/exec/cli/app-server/config. | None | 0 |
-| [create-cli](https://github.com/steipete/agent-scripts/tree/main/skills/create-cli) | CLI UX/spec: args, flags, help, output, errors, config, dry-run. | `references/cli-guidelines.md` | 45 |
-| [discord-clawd](https://github.com/steipete/agent-scripts/tree/main/skills/discord-clawd) | Discord-backed OpenClaw agent/session relay; not archive search. | `agents/openai.yaml` | 0 |
-| [domain-dns-ops](https://github.com/steipete/agent-scripts/tree/main/skills/domain-dns-ops) | DNS/domain ops: registrars, zones, redirects, DNS/HTTP verify, manager truth. | `references/manager-repo.md` | 10 |
-| [frontend-design](https://github.com/steipete/agent-scripts/tree/main/skills/frontend-design) | Frontend UI: pages, apps, components, polished non-generic design. | `LICENSE.txt` | 20 |
-| [github-author-context](https://github.com/steipete/agent-scripts/tree/main/skills/github-author-context) | GitHub contributor context: identity, activity, trust, company/team signal. | `agents/openai.yaml` | 0 |
-| [github-cache-hygiene](https://github.com/steipete/agent-scripts/tree/main/skills/github-cache-hygiene) | GitHub quota/cache hygiene: gh, ghx, xcache, gitcrawl, mirrors, limits. | `agents/openai.yaml` | 0 |
-| [github-deep-review](https://github.com/steipete/agent-scripts/tree/main/skills/github-deep-review) | GitHub deep review: bugs, PRs, best fix, stale-or-real, read code first. | `agents/openai.yaml` | 0 |
-| [github-project-triage](https://github.com/steipete/agent-scripts/tree/main/skills/github-project-triage) | Use whenever the user types triage or asks to triage GitHub issues, PRs, queues, CI, blockers, risk, proof, or next actions. | `agents/openai.yaml`, `scripts/github-activity.sh` | 0 |
-| [hopper-debugger](https://github.com/steipete/agent-scripts/tree/main/skills/hopper-debugger) | Hopper debugging: macOS/iOS binaries, ObjC/Swift symbols, dyld, LLDB. | `agents/openai.yaml` | 0 |
-| [instruments-profiling](https://github.com/steipete/agent-scripts/tree/main/skills/instruments-profiling) | Instruments/xctrace profiling: macOS/iOS traces, binaries, args, exports. | None | 0 |
-| [mac-maintenance](https://github.com/steipete/agent-scripts/tree/main/skills/mac-maintenance) | Mac upkeep: brew update/upgrade, pull clean repos, empty Trash. | None | 0 |
-| [markdown-converter](https://github.com/steipete/agent-scripts/tree/main/skills/markdown-converter) | Markdown conversion: PDF, Office, HTML, data, OCR, audio, ZIP, YouTube. | None | 0 |
-| [nano-banana-pro](https://github.com/steipete/agent-scripts/tree/main/skills/nano-banana-pro) | Nano Banana/Gemini image gen/edit: text/image input, 512-4K workflows. | `scripts/generate_image.py` | 100 |
-| [native-app-performance](https://github.com/steipete/agent-scripts/tree/main/skills/native-app-performance) | Native app performance: xctrace, Time Profiler, traces, hotspots. | `scripts/extract_time_samples.py`, `scripts/record_time_profiler.sh`, `scripts/top_hotspots.py` | 52 |
-| [notcrawl](https://github.com/steipete/agent-scripts/tree/main/skills/notcrawl) | Notion archive: desktop/API sync, Markdown export, page search, read-only SQL. | None | 0 |
-| [npm](https://github.com/steipete/agent-scripts/tree/main/skills/npm) | npm registry ops: login, whoami, names, publish; 1Password tmux. | `scripts/reserve-packages.sh` | 78 |
-| [obsidian](https://github.com/steipete/agent-scripts/tree/main/skills/obsidian) | Obsidian vault: search/read/write notes, backlinks, Bases, Canvas. | None | 0 |
-| [one-password](https://github.com/steipete/agent-scripts/tree/main/skills/one-password) | 1Password/op: service-account first, targeted secret read/store/inject, tmux. | `references/cli-examples.md`, `references/get-started.md` | 100 |
-| [openai-image-gen](https://github.com/steipete/agent-scripts/tree/main/skills/openai-image-gen) | OpenAI Images API: batches, prompt sampler, gallery. | `scripts/gen.py` | 100 |
-| [openclaw-relay](https://github.com/steipete/agent-scripts/tree/main/skills/openclaw-relay) | OpenClaw session relay: prompts/posts via local/remote acpx over SSH. | `agents/openai.yaml`, `config/session_aliases.json`, `scripts/openclaw_relay.py` | 100 |
-| [oracle](https://github.com/steipete/agent-scripts/tree/main/skills/oracle) | Oracle second-model review: bundle prompts/files, debug, refactor, design. | None | 0 |
-| [peekaboo](https://github.com/steipete/agent-scripts/tree/main/skills/peekaboo) | macOS screenshots, UI inspect, clicks, typing, app/window automation. | None | 0 |
-| [release-mac-app](https://github.com/steipete/agent-scripts/tree/main/skills/release-mac-app) | macOS app release: Sparkle, notarization, GitHub Release, Homebrew, closeout. | `scripts/lib/mac_release.sh`, `scripts/mac-release` | 100 |
-| [release-tweets](https://github.com/steipete/agent-scripts/tree/main/skills/release-tweets) | Release tweets: draft/copy/post from changelog, tags, npm/appcast, artifacts. | `agents/openai.yaml` | 0 |
-| [reminders](https://github.com/steipete/agent-scripts/tree/main/skills/reminders) | Apple Reminders via rem CLI: add, list, search, update, complete, delete. | None | 0 |
-| [remote-mac](https://github.com/steipete/agent-scripts/tree/main/skills/remote-mac) | Remote Macs: MacBook, Mac Studio, clawmac, Tailscale, SSH, OpenClaw. | None | 75 |
-| [skill-cleaner](https://github.com/steipete/agent-scripts/tree/main/skills/skill-cleaner) | Audit Codex/OpenClaw skills: loaded roots, duplicate skills, unused skills, prompt-budget costs, compact descriptions. | `agents/openai.yaml`, `scripts/skill-cleaner.ts` | 13 |
-| [sonos](https://github.com/steipete/agent-scripts/tree/main/skills/sonos) | Sonos control: search, queue, playlists, rooms/groups, volume, YouTube. | `agents/openai.yaml` | 0 |
-| [speaking](https://github.com/steipete/agent-scripts/tree/main/skills/speaking) | Speaking ops: invites, keynotes, panels, Gmail/calendar, conferences. | `agents/openai.yaml` | 0 |
-| [ssh-doctor](https://github.com/steipete/agent-scripts/tree/main/skills/ssh-doctor) | SSH triage: Remote Login, launchd sshd, pre-auth closes, stale sessions. | None | 75 |
-| [swift-concurrency-expert](https://github.com/steipete/agent-scripts/tree/main/skills/swift-concurrency-expert) | Swift concurrency review/fix: compiler errors, Sendable, isolation, remediation. | `references/swift-6-2-concurrency.md`, `references/swiftui-concurrency-tour-wwdc.md` | 0 |
-| [swiftui-liquid-glass](https://github.com/steipete/agent-scripts/tree/main/skills/swiftui-liquid-glass) | SwiftUI Liquid Glass: implement, adopt, refactor, review correctness/perf/design. | `references/liquid-glass.md` | 0 |
-| [swiftui-performance-audit](https://github.com/steipete/agent-scripts/tree/main/skills/swiftui-performance-audit) | SwiftUI performance: render, scroll, CPU/memory, updates, layout, Instruments. | `references` (4 files) | 0 |
-| [swiftui-view-refactor](https://github.com/steipete/agent-scripts/tree/main/skills/swiftui-view-refactor) | SwiftUI view refactor/review: layout, DI, Observation, view models. | `references/mv-patterns.md` | 0 |
-| [things-todo](https://github.com/steipete/agent-scripts/tree/main/skills/things-todo) | Things 3 via things CLI: add, list, search, update, delete, verify. | None | 0 |
-| [twilio-sms](https://github.com/steipete/agent-scripts/tree/main/skills/twilio-sms) | Twilio SMS CLI: buy/list/keep numbers, send/check messages, credential routing. | `agents/openai.yaml` | 30 |
-| [video-transcript-downloader](https://github.com/steipete/agent-scripts/tree/main/skills/video-transcript-downloader) | yt-dlp downloads: video, audio, subtitles, transcripts, clips, playlists. | `package-lock.json`, `package.json`, `scripts/vtd.js` | 19 |
-| [vm-lab](https://github.com/steipete/agent-scripts/tree/main/skills/vm-lab) | Parallels macOS VM lab: GUI automation, Peekaboo, TCC, Ghostty. | `agents/openai.yaml`, `scripts/parallels_type.py` | 78 |
-| [whatsapp](https://github.com/steipete/agent-scripts/tree/main/skills/whatsapp) | WhatsApp router: history/search/read/send; wacrawl read, wacli live. | None | 0 |
-| [wrangler](https://github.com/steipete/agent-scripts/tree/main/skills/wrangler) | Wrangler CLI: Workers, KV, tail, deploy, account routing. | `agents/openai.yaml` | 0 |
-| [xurl](https://github.com/steipete/agent-scripts/tree/main/skills/xurl) | xurl X API CLI: install, auth, app choice, shortcuts, raw endpoints. | None | 40 |
+| Name | Description | Bundled Assets |
+| -----|-------------|----------------|
+| [agent-transcript](https://github.com/steipete/agent-scripts/tree/main/skills/agent-transcript) | Add a redacted agent transcript section to GitHub PR or issue bodies during OpenClaw agent-created PR/issue workflows. | `scripts/agent-transcript` |
+| [beeper](https://github.com/steipete/agent-scripts/tree/main/skills/beeper) | Beeper cache: contact hints, room lookup, WhatsApp/iMessage traces, FTS. | None |
+| [browser-use](https://github.com/steipete/agent-scripts/tree/main/skills/browser-use) | Existing Chrome automation: Chrome plugin first, mcporter fallback. | `mcporter-config.md` |
+| [clawsweeper-status](https://github.com/steipete/agent-scripts/tree/main/skills/clawsweeper-status) | ClawSweeper status: URLs, workflow health, active workers, ops snapshot. | `agents/openai.yaml`, `scripts/clawsweeper-status.sh` |
+| [clickclack](https://github.com/steipete/agent-scripts/tree/main/skills/clickclack) | ClickClack ops: chat app, Hetzner deploy, DNS/docs/app, Docker rollout. | `agents/openai.yaml` |
+| [cloudflare-registrar](https://github.com/steipete/agent-scripts/tree/main/skills/cloudflare-registrar) | Cloudflare Registrar: domain availability, prices, registration via mcporter. | None |
+| [codex-debugging](https://github.com/steipete/agent-scripts/tree/main/skills/codex-debugging) | Codex debugging: codex-rs core/tui/exec/cli/app-server/config. | None |
+| [create-cli](https://github.com/steipete/agent-scripts/tree/main/skills/create-cli) | CLI UX/spec: args, flags, help, output, errors, config, dry-run. | `references/cli-guidelines.md` |
+| [discord-clawd](https://github.com/steipete/agent-scripts/tree/main/skills/discord-clawd) | Discord-backed OpenClaw agent/session relay; not archive search. | `agents/openai.yaml` |
+| [domain-dns-ops](https://github.com/steipete/agent-scripts/tree/main/skills/domain-dns-ops) | DNS/domain ops: registrars, zones, redirects, DNS/HTTP verify, manager truth. | `references/manager-repo.md` |
+| [frontend-design](https://github.com/steipete/agent-scripts/tree/main/skills/frontend-design) | Frontend UI: pages, apps, components, polished non-generic design. | `LICENSE.txt` |
+| [github-author-context](https://github.com/steipete/agent-scripts/tree/main/skills/github-author-context) | GitHub contributor context: identity, activity, trust, company/team signal. | `agents/openai.yaml` |
+| [github-cache-hygiene](https://github.com/steipete/agent-scripts/tree/main/skills/github-cache-hygiene) | GitHub quota/cache hygiene: gh, ghx, xcache, gitcrawl, mirrors, limits. | `agents/openai.yaml` |
+| [github-deep-review](https://github.com/steipete/agent-scripts/tree/main/skills/github-deep-review) | GitHub deep review: bugs, PRs, best fix, stale-or-real, read code first. | `agents/openai.yaml` |
+| [github-project-triage](https://github.com/steipete/agent-scripts/tree/main/skills/github-project-triage) | Use whenever the user types triage or asks to triage GitHub issues, PRs, queues, CI, blockers, risk, proof, or next actions. | `agents/openai.yaml`, `scripts/github-activity.sh` |
+| [hopper-debugger](https://github.com/steipete/agent-scripts/tree/main/skills/hopper-debugger) | Hopper debugging: macOS/iOS binaries, ObjC/Swift symbols, dyld, LLDB. | `agents/openai.yaml` |
+| [instruments-profiling](https://github.com/steipete/agent-scripts/tree/main/skills/instruments-profiling) | Instruments/xctrace profiling: macOS/iOS traces, binaries, args, exports. | None |
+| [mac-maintenance](https://github.com/steipete/agent-scripts/tree/main/skills/mac-maintenance) | Mac upkeep: brew update/upgrade, pull clean repos, empty Trash. | None |
+| [markdown-converter](https://github.com/steipete/agent-scripts/tree/main/skills/markdown-converter) | Markdown conversion: PDF, Office, HTML, data, OCR, audio, ZIP, YouTube. | None |
+| [nano-banana-pro](https://github.com/steipete/agent-scripts/tree/main/skills/nano-banana-pro) | Nano Banana/Gemini image gen/edit: text/image input, 512-4K workflows. | `scripts/generate_image.py` |
+| [native-app-performance](https://github.com/steipete/agent-scripts/tree/main/skills/native-app-performance) | Native app performance: xctrace, Time Profiler, traces, hotspots. | `scripts/extract_time_samples.py`, `scripts/record_time_profiler.sh`, `scripts/top_hotspots.py` |
+| [notcrawl](https://github.com/steipete/agent-scripts/tree/main/skills/notcrawl) | Notion archive: desktop/API sync, Markdown export, page search, read-only SQL. | None |
+| [npm](https://github.com/steipete/agent-scripts/tree/main/skills/npm) | npm registry ops: login, whoami, names, publish; 1Password tmux. | `scripts/reserve-packages.sh` |
+| [obsidian](https://github.com/steipete/agent-scripts/tree/main/skills/obsidian) | Obsidian vault: search/read/write notes, backlinks, Bases, Canvas. | None |
+| [one-password](https://github.com/steipete/agent-scripts/tree/main/skills/one-password) | 1Password/op: service-account first, targeted secret read/store/inject, tmux. | `references/cli-examples.md`, `references/get-started.md` |
+| [openai-image-gen](https://github.com/steipete/agent-scripts/tree/main/skills/openai-image-gen) | OpenAI Images API: batches, prompt sampler, gallery. | `scripts/gen.py` |
+| [openclaw-relay](https://github.com/steipete/agent-scripts/tree/main/skills/openclaw-relay) | OpenClaw session relay: prompts/posts via local/remote acpx over SSH. | `agents/openai.yaml`, `config/session_aliases.json`, `scripts/openclaw_relay.py` |
+| [oracle](https://github.com/steipete/agent-scripts/tree/main/skills/oracle) | Oracle second-model review: bundle prompts/files, debug, refactor, design. | None |
+| [peekaboo](https://github.com/steipete/agent-scripts/tree/main/skills/peekaboo) | macOS screenshots, UI inspect, clicks, typing, app/window automation. | None |
+| [release-mac-app](https://github.com/steipete/agent-scripts/tree/main/skills/release-mac-app) | macOS app release: Sparkle, notarization, GitHub Release, Homebrew, closeout. | `scripts/lib/mac_release.sh`, `scripts/mac-release` |
+| [release-tweets](https://github.com/steipete/agent-scripts/tree/main/skills/release-tweets) | Release tweets: draft/copy/post from changelog, tags, npm/appcast, artifacts. | `agents/openai.yaml` |
+| [reminders](https://github.com/steipete/agent-scripts/tree/main/skills/reminders) | Apple Reminders via rem CLI: add, list, search, update, complete, delete. | None |
+| [remote-mac](https://github.com/steipete/agent-scripts/tree/main/skills/remote-mac) | Remote Macs: MacBook, Mac Studio, clawmac, Tailscale, SSH, OpenClaw. | None |
+| [skill-cleaner](https://github.com/steipete/agent-scripts/tree/main/skills/skill-cleaner) | Audit Codex/OpenClaw skills: loaded roots, duplicate skills, unused skills, prompt-budget costs, compact descriptions. | `agents/openai.yaml`, `scripts/skill-cleaner.ts` |
+| [sonos](https://github.com/steipete/agent-scripts/tree/main/skills/sonos) | Sonos control: search, queue, playlists, rooms/groups, volume, YouTube. | `agents/openai.yaml` |
+| [speaking](https://github.com/steipete/agent-scripts/tree/main/skills/speaking) | Speaking ops: invites, keynotes, panels, Gmail/calendar, conferences. | `agents/openai.yaml` |
+| [ssh-doctor](https://github.com/steipete/agent-scripts/tree/main/skills/ssh-doctor) | SSH triage: Remote Login, launchd sshd, pre-auth closes, stale sessions. | None |
+| [swift-concurrency-expert](https://github.com/steipete/agent-scripts/tree/main/skills/swift-concurrency-expert) | Swift concurrency review/fix: compiler errors, Sendable, isolation, remediation. | `references/swift-6-2-concurrency.md`, `references/swiftui-concurrency-tour-wwdc.md` |
+| [swiftui-liquid-glass](https://github.com/steipete/agent-scripts/tree/main/skills/swiftui-liquid-glass) | SwiftUI Liquid Glass: implement, adopt, refactor, review correctness/perf/design. | `references/liquid-glass.md` |
+| [swiftui-performance-audit](https://github.com/steipete/agent-scripts/tree/main/skills/swiftui-performance-audit) | SwiftUI performance: render, scroll, CPU/memory, updates, layout, Instruments. | `references` (4 files) |
+| [swiftui-view-refactor](https://github.com/steipete/agent-scripts/tree/main/skills/swiftui-view-refactor) | SwiftUI view refactor/review: layout, DI, Observation, view models. | `references/mv-patterns.md` |
+| [things-todo](https://github.com/steipete/agent-scripts/tree/main/skills/things-todo) | Things 3 via things CLI: add, list, search, update, delete, verify. | None |
+| [twilio-sms](https://github.com/steipete/agent-scripts/tree/main/skills/twilio-sms) | Twilio SMS CLI: buy/list/keep numbers, send/check messages, credential routing. | `agents/openai.yaml` |
+| [video-transcript-downloader](https://github.com/steipete/agent-scripts/tree/main/skills/video-transcript-downloader) | yt-dlp downloads: video, audio, subtitles, transcripts, clips, playlists. | `package-lock.json`, `package.json`, `scripts/vtd.js` |
+| [vm-lab](https://github.com/steipete/agent-scripts/tree/main/skills/vm-lab) | Parallels macOS VM lab: GUI automation, Peekaboo, TCC, Ghostty. | `agents/openai.yaml`, `scripts/parallels_type.py` |
+| [whatsapp](https://github.com/steipete/agent-scripts/tree/main/skills/whatsapp) | WhatsApp router: history/search/read/send; wacrawl read, wacli live. | None |
+| [wrangler](https://github.com/steipete/agent-scripts/tree/main/skills/wrangler) | Wrangler CLI: Workers, KV, tail, deploy, account routing. | `agents/openai.yaml` |
+| [xurl](https://github.com/steipete/agent-scripts/tree/main/skills/xurl) | xurl X API CLI: install, auth, app choice, shortcuts, raw endpoints. | None |
