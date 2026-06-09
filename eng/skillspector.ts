@@ -729,6 +729,15 @@ function writeReport(results: ScanResult[]) {
 // Main
 // ============================================================
 
+function cleanupTmpBase(tmpBase: string): void {
+  try {
+    rmSync(tmpBase, { recursive: true, force: true });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.warn(`[WARN] Failed to remove temporary directory ${tmpBase}: ${message}`);
+  }
+}
+
 async function main() {
   const manifestFiles = resolveManifestTargets(
     args.target?.length ? args.target : DEFAULT_MANIFEST_TARGETS,
@@ -739,24 +748,25 @@ async function main() {
   rmSync(tmpBase, { recursive: true, force: true });
   mkdirSync(tmpBase, { recursive: true });
 
-  // 1. Build lists
-  const { skills, cloneTargets } = buildLists(tmpBase, manifestFiles);
-  console.log(`[INFO] ${skills.length} skills, ${cloneTargets.length} repos, concurrency: ${CONCURRENCY}`);
+  try {
+    // 1. Build lists
+    const { skills, cloneTargets } = buildLists(tmpBase, manifestFiles);
+    console.log(`[INFO] ${skills.length} skills, ${cloneTargets.length} repos, concurrency: ${CONCURRENCY}`);
 
-  // 2. Clone
-  const failedClones = await cloneRepos(cloneTargets);
+    // 2. Clone
+    const failedClones = await cloneRepos(cloneTargets);
 
-  // 3. Scan
-  const results = await scanSkills(skills, cloneTargets, failedClones);
+    // 3. Scan
+    const results = await scanSkills(skills, cloneTargets, failedClones);
 
-  // 4. Update .md files with Security Risk column
-  updateManifests(results, manifestFiles);
+    // 4. Update .md files with Security Risk column
+    updateManifests(results, manifestFiles);
 
-  // 5. Report
-  writeReport(results);
-
-  // Cleanup
-  rmSync(tmpBase, { recursive: true, force: true });
+    // 5. Report
+    writeReport(results);
+  } finally {
+    cleanupTmpBase(tmpBase);
+  }
 }
 
 if (import.meta.main) {
