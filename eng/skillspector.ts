@@ -173,7 +173,7 @@ function toRepoRelativePath(filepath: string): string | null {
   if (!rel || rel.startsWith("..") || isAbsolute(rel)) {
     return null;
   }
-  return rel;
+  return rel.replace(/\\/g, "/");
 }
 
 function addManifestTarget(filepath: string, label: string, paths: Set<string>): void {
