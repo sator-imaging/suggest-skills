@@ -12,12 +12,16 @@
  * Usage:
  *   bun eng/skillspector.ts [--sarif <path>] [--markdown <path>] [--no-llm]
  *                           [--timeout <seconds>] [--jobs <n>]
+ *                           [--target <glob>]...
+ *
+ * --target replaces the default manifest list; pass multiple --target
+ * flags to scan several paths or glob patterns.
  */
 
 import { Fibers } from "ts-fibers";
-import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from "fs";
-import { join, resolve } from "path";
-import { spawn } from "bun";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, statSync } from "fs";
+import { isAbsolute, join, relative, resolve } from "path";
+import { Glob, spawn } from "bun";
 import { parseArgs } from "util";
 import { availableParallelism } from "node:os";
 
@@ -31,6 +35,7 @@ const { values: args } = parseArgs({
     "no-llm": { type: "boolean", default: false },
     timeout: { type: "string" },
     jobs: { type: "string" },
+    target: { type: "string", multiple: true },
   },
   strict: true,
 });
@@ -46,7 +51,7 @@ const TIMEOUT_MS = Number(args.timeout ?? DEFAULT_TIMEOUT_SEC) * 1000;
 const CONCURRENCY = Number(args.jobs ?? DEFAULT_CONCURRENCY);
 
 const REPO_ROOT = resolve(import.meta.dir, "..");
-const MANIFEST_FILES = ["official/skills/ALL.md", "community/skills/ALL.md"];
+const DEFAULT_MANIFEST_TARGETS = ["**/skills/ALL.md"];
 
 // --- Types ---
 
@@ -152,39 +157,132 @@ function parseSeverity(md: string): string {
   return m?.[1] ?? "-";
 }
 
+function hasGlobChars(pattern: string): boolean {
+  return /[*?[\]{}]/.test(pattern);
+}
+
+const SKILL_ROW_PATTERN = /\|\s*\[([^\]]+)\]\((https:\/\/github\.com\/([^/]+\/[^/]+)\/tree\/([^)]+))\)/g;
+
+const IGNORED_REPO_PATH_PREFIXES = [
+  ".skillspector-tmp/",
+  "node_modules/",
+  ".git/",
+] as const;
+
+function isIgnoredRepoPath(rel: string): boolean {
+  return IGNORED_REPO_PATH_PREFIXES.some(
+    (prefix) => rel === prefix.slice(0, -1) || rel.startsWith(prefix),
+  );
+}
+
+/** Return a normalized repo-relative path when filepath is inside REPO_ROOT. */
+function normalizeRepoRelativePath(filepath: string): string | null {
+  const rel = relative(REPO_ROOT, resolve(filepath)).replace(/\\/g, "/");
+  if (!rel || rel === ".." || rel.startsWith("../") || isAbsolute(rel)) {
+    return null;
+  }
+  return rel;
+}
+
+function addManifestTarget(filepath: string, label: string, paths: Set<string>): void {
+  const rel = normalizeRepoRelativePath(filepath);
+  if (!rel) {
+    console.warn(`[WARN] Target must be inside repository root: ${label}`);
+    return;
+  }
+  if (isIgnoredRepoPath(rel)) {
+    return;
+  }
+
+  try {
+    if (!statSync(filepath).isFile()) {
+      console.warn(`[WARN] Target is not a file: ${label}`);
+      return;
+    }
+    paths.add(rel);
+  } catch {
+    console.warn(`[WARN] Manifest not found: ${label}`);
+  }
+}
+
+/** Expand CLI target patterns (literal paths or globs) to repo-relative manifest files. */
+export function resolveManifestTargets(patterns: readonly string[]): string[] {
+  const paths = new Set<string>();
+
+  for (const pattern of patterns) {
+    const trimmed = pattern.trim();
+    if (!trimmed) continue;
+
+    if (hasGlobChars(trimmed)) {
+      try {
+        const glob = new Glob(trimmed);
+        const matches = [...glob.scanSync({ cwd: REPO_ROOT, absolute: true })];
+        if (matches.length === 0) {
+          console.warn(`[WARN] No files matched pattern: ${trimmed}`);
+        }
+        for (const match of matches) {
+          addManifestTarget(match, match, paths);
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.warn(`[WARN] Failed to scan glob pattern "${trimmed}": ${message}`);
+      }
+      continue;
+    }
+
+    addManifestTarget(resolve(REPO_ROOT, trimmed), trimmed, paths);
+  }
+
+  return [...paths].sort();
+}
+
+/** Parse skill rows from a single manifest file. */
+export function parseSkillsFromManifest(content: string, manifest: string): SkillEntry[] {
+  const skills: SkillEntry[] = [];
+
+  for (const m of content.matchAll(SKILL_ROW_PATTERN)) {
+    const name = m[1];
+    const url = m[2];
+    const repo = m[3];
+    const refAndPath = m[4];
+
+    if (!name || !url || !repo || !refAndPath) continue;
+
+    const slashIdx = refAndPath.indexOf("/");
+    const ref = slashIdx >= 0 ? refAndPath.slice(0, slashIdx) : refAndPath;
+    const skillPath = slashIdx >= 0 ? refAndPath.slice(slashIdx + 1) : "";
+
+    skills.push({ name, url, repo, ref, skillPath, manifest });
+  }
+
+  return skills;
+}
+
 // ============================================================
 // Step 1: Build lists
 // ============================================================
 
-function buildLists(tmpBase: string) {
+function buildLists(tmpBase: string, manifestFiles: readonly string[]) {
+  if (manifestFiles.length === 0) {
+    console.warn("[WARN] No manifest files to scan");
+    return { skills: [], cloneTargets: [] };
+  }
+
   const skills: SkillEntry[] = [];
   const seen = new Set<string>();
 
-  for (const manifest of MANIFEST_FILES) {
+  for (const manifest of manifestFiles) {
     const filepath = join(REPO_ROOT, manifest);
     if (!existsSync(filepath)) {
       console.warn(`[WARN] Manifest not found: ${filepath}`);
       continue;
     }
+
     const content = readFileSync(filepath, "utf-8");
-
-    const rowPattern = /\|\s*\[([^\]]+)\]\((https:\/\/github\.com\/([^/]+\/[^/]+)\/tree\/([^)]+))\)/g;
-    for (const m of content.matchAll(rowPattern)) {
-      const name = m[1];
-      const url = m[2];
-      const repo = m[3];
-      const refAndPath = m[4];
-
-      if (!name || !url || !repo || !refAndPath) continue;
-
-      if (seen.has(url)) continue;
-      seen.add(url);
-
-      const slashIdx = refAndPath.indexOf("/");
-      const ref = slashIdx >= 0 ? refAndPath.slice(0, slashIdx) : refAndPath;
-      const skillPath = slashIdx >= 0 ? refAndPath.slice(slashIdx + 1) : "";
-
-      skills.push({ name, url, repo, ref, skillPath, manifest });
+    for (const skill of parseSkillsFromManifest(content, manifest)) {
+      if (seen.has(skill.url)) continue;
+      seen.add(skill.url);
+      skills.push(skill);
     }
   }
 
@@ -387,7 +485,7 @@ export function manifestHasSecurityRisk(headerLine: string): boolean {
   return /^\|\s*Name\s*\|.*Security Risk\s*\|/.test(headerLine);
 }
 
-function updateManifests(results: ScanResult[]) {
+function updateManifests(results: ScanResult[], manifestFiles: readonly string[]) {
   // Build a lookup: skill URL -> result
   const resultByUrl = new Map<string, ScanResult>();
   for (const r of results) {
@@ -395,7 +493,7 @@ function updateManifests(results: ScanResult[]) {
     resultByUrl.set(r.skill.url, r);
   }
 
-  for (const manifest of MANIFEST_FILES) {
+  for (const manifest of manifestFiles) {
     const filepath = join(REPO_ROOT, manifest);
     if (!existsSync(filepath)) continue;
 
@@ -509,6 +607,7 @@ export function formatStats(results: ScanResult[]): string {
   let failed = 0;
   let cloneFailed = 0;
   let succeeded = 0;
+  let riskySkills = 0;
 
   for (const r of results) {
     switch (r?.status) {
@@ -523,11 +622,17 @@ export function formatStats(results: ScanResult[]): string {
         break;
       case "OK":
         succeeded++;
+        {
+          const n = Number(scoreNumber(r.score ?? ""));
+          if (Number.isFinite(n) && n > 0) {
+            riskySkills++;
+          }
+        }
         break;
     }
   }
 
-  return `📊 Scanned: **${results.length}** | Succeeded: **${succeeded}** | Failed: **${failed}** | Clone failed: **${cloneFailed}** | Timed out: **${timedOut}**`;
+  return `📊 Scanned: **${results.length}** | Succeeded: **${succeeded}** | Risky Skills: **${riskySkills}** | Failed: **${failed}** | Clone failed: **${cloneFailed}** | Timed out: **${timedOut}**`;
 }
 
 function sortReportResults(results: ScanResult[]): ScanResult[] {
@@ -625,12 +730,17 @@ function writeReport(results: ScanResult[]) {
 // ============================================================
 
 async function main() {
+  const manifestFiles = resolveManifestTargets(
+    args.target?.length ? args.target : DEFAULT_MANIFEST_TARGETS,
+  );
+  console.log(`[INFO] Manifest targets (${manifestFiles.length}): ${manifestFiles.join(", ")}`);
+
   const tmpBase = join(REPO_ROOT, ".skillspector-tmp");
   rmSync(tmpBase, { recursive: true, force: true });
   mkdirSync(tmpBase, { recursive: true });
 
   // 1. Build lists
-  const { skills, cloneTargets } = buildLists(tmpBase);
+  const { skills, cloneTargets } = buildLists(tmpBase, manifestFiles);
   console.log(`[INFO] ${skills.length} skills, ${cloneTargets.length} repos, concurrency: ${CONCURRENCY}`);
 
   // 2. Clone
@@ -640,7 +750,7 @@ async function main() {
   const results = await scanSkills(skills, cloneTargets, failedClones);
 
   // 4. Update ALL.md files with Security Risk column
-  updateManifests(results);
+  updateManifests(results, manifestFiles);
 
   // 5. Report
   writeReport(results);
