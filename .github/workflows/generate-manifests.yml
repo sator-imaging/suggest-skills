@@ -246,11 +246,24 @@ jobs:
 
           exit 1
 
+  scan:
+    name: Security Scan
+    needs: 
+      - prepare  # For needs.outputs
+      - generate
+    uses: ./.github/workflows/skillspector.yml
+    with:
+      branch: ${{ needs.prepare.outputs.branch }}
+    permissions:
+      contents: write
+      pull-requests: write
+      security-events: write
+
   collect:
     name: Collect Skills
     needs:
       - prepare  # For needs.outputs
-      - generate
+      - scan
 
     runs-on: ubuntu-latest
     steps:
@@ -277,7 +290,7 @@ jobs:
           for BASE_DIR in "$COMMUNITY_DIR" "$OFFICIAL_DIR"; do
             for SUB_DIR in agents skills designs; do
               TARGET_DIR="$BASE_DIR/$SUB_DIR"
-              ALL_MD="$TARGET_DIR/ALL.md"
+              ALL_MD="$BASE_DIR/$BASE_DIR-$SUB_DIR.md"
 
               rm -f "$ALL_MD"
 
@@ -312,24 +325,11 @@ jobs:
 
           git push --set-upstream origin "$BRANCH_NAME" || true
 
-  scan:
-    name: Security Scan
-    needs: 
-      - prepare  # For needs.outputs
-      - collect
-    uses: ./.github/workflows/skillspector.yml
-    with:
-      branch: ${{ needs.prepare.outputs.branch }}
-    permissions:
-      contents: write
-      pull-requests: write
-      security-events: write
-
   pr:
     name: Create PR
     needs:
       - prepare  # For needs.outputs
-      - scan
+      - collect
 
     runs-on: ubuntu-latest
     steps:

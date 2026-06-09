@@ -81,7 +81,8 @@ jobs:
           bun eng/skillspector.ts \
             --sarif  skillspector.sarif \
             --markdown skillspector-report.md \
-            --no-llm
+            --no-llm \
+            --target '**/skills/*.md'
 
           git add '**/ALL.md'
           git commit -m "[bot] Update Security Risk scores in ALL.md"
@@ -102,8 +103,8 @@ jobs:
         run: |
           cat skillspector-report.md >> $GITHUB_STEP_SUMMARY || true
 
-      - name: Upload SARIF to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: skillspector.sarif
-        if: always() && hashFiles('skillspector.sarif') != ''
+      #- name: Upload SARIF to GitHub Security
+      #  uses: github/codeql-action/upload-sarif@v3
+      #  with:
+      #    sarif_file: skillspector.sarif
+      #  if: always() && hashFiles('skillspector.sarif') != ''
