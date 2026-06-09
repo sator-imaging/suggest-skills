@@ -53,7 +53,7 @@ describe("skillspector report formatting", () => {
     expect(riskEmojiPrefix("timeout")).toBe("");
   });
 
-  test("formatStats bolds numbers and adds a chart emoji prefix", () => {
+  test("formatStats renders a bullet list with risky-skill percentage", () => {
     const results = [
       { status: "OK", score: "0/100" },
       { status: "OK", score: "42/100" },
@@ -63,7 +63,14 @@ describe("skillspector report formatting", () => {
     ] as Parameters<typeof formatStats>[0];
 
     expect(formatStats(results)).toBe(
-      "📊 Scanned: **5** | Succeeded: **2** | Risky Skills: **1** | Failed: **1** | Clone failed: **1** | Timed out: **1**",
+      [
+        "📊 Scanned: 5",
+        "- Succeeded: 2",
+        "- Failed: 1",
+        "- Clone failed: 1",
+        "- Timed out: 1",
+        "- Risky Skills: 1 (20%)",
+      ].join("\n"),
     );
   });
 });

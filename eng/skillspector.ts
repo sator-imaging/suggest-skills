@@ -632,7 +632,17 @@ export function formatStats(results: ScanResult[]): string {
     }
   }
 
-  return `📊 Scanned: **${results.length}** | Succeeded: **${succeeded}** | Risky Skills: **${riskySkills}** | Failed: **${failed}** | Clone failed: **${cloneFailed}** | Timed out: **${timedOut}**`;
+  const scanned = results.length;
+  const riskyPct = scanned > 0 ? Math.round((riskySkills / scanned) * 100) : 0;
+
+  return [
+    `📊 Scanned: ${scanned}`,
+    `- Succeeded: ${succeeded}`,
+    `- Failed: ${failed}`,
+    `- Clone failed: ${cloneFailed}`,
+    `- Timed out: ${timedOut}`,
+    `- Risky Skills: ${riskySkills} (${riskyPct}%)`,
+  ].join("\n");
 }
 
 function sortReportResults(results: ScanResult[]): ScanResult[] {
@@ -660,7 +670,7 @@ function writeReport(results: ScanResult[]) {
   lines.push(formatStats(valid));
   lines.push("");
 
-  // Per-repo sections (only repos with reportable findings)
+  // Per-repo sections (stats for all repos; table only when there are findings)
   const byRepo = new Map<string, { display: string; results: ScanResult[] }>();
   for (const r of valid) {
     const key = r.skill.repo.toLowerCase();
@@ -673,20 +683,22 @@ function writeReport(results: ScanResult[]) {
   for (const key of [...byRepo.keys()].sort()) {
     const { display: repo, results: repoResults } = byRepo.get(key)!;
     const reportable = sortReportResults(repoResults.filter(isReportable));
-    if (reportable.length === 0) continue;
 
     lines.push(`# ${repo}`);
     lines.push("");
     lines.push(formatStats(repoResults));
     lines.push("");
-    lines.push("| Risk | Skill | Scan |");
-    lines.push("|------|-------|------|");
 
-    for (const r of reportable) {
-      lines.push(`| ${formatRiskCell(r)} | ${r.skill.name} | ${scanLabel(r)} |`);
+    if (reportable.length > 0) {
+      lines.push("| Risk | Skill | Scan |");
+      lines.push("|------|-------|------|");
+
+      for (const r of reportable) {
+        lines.push(`| ${formatRiskCell(r)} | ${r.skill.name} | ${scanLabel(r)} |`);
+      }
+
+      lines.push("");
     }
-
-    lines.push("");
   }
 
   writeFileSync(MARKDOWN_OUTPUT, lines.join("\n") + "\n");
