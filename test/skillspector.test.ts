@@ -113,6 +113,10 @@ describe("skillspector manifest targets", () => {
     expect(resolveManifestTargets(["../../../package.json"])).toEqual([]);
   });
 
+  test("resolveManifestTargets rejects directories", () => {
+    expect(resolveManifestTargets(["official/skills"])).toEqual([]);
+  });
+
   test("resolveManifestTargets resolves globs from any working directory", () => {
     const cwd = process.cwd();
     try {

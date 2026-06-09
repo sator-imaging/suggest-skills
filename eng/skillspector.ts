@@ -19,7 +19,7 @@
  */
 
 import { Fibers } from "ts-fibers";
-import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from "fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, statSync } from "fs";
 import { isAbsolute, join, relative, resolve } from "path";
 import { Glob, spawn } from "bun";
 import { parseArgs } from "util";
@@ -176,6 +176,24 @@ function toRepoRelativePath(filepath: string): string | null {
   return rel;
 }
 
+function addManifestTarget(filepath: string, label: string, paths: Set<string>): void {
+  const rel = toRepoRelativePath(filepath);
+  if (!rel) {
+    console.warn(`[WARN] Target must be inside repository root: ${label}`);
+    return;
+  }
+
+  try {
+    if (!statSync(filepath).isFile()) {
+      console.warn(`[WARN] Target is not a file: ${label}`);
+      return;
+    }
+    paths.add(rel);
+  } catch {
+    console.warn(`[WARN] Manifest not found: ${label}`);
+  }
+}
+
 /** Expand CLI target patterns (literal paths or globs) to repo-relative manifest files. */
 export function resolveManifestTargets(patterns: readonly string[]): string[] {
   const paths = new Set<string>();
@@ -191,25 +209,12 @@ export function resolveManifestTargets(patterns: readonly string[]): string[] {
         console.warn(`[WARN] No files matched pattern: ${trimmed}`);
       }
       for (const match of matches) {
-        const rel = toRepoRelativePath(match);
-        if (rel) {
-          paths.add(rel);
-        }
+        addManifestTarget(match, match, paths);
       }
       continue;
     }
 
-    const filepath = resolve(REPO_ROOT, trimmed);
-    const rel = toRepoRelativePath(filepath);
-    if (!rel) {
-      console.warn(`[WARN] Target must be inside repository root: ${trimmed}`);
-      continue;
-    }
-    if (existsSync(filepath)) {
-      paths.add(rel);
-    } else {
-      console.warn(`[WARN] Manifest not found: ${filepath}`);
-    }
+    addManifestTarget(resolve(REPO_ROOT, trimmed), trimmed, paths);
   }
 
   return [...paths].sort();
