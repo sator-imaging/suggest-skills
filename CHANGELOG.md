@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.0.3](https://github.com/sator-imaging/suggest-skills/releases/tag/v2.0.3) (2026-06-09)
+
+### 🚀 Features
+* feat(skillspector): no-risk stats and --target glob CLI by [@sator-ai-dev](https://github.com/sator-ai-dev) in [#202](https://github.com/sator-imaging/suggest-skills/pull/202)
+* Update skill scan report stats to bullet list format by [@sator-ai-dev](https://github.com/sator-ai-dev) in [#206](https://github.com/sator-imaging/suggest-skills/pull/206)
+### ✨ Bug Fixes
+* fix(skillspector): ensure temp dir cleanup runs on failure by [@sator-ai-dev](https://github.com/sator-ai-dev) in [#204](https://github.com/sator-imaging/suggest-skills/pull/204)
+
+
+**Full Changelog**: https://github.com/sator-imaging/suggest-skills/compare/v2.0.2...v2.0.3
+
+
 ## [2.0.2](https://github.com/sator-imaging/suggest-skills/releases/tag/v2.0.2) (2026-06-08)
 
 ### 🚀 Features
