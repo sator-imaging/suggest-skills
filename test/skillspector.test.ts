@@ -8,8 +8,8 @@ import {
   resolveManifestTargets,
   riskEmojiPrefix,
 } from "../eng/skillspector";
-import { readFileSync } from "fs";
-import { join } from "path";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
+import { dirname, join } from "path";
 
 describe("skillspector manifest table helpers", () => {
   test("appendSeparatorCell appends ---| after trailing pipe", () => {
@@ -115,6 +115,20 @@ describe("skillspector manifest targets", () => {
 
   test("resolveManifestTargets rejects directories", () => {
     expect(resolveManifestTargets(["official/skills"])).toEqual([]);
+  });
+
+  test("resolveManifestTargets ignores node_modules paths", () => {
+    const fakeManifest = join("node_modules", ".skillspector-test", "ALL.md");
+    const abs = join(import.meta.dir, "..", fakeManifest);
+    mkdirSync(dirname(abs), { recursive: true });
+    writeFileSync(abs, "| Name | Description |\n");
+
+    try {
+      expect(resolveManifestTargets([fakeManifest])).toEqual([]);
+      expect(resolveManifestTargets(["**/.skillspector-test/ALL.md"])).toEqual([]);
+    } finally {
+      rmSync(dirname(abs), { recursive: true, force: true });
+    }
   });
 
   test("resolveManifestTargets continues after unmatched glob patterns", () => {

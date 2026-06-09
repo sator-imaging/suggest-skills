@@ -163,10 +163,21 @@ function hasGlobChars(pattern: string): boolean {
 
 const SKILL_ROW_PATTERN = /\|\s*\[([^\]]+)\]\((https:\/\/github\.com\/([^/]+\/[^/]+)\/tree\/([^)]+))\)/g;
 
-/** Return a repo-relative path when filepath is inside REPO_ROOT. */
-function toRepoRelativePath(filepath: string): string | null {
-  const resolved = resolve(filepath);
-  const rel = relative(REPO_ROOT, resolved).replace(/\\/g, "/");
+const IGNORED_REPO_PATH_PREFIXES = [
+  ".skillspector-tmp/",
+  "node_modules/",
+  ".git/",
+] as const;
+
+function isIgnoredRepoPath(rel: string): boolean {
+  return IGNORED_REPO_PATH_PREFIXES.some(
+    (prefix) => rel === prefix.slice(0, -1) || rel.startsWith(prefix),
+  );
+}
+
+/** Return a normalized repo-relative path when filepath is inside REPO_ROOT. */
+function normalizeRepoRelativePath(filepath: string): string | null {
+  const rel = relative(REPO_ROOT, resolve(filepath)).replace(/\\/g, "/");
   if (!rel || rel === ".." || rel.startsWith("../") || isAbsolute(rel)) {
     return null;
   }
@@ -174,9 +185,12 @@ function toRepoRelativePath(filepath: string): string | null {
 }
 
 function addManifestTarget(filepath: string, label: string, paths: Set<string>): void {
-  const rel = toRepoRelativePath(filepath);
+  const rel = normalizeRepoRelativePath(filepath);
   if (!rel) {
     console.warn(`[WARN] Target must be inside repository root: ${label}`);
+    return;
+  }
+  if (isIgnoredRepoPath(rel)) {
     return;
   }
 
