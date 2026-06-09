@@ -9,8 +9,8 @@
 - MCP server for recommending and downloading repository-specific AI agent skills
 - Supports `stdio` and HTTP runtime modes from the same codebase
 
-> [!TIP]
-> To find official skills repository, visit: https://skills.sh/official
+> [!IMPORTANT]
+> This tool doesn't provide security checks. To find official skills repository, visit: https://skills.sh/official
 
 
 
