@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.0.4](https://github.com/sator-imaging/suggest-skills/releases/tag/v2.0.4) (2026-06-10)
+
+### 📚 Other Changes
+* deps: ts-fibers[@1.0.1](https://github.com/1.0.1) by [@sator-imaging](https://github.com/sator-imaging) in [#211](https://github.com/sator-imaging/suggest-skills/pull/211)
+
+
+**Full Changelog**: https://github.com/sator-imaging/suggest-skills/compare/v2.0.3...v2.0.4
+
+
 ## [2.0.3](https://github.com/sator-imaging/suggest-skills/releases/tag/v2.0.3) (2026-06-09)
 
 ### 🚀 Features

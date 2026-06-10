@@ -1,5 +1,5 @@
 {
-  "version": "2.0.3",
+  "version": "2.0.4",
   "name": "suggest-skills",
   "description": "MCP server that suggests repository-specific AI agent skills.",
   "repository": {
