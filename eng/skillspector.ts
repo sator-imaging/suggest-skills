@@ -10,7 +10,8 @@
  * Uses ts-fibers for concurrency with per-operation timeout.
  *
  * Usage:
- *   bun eng/skillspector.ts [--sarif <path>] [--markdown <path>] [--no-llm]
+ *   bun eng/skillspector.ts [--sarif <path>] [--markdown <path>] [--use-llm]
+ *                           (omit --markdown to print the report to stdout)
  *                           [--timeout <seconds>] [--jobs <n>]
  *                           [--target <glob>]...
  *
@@ -30,9 +31,9 @@ import { availableParallelism } from "node:os";
 const { values: args } = parseArgs({
   args: Bun.argv.slice(2),
   options: {
-    sarif: { type: "string", default: "skillspector.sarif" },
-    markdown: { type: "string", default: "skillspector-report.md" },
-    "no-llm": { type: "boolean", default: false },
+    sarif: { type: "string" },
+    markdown: { type: "string" },
+    "use-llm": { type: "boolean", default: false },
     timeout: { type: "string" },
     jobs: { type: "string" },
     target: { type: "string", multiple: true },
@@ -40,9 +41,9 @@ const { values: args } = parseArgs({
   strict: true,
 });
 
-const SARIF_OUTPUT = resolve(args.sarif!);
-const MARKDOWN_OUTPUT = resolve(args.markdown!);
-const NO_LLM = args["no-llm"]!;
+const SARIF_OUTPUT = args.sarif ? resolve(args.sarif) : null;
+const MARKDOWN_OUTPUT = args.markdown ? resolve(args.markdown) : null;
+const USE_LLM = args["use-llm"]!;
 
 const DEFAULT_TIMEOUT_SEC = 180 as const;
 const DEFAULT_CONCURRENCY = Math.max(1, availableParallelism());
@@ -75,10 +76,18 @@ interface ScanResult {
   index: number;
   skill: SkillEntry;
   status: "OK" | "FAILED" | "TIMEOUT" | "CLONE_FAILED";
-  markdown: string;
   score: string;
   severity: string;
+  recommendation: string;
   sarif: object | null;
+}
+
+interface SkillSpectorScanJson {
+  risk_assessment?: {
+    score?: number;
+    severity?: string;
+    recommendation?: string;
+  };
 }
 
 // --- Helpers ---
@@ -141,20 +150,30 @@ async function runCmd(
   return { stdout: race.stdout, timedOut: false, exitCode: race.exitCode };
 }
 
-function parseScore(md: string): string {
-  const m = md.match(/Score \| (\d+\/100)/);
-  return m?.[1] ?? "-";
-}
-
-/** Extract just the number from "XX/100" */
+/** Extract just the number from "XX/100" or a bare score string. */
 function scoreNumber(score: string): string {
   const m = score.match(/^(\d+)/);
   return m?.[1] ?? "";
 }
 
-function parseSeverity(md: string): string {
-  const m = md.match(/Severity \| (\w+)/);
-  return m?.[1] ?? "-";
+/** Parse risk fields from SkillSpector JSON scan output. */
+export function parseScanJson(stdout: string): Pick<ScanResult, "score" | "severity" | "recommendation"> {
+  try {
+    const data = JSON.parse(stdout) as SkillSpectorScanJson;
+    const risk = data.risk_assessment;
+    if (!risk) {
+      return { score: "-", severity: "-", recommendation: "-" };
+    }
+
+    const scoreNum = risk.score;
+    const score = Number.isFinite(scoreNum) ? `${scoreNum}/100` : "-";
+    const severity = risk.severity?.trim() || "-";
+    const rawRec = risk.recommendation?.trim();
+    const recommendation = rawRec ? rawRec.replace(/_/g, " ") : "-";
+    return { score, severity, recommendation };
+  } catch {
+    return { score: "-", severity: "-", recommendation: "-" };
+  }
 }
 
 function hasGlobChars(pattern: string): boolean {
@@ -366,9 +385,9 @@ async function scanSkills(
     skills.map((skill, i) => ({ skill, index: i })),
     async ({ skill, index }) => {
       let status: ScanResult["status"] = "OK";
-      let markdown = "";
       let score = "-";
       let severity = "-";
+      let recommendation = "-";
       let sarif: object | null = null;
 
       const key = `${skill.repo}@${skill.ref}`;
@@ -383,27 +402,26 @@ async function scanSkills(
           console.error(`  [FAILED] Path not found: ${skill.skillPath}`);
         }
 
-        // Markdown scan
+        // JSON scan
         if (status === "OK") {
-          const cmd = ["skillspector", "scan", scanDir, "--format", "markdown"];
-          if (NO_LLM) cmd.push("--no-llm");
+          const cmd = ["skillspector", "scan", scanDir, "--format", "json"];
+          if (!USE_LLM) cmd.push("--no-llm");
 
           const r = await runCmd(cmd, TIMEOUT_MS);
           if (r.timedOut) {
             status = "TIMEOUT";
           } else if (r.stdout) {
-            markdown = r.stdout;
-            score = parseScore(markdown);
-            severity = parseSeverity(markdown);
+            ({ score, severity, recommendation } = parseScanJson(r.stdout));
+            if (score === "-") status = "FAILED";
           } else {
             status = "FAILED";
           }
         }
 
-        // SARIF scan
-        if (status === "OK") {
+        // SARIF scan (skipped when --sarif is not specified)
+        if (SARIF_OUTPUT && status === "OK") {
           const cmd = ["skillspector", "scan", scanDir, "--format", "sarif"];
-          if (NO_LLM) cmd.push("--no-llm");
+          if (!USE_LLM) cmd.push("--no-llm");
 
           const r = await runCmd(cmd, TIMEOUT_MS);
           if (r.timedOut) {
@@ -414,7 +432,9 @@ async function scanSkills(
         }
       }
 
-      const result: ScanResult = { index, skill, status, markdown, score, severity, sarif };
+      const result: ScanResult = {
+        index, skill, status, score, severity, recommendation, sarif,
+      };
       results[index] = result;
       return result;
     },
@@ -437,12 +457,18 @@ async function scanSkills(
 // Step 4: Update .md files with Security Risk column
 // ============================================================
 
-function riskCellValue(result: ScanResult | undefined): string {
+/** Format a manifest Security Risk cell from a scan result. */
+export function riskCellValue(result: ScanResult | undefined): string {
   if (!result) return "n/a";
   if (result.status === "TIMEOUT") return "timeout";
   if (result.status === "CLONE_FAILED" || result.status === "FAILED") return "n/a";
   const num = scoreNumber(result.score);
-  return num || "n/a";
+  if (!num) return "n/a";
+  const rec = result.recommendation?.trim() ?? "";
+  if (rec && rec !== "-") {
+    return `${num} (${rec})`;
+  }
+  return num;
 }
 
 const SECURITY_RISK_HEADER = "Security Risk";
@@ -481,6 +507,7 @@ function tableColumnCount(line: string): number {
   return line.split("|").map((part) => part.trim()).filter((part) => part.length > 0).length;
 }
 
+/** Return whether a manifest table header already includes a Security Risk column. */
 export function manifestHasSecurityRisk(headerLine: string): boolean {
   return /^\|\s*Name\s*\|.*Security Risk\s*\|/.test(headerLine);
 }
@@ -580,6 +607,7 @@ function riskDisplay(result: ScanResult): string {
   return scoreNumber(result.score) || "n/a";
 }
 
+/** Map a numeric risk score to an emoji prefix for report tables. */
 export function riskEmojiPrefix(risk: string): string {
   if (risk === "n/a" || risk === "timeout" || !risk) return "";
   const n = Number(risk);
@@ -602,6 +630,7 @@ function riskSortValue(result: ScanResult): number {
   return Number.isFinite(n) ? n : -1;
 }
 
+/** Render scan outcome statistics as a markdown bullet list. */
 export function formatStats(results: ScanResult[]): string {
   let timedOut = 0;
   let failed = 0;
@@ -701,40 +730,46 @@ function writeReport(results: ScanResult[]) {
     }
   }
 
-  writeFileSync(MARKDOWN_OUTPUT, lines.join("\n") + "\n");
+  const reportBody = lines.join("\n") + "\n";
+  if (MARKDOWN_OUTPUT) {
+    writeFileSync(MARKDOWN_OUTPUT, reportBody);
+  } else {
+    console.log(reportBody);
+  }
 
-  // Merge SARIF
-  const allSarifResults: any[] = [];
-  const allRules: any[] = [];
-  const ruleIdsSeen = new Set<string>();
+  if (SARIF_OUTPUT) {
+    const allSarifResults: any[] = [];
+    const allRules: any[] = [];
+    const ruleIdsSeen = new Set<string>();
 
-  for (const r of results) {
-    if (!r?.sarif) continue;
-    const sarif = r.sarif as any;
-    for (const run of sarif.runs ?? []) {
-      allSarifResults.push(...(run.results ?? []));
-      for (const rule of run.tool?.driver?.rules ?? []) {
-        if (!ruleIdsSeen.has(rule.id)) {
-          ruleIdsSeen.add(rule.id);
-          allRules.push(rule);
+    for (const r of results) {
+      if (!r?.sarif) continue;
+      const sarif = r.sarif as any;
+      for (const run of sarif.runs ?? []) {
+        allSarifResults.push(...(run.results ?? []));
+        for (const rule of run.tool?.driver?.rules ?? []) {
+          if (!ruleIdsSeen.has(rule.id)) {
+            ruleIdsSeen.add(rule.id);
+            allRules.push(rule);
+          }
         }
       }
     }
-  }
 
-  writeFileSync(SARIF_OUTPUT, JSON.stringify({
-    $schema: "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/sarif-2.1/schema/sarif-schema-2.1.0.json",
-    version: "2.1.0",
-    runs: [{
-      tool: { driver: { name: "SkillSpector", informationUri: "https://github.com/NVIDIA/skillspector", rules: allRules } },
-      results: allSarifResults,
-    }],
-  }, null, 2) + "\n");
+    writeFileSync(SARIF_OUTPUT, JSON.stringify({
+      $schema: "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/sarif-2.1/schema/sarif-schema-2.1.0.json",
+      version: "2.1.0",
+      runs: [{
+        tool: { driver: { name: "SkillSpector", informationUri: "https://github.com/NVIDIA/skillspector", rules: allRules } },
+        results: allSarifResults,
+      }],
+    }, null, 2) + "\n");
+  }
 
   console.log("");
   console.log(`[INFO] Done. Succeeded: ${succeeded.length}, Failed: ${failed.length}, Clone failed: ${cloneFailed.length}, Timed out: ${timedOut.length}`);
-  console.log(`[INFO] SARIF:    ${SARIF_OUTPUT}`);
-  console.log(`[INFO] Markdown: ${MARKDOWN_OUTPUT}`);
+  if (SARIF_OUTPUT) console.log(`[INFO] SARIF:    ${SARIF_OUTPUT}`);
+  if (MARKDOWN_OUTPUT) console.log(`[INFO] Markdown: ${MARKDOWN_OUTPUT}`);
 }
 
 // ============================================================

@@ -4,8 +4,10 @@ import {
   appendTableCell,
   formatStats,
   manifestHasSecurityRisk,
+  parseScanJson,
   parseSkillsFromManifest,
   resolveManifestTargets,
+  riskCellValue,
   riskEmojiPrefix,
 } from "../eng/skillspector";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
@@ -34,6 +36,60 @@ describe("skillspector manifest table helpers", () => {
   test("manifestHasSecurityRisk detects an existing column on the header row", () => {
     expect(manifestHasSecurityRisk("| Name | Description | Bundled Assets | Security Risk |")).toBe(true);
     expect(manifestHasSecurityRisk("| Name | Description | Bundled Assets |")).toBe(false);
+  });
+});
+
+describe("skillspector scan json parsing", () => {
+  const sampleJson = JSON.stringify({
+    risk_assessment: {
+      score: 26,
+      severity: "MEDIUM",
+      recommendation: "CAUTION",
+    },
+  });
+
+  test("parseScanJson reads risk fields from JSON output", () => {
+    expect(parseScanJson(sampleJson)).toEqual({
+      score: "26/100",
+      severity: "MEDIUM",
+      recommendation: "CAUTION",
+    });
+    expect(parseScanJson(JSON.stringify({
+      risk_assessment: { score: 100, severity: "CRITICAL", recommendation: "DO_NOT_INSTALL" },
+    }))).toEqual({
+      score: "100/100",
+      severity: "CRITICAL",
+      recommendation: "DO NOT INSTALL",
+    });
+    expect(parseScanJson(JSON.stringify({
+      risk_assessment: { score: 0, severity: "LOW", recommendation: "SAFE" },
+    }))).toEqual({
+      score: "0/100",
+      severity: "LOW",
+      recommendation: "SAFE",
+    });
+    expect(parseScanJson("not json")).toEqual({
+      score: "-",
+      severity: "-",
+      recommendation: "-",
+    });
+  });
+
+  test("riskCellValue includes score and recommendation", () => {
+    const ok = {
+      status: "OK",
+      score: "26/100",
+      recommendation: "CAUTION",
+    } as Parameters<typeof riskCellValue>[0];
+
+    expect(riskCellValue(ok)).toBe("26 (CAUTION)");
+    expect(riskCellValue({ ...ok, score: "100/100", recommendation: "DO NOT INSTALL" })).toBe(
+      "100 (DO NOT INSTALL)",
+    );
+    expect(riskCellValue({ ...ok, recommendation: "-" })).toBe("26");
+    expect(riskCellValue({ status: "OK", score: "26/100" } as Parameters<typeof riskCellValue>[0])).toBe("26");
+    expect(riskCellValue({ status: "TIMEOUT", score: "26/100", recommendation: "CAUTION" })).toBe("timeout");
+    expect(riskCellValue(undefined)).toBe("n/a");
   });
 });
 

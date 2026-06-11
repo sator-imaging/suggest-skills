@@ -81,7 +81,6 @@ jobs:
           bun eng/skillspector.ts \
             --sarif  skillspector.sarif \
             --markdown skillspector-report.md \
-            --no-llm \
             --target '**/skills/*suggest-skills*.md'
 
       - name: Upload SARIF to GitHub Security
@@ -96,7 +95,6 @@ jobs:
           bun eng/skillspector.ts \
             --sarif  skillspector.sarif \
             --markdown skillspector-report.md \
-            --no-llm \
             --target '**/skills/*.md'
 
           git add -f '**/skills/*.md'
