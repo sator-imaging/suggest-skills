@@ -10,7 +10,7 @@
  * Uses ts-fibers for concurrency with per-operation timeout.
  *
  * Usage:
- *   bun eng/skillspector.ts [--sarif <path>] [--markdown <path>] [--no-llm]
+ *   bun eng/skillspector.ts [--sarif <path>] [--markdown <path>] [--use-llm]
  *                           (omit --markdown to print the report to stdout)
  *                           [--timeout <seconds>] [--jobs <n>]
  *                           [--target <glob>]...
@@ -33,7 +33,7 @@ const { values: args } = parseArgs({
   options: {
     sarif: { type: "string" },
     markdown: { type: "string" },
-    "no-llm": { type: "boolean", default: false },
+    "use-llm": { type: "boolean", default: false },
     timeout: { type: "string" },
     jobs: { type: "string" },
     target: { type: "string", multiple: true },
@@ -43,7 +43,7 @@ const { values: args } = parseArgs({
 
 const SARIF_OUTPUT = args.sarif ? resolve(args.sarif) : null;
 const MARKDOWN_OUTPUT = args.markdown ? resolve(args.markdown) : null;
-const NO_LLM = args["no-llm"]!;
+const USE_LLM = args["use-llm"]!;
 
 const DEFAULT_TIMEOUT_SEC = 180 as const;
 const DEFAULT_CONCURRENCY = Math.max(1, availableParallelism());
@@ -405,7 +405,7 @@ async function scanSkills(
         // JSON scan
         if (status === "OK") {
           const cmd = ["skillspector", "scan", scanDir, "--format", "json"];
-          if (NO_LLM) cmd.push("--no-llm");
+          if (!USE_LLM) cmd.push("--no-llm");
 
           const r = await runCmd(cmd, TIMEOUT_MS);
           if (r.timedOut) {
@@ -421,7 +421,7 @@ async function scanSkills(
         // SARIF scan (skipped when --sarif is not specified)
         if (SARIF_OUTPUT && status === "OK") {
           const cmd = ["skillspector", "scan", scanDir, "--format", "sarif"];
-          if (NO_LLM) cmd.push("--no-llm");
+          if (!USE_LLM) cmd.push("--no-llm");
 
           const r = await runCmd(cmd, TIMEOUT_MS);
           if (r.timedOut) {
