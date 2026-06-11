@@ -11,6 +11,7 @@
  *
  * Usage:
  *   bun eng/skillspector.ts [--sarif <path>] [--markdown <path>] [--no-llm]
+ *                           (omit --markdown to print the report to stdout)
  *                           [--timeout <seconds>] [--jobs <n>]
  *                           [--target <glob>]...
  *
@@ -31,7 +32,7 @@ const { values: args } = parseArgs({
   args: Bun.argv.slice(2),
   options: {
     sarif: { type: "string" },
-    markdown: { type: "string", default: "skillspector-report.md" },
+    markdown: { type: "string" },
     "no-llm": { type: "boolean", default: false },
     timeout: { type: "string" },
     jobs: { type: "string" },
@@ -41,7 +42,7 @@ const { values: args } = parseArgs({
 });
 
 const SARIF_OUTPUT = args.sarif ? resolve(args.sarif) : null;
-const MARKDOWN_OUTPUT = resolve(args.markdown!);
+const MARKDOWN_OUTPUT = args.markdown ? resolve(args.markdown) : null;
 const NO_LLM = args["no-llm"]!;
 
 const DEFAULT_TIMEOUT_SEC = 180 as const;
@@ -725,7 +726,12 @@ function writeReport(results: ScanResult[]) {
     }
   }
 
-  writeFileSync(MARKDOWN_OUTPUT, lines.join("\n") + "\n");
+  const reportBody = lines.join("\n") + "\n";
+  if (MARKDOWN_OUTPUT) {
+    writeFileSync(MARKDOWN_OUTPUT, reportBody);
+  } else {
+    console.log(reportBody);
+  }
 
   if (SARIF_OUTPUT) {
     const allSarifResults: any[] = [];
@@ -759,7 +765,7 @@ function writeReport(results: ScanResult[]) {
   console.log("");
   console.log(`[INFO] Done. Succeeded: ${succeeded.length}, Failed: ${failed.length}, Clone failed: ${cloneFailed.length}, Timed out: ${timedOut.length}`);
   if (SARIF_OUTPUT) console.log(`[INFO] SARIF:    ${SARIF_OUTPUT}`);
-  console.log(`[INFO] Markdown: ${MARKDOWN_OUTPUT}`);
+  if (MARKDOWN_OUTPUT) console.log(`[INFO] Markdown: ${MARKDOWN_OUTPUT}`);
 }
 
 // ============================================================
