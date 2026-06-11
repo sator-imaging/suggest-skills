@@ -612,9 +612,10 @@ export function riskEmojiPrefix(risk: string): string {
   if (risk === "n/a" || risk === "timeout" || !risk) return "";
   const n = Number(risk);
   if (!Number.isFinite(n) || n <= 0) return "";
-  if (n >= 90) return "☠️ ";
-  if (n >= 60) return "🔥 ";
-  if (n >= 30) return "🟠 ";
+  // https://github.com/nvidia/skillspector#severity-levels
+  if (n > 80) return "☠️ ";
+  if (n > 50) return "🔥 ";
+  if (n > 20) return "🟠 ";
   return "🟡 ";
 }
 
