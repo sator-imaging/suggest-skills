@@ -78,6 +78,7 @@ interface ScanResult {
   markdown: string;
   score: string;
   severity: string;
+  recommendation: string;
   sarif: object | null;
 }
 
@@ -155,6 +156,12 @@ function scoreNumber(score: string): string {
 function parseSeverity(md: string): string {
   const m = md.match(/Severity \| (\w+)/);
   return m?.[1] ?? "-";
+}
+
+/** Recommendation label from SkillSpector markdown (e.g. SAFE, CAUTION, DO NOT INSTALL). */
+export function parseRecommendation(md: string): string {
+  const m = md.match(/\| Recommendation \| ([^|\n]+) \|/);
+  return m?.[1]?.trim() ?? "-";
 }
 
 function hasGlobChars(pattern: string): boolean {
@@ -369,6 +376,7 @@ async function scanSkills(
       let markdown = "";
       let score = "-";
       let severity = "-";
+      let recommendation = "-";
       let sarif: object | null = null;
 
       const key = `${skill.repo}@${skill.ref}`;
@@ -395,6 +403,7 @@ async function scanSkills(
             markdown = r.stdout;
             score = parseScore(markdown);
             severity = parseSeverity(markdown);
+            recommendation = parseRecommendation(markdown);
           } else {
             status = "FAILED";
           }
@@ -414,7 +423,9 @@ async function scanSkills(
         }
       }
 
-      const result: ScanResult = { index, skill, status, markdown, score, severity, sarif };
+      const result: ScanResult = {
+        index, skill, status, markdown, score, severity, recommendation, sarif,
+      };
       results[index] = result;
       return result;
     },
@@ -437,12 +448,17 @@ async function scanSkills(
 // Step 4: Update .md files with Security Risk column
 // ============================================================
 
-function riskCellValue(result: ScanResult | undefined): string {
+export function riskCellValue(result: ScanResult | undefined): string {
   if (!result) return "n/a";
   if (result.status === "TIMEOUT") return "timeout";
   if (result.status === "CLONE_FAILED" || result.status === "FAILED") return "n/a";
   const num = scoreNumber(result.score);
-  return num || "n/a";
+  if (!num) return "n/a";
+  const rec = result.recommendation.trim();
+  if (rec && rec !== "-") {
+    return `${num} (${rec})`;
+  }
+  return num;
 }
 
 const SECURITY_RISK_HEADER = "Security Risk";

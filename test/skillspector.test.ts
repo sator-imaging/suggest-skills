@@ -4,8 +4,10 @@ import {
   appendTableCell,
   formatStats,
   manifestHasSecurityRisk,
+  parseRecommendation,
   parseSkillsFromManifest,
   resolveManifestTargets,
+  riskCellValue,
   riskEmojiPrefix,
 } from "../eng/skillspector";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
@@ -34,6 +36,43 @@ describe("skillspector manifest table helpers", () => {
   test("manifestHasSecurityRisk detects an existing column on the header row", () => {
     expect(manifestHasSecurityRisk("| Name | Description | Bundled Assets | Security Risk |")).toBe(true);
     expect(manifestHasSecurityRisk("| Name | Description | Bundled Assets |")).toBe(false);
+  });
+});
+
+describe("skillspector recommendation parsing", () => {
+  const sampleMarkdown = [
+    "# SkillSpector Security Report",
+    "",
+    "## Risk Assessment",
+    "",
+    "| Metric | Value |",
+    "|--------|-------|",
+    "| Score | 26/100 |",
+    "| Severity | MEDIUM |",
+    "| Recommendation | CAUTION |",
+  ].join("\n");
+
+  test("parseRecommendation reads the recommendation from markdown output", () => {
+    expect(parseRecommendation(sampleMarkdown)).toBe("CAUTION");
+    expect(parseRecommendation("| Recommendation | DO NOT INSTALL |")).toBe("DO NOT INSTALL");
+    expect(parseRecommendation("| Recommendation | SAFE |")).toBe("SAFE");
+    expect(parseRecommendation("no recommendation here")).toBe("-");
+  });
+
+  test("riskCellValue includes score and recommendation", () => {
+    const ok = {
+      status: "OK",
+      score: "26/100",
+      recommendation: "CAUTION",
+    } as Parameters<typeof riskCellValue>[0];
+
+    expect(riskCellValue(ok)).toBe("26 (CAUTION)");
+    expect(riskCellValue({ ...ok, score: "100/100", recommendation: "DO NOT INSTALL" })).toBe(
+      "100 (DO NOT INSTALL)",
+    );
+    expect(riskCellValue({ ...ok, recommendation: "-" })).toBe("26");
+    expect(riskCellValue({ status: "TIMEOUT", score: "26/100", recommendation: "CAUTION" })).toBe("timeout");
+    expect(riskCellValue(undefined)).toBe("n/a");
   });
 });
 
