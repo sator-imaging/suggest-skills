@@ -76,6 +76,22 @@ jobs:
           git reset --hard "origin/${{ github.ref_name }}"
           git clean -fd
 
+      # Scan only this repo
+      - name: Self scan + SARIF upload
+        run: |
+          bun eng/skillspector.ts \
+            --sarif  skillspector.sarif \
+            --markdown skillspector-report.md \
+            --no-llm \
+            --target '**/skills/*suggest-skills*.md'
+
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: skillspector.sarif
+        if: always() && hashFiles('skillspector.sarif') != ''
+
+      # Then, full scan including this repo
       - name: Run SkillSpector scan
         run: |
           bun eng/skillspector.ts \
@@ -102,9 +118,3 @@ jobs:
         if: always()
         run: |
           cat skillspector-report.md >> $GITHUB_STEP_SUMMARY || true
-
-      #- name: Upload SARIF to GitHub Security
-      #  uses: github/codeql-action/upload-sarif@v3
-      #  with:
-      #    sarif_file: skillspector.sarif
-      #  if: always() && hashFiles('skillspector.sarif') != ''
