@@ -87,6 +87,7 @@ describe("skillspector scan json parsing", () => {
       "100 (DO NOT INSTALL)",
     );
     expect(riskCellValue({ ...ok, recommendation: "-" })).toBe("26");
+    expect(riskCellValue({ status: "OK", score: "26/100" } as Parameters<typeof riskCellValue>[0])).toBe("26");
     expect(riskCellValue({ status: "TIMEOUT", score: "26/100", recommendation: "CAUTION" })).toBe("timeout");
     expect(riskCellValue(undefined)).toBe("n/a");
   });

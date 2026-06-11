@@ -457,13 +457,14 @@ async function scanSkills(
 // Step 4: Update .md files with Security Risk column
 // ============================================================
 
+/** Format a manifest Security Risk cell from a scan result. */
 export function riskCellValue(result: ScanResult | undefined): string {
   if (!result) return "n/a";
   if (result.status === "TIMEOUT") return "timeout";
   if (result.status === "CLONE_FAILED" || result.status === "FAILED") return "n/a";
   const num = scoreNumber(result.score);
   if (!num) return "n/a";
-  const rec = result.recommendation.trim();
+  const rec = result.recommendation?.trim() ?? "";
   if (rec && rec !== "-") {
     return `${num} (${rec})`;
   }
@@ -506,6 +507,7 @@ function tableColumnCount(line: string): number {
   return line.split("|").map((part) => part.trim()).filter((part) => part.length > 0).length;
 }
 
+/** Return whether a manifest table header already includes a Security Risk column. */
 export function manifestHasSecurityRisk(headerLine: string): boolean {
   return /^\|\s*Name\s*\|.*Security Risk\s*\|/.test(headerLine);
 }
@@ -605,6 +607,7 @@ function riskDisplay(result: ScanResult): string {
   return scoreNumber(result.score) || "n/a";
 }
 
+/** Map a numeric risk score to an emoji prefix for report tables. */
 export function riskEmojiPrefix(risk: string): string {
   if (risk === "n/a" || risk === "timeout" || !risk) return "";
   const n = Number(risk);
@@ -627,6 +630,7 @@ function riskSortValue(result: ScanResult): number {
   return Number.isFinite(n) ? n : -1;
 }
 
+/** Render scan outcome statistics as a markdown bullet list. */
 export function formatStats(results: ScanResult[]): string {
   let timedOut = 0;
   let failed = 0;
