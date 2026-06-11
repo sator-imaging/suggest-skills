@@ -3,10 +3,10 @@ name: '[push,PR] Test Coverage'
 on:
   push:
     branches: [ main ]
-    paths: [ 'src/**/*', 'test/**/*' ]
+    paths-ignore: [ '.github/**', 'community/**', 'official/**' ]
   pull_request:
     branches: [ main ]
-    paths: [ 'src/**/*', 'test/**/*' ]
+    paths-ignore: [ '.github/**', 'community/**', 'official/**' ]
   workflow_dispatch:
 
 jobs:
