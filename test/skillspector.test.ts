@@ -13,6 +13,32 @@ import {
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
 
+type ScanResultArg = NonNullable<Parameters<typeof riskCellValue>[0]>;
+
+function makeScanResult(
+  overrides: Omit<Partial<ScanResultArg>, "skill"> & {
+    skill?: Partial<ScanResultArg["skill"]>;
+  } & Pick<ScanResultArg, "status">,
+): ScanResultArg {
+  return {
+    index: 0,
+    score: "-",
+    severity: "-",
+    recommendation: "-",
+    sarif: null,
+    ...overrides,
+    skill: {
+      name: "test-skill",
+      url: "https://github.com/o/r/tree/main/skills/test",
+      repo: "o/r",
+      ref: "main",
+      skillPath: "skills/test",
+      manifest: "test.skills.md",
+      ...overrides.skill,
+    },
+  };
+}
+
 describe("skillspector manifest table helpers", () => {
   test("appendSeparatorCell appends ---| after trailing pipe", () => {
     const line = "| -----|-------------|----------------|";
@@ -76,19 +102,21 @@ describe("skillspector scan json parsing", () => {
   });
 
   test("riskCellValue includes score and recommendation", () => {
-    const ok = {
+    const ok = makeScanResult({
       status: "OK",
       score: "26/100",
       recommendation: "CAUTION",
-    } as Parameters<typeof riskCellValue>[0];
+    });
 
     expect(riskCellValue(ok)).toBe("26 (CAUTION)");
     expect(riskCellValue({ ...ok, score: "100/100", recommendation: "DO NOT INSTALL" })).toBe(
       "100 (DO NOT INSTALL)",
     );
     expect(riskCellValue({ ...ok, recommendation: "-" })).toBe("26");
-    expect(riskCellValue({ status: "OK", score: "26/100" } as Parameters<typeof riskCellValue>[0])).toBe("26");
-    expect(riskCellValue({ status: "TIMEOUT", score: "26/100", recommendation: "CAUTION" })).toBe("timeout");
+    expect(riskCellValue(makeScanResult({ status: "OK", score: "26/100" }))).toBe("26");
+    expect(riskCellValue(makeScanResult({ status: "TIMEOUT", score: "26/100", recommendation: "CAUTION" }))).toBe(
+      "timeout",
+    );
     expect(riskCellValue(undefined)).toBe("n/a");
   });
 });
@@ -111,13 +139,13 @@ describe("skillspector report formatting", () => {
 
   test("formatStats renders advisory and dangerous skill percentages", () => {
     const results = [
-      { status: "OK", score: "0/100" },
-      { status: "OK", score: "10/100" },
-      { status: "OK", score: "42/100" },
-      { status: "FAILED" },
-      { status: "CLONE_FAILED" },
-      { status: "TIMEOUT" },
-    ] as Parameters<typeof formatStats>[0];
+      makeScanResult({ status: "OK", score: "0/100" }),
+      makeScanResult({ status: "OK", score: "10/100" }),
+      makeScanResult({ status: "OK", score: "42/100" }),
+      makeScanResult({ status: "FAILED" }),
+      makeScanResult({ status: "CLONE_FAILED" }),
+      makeScanResult({ status: "TIMEOUT" }),
+    ];
 
     expect(formatStats(results)).toBe(
       [
