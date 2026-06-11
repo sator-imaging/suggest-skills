@@ -75,11 +75,18 @@ interface ScanResult {
   index: number;
   skill: SkillEntry;
   status: "OK" | "FAILED" | "TIMEOUT" | "CLONE_FAILED";
-  markdown: string;
   score: string;
   severity: string;
   recommendation: string;
   sarif: object | null;
+}
+
+interface SkillSpectorScanJson {
+  risk_assessment?: {
+    score?: number;
+    severity?: string;
+    recommendation?: string;
+  };
 }
 
 // --- Helpers ---
@@ -142,26 +149,30 @@ async function runCmd(
   return { stdout: race.stdout, timedOut: false, exitCode: race.exitCode };
 }
 
-function parseScore(md: string): string {
-  const m = md.match(/Score \| (\d+\/100)/);
-  return m?.[1] ?? "-";
-}
-
-/** Extract just the number from "XX/100" */
+/** Extract just the number from "XX/100" or a bare score string. */
 function scoreNumber(score: string): string {
   const m = score.match(/^(\d+)/);
   return m?.[1] ?? "";
 }
 
-function parseSeverity(md: string): string {
-  const m = md.match(/Severity \| (\w+)/);
-  return m?.[1] ?? "-";
-}
+/** Parse risk fields from SkillSpector JSON scan output. */
+export function parseScanJson(stdout: string): Pick<ScanResult, "score" | "severity" | "recommendation"> {
+  try {
+    const data = JSON.parse(stdout) as SkillSpectorScanJson;
+    const risk = data.risk_assessment;
+    if (!risk) {
+      return { score: "-", severity: "-", recommendation: "-" };
+    }
 
-/** Recommendation label from SkillSpector markdown (e.g. SAFE, CAUTION, DO NOT INSTALL). */
-export function parseRecommendation(md: string): string {
-  const m = md.match(/\| Recommendation \| ([^|\n]+) \|/);
-  return m?.[1]?.trim() ?? "-";
+    const scoreNum = risk.score;
+    const score = Number.isFinite(scoreNum) ? `${scoreNum}/100` : "-";
+    const severity = risk.severity?.trim() || "-";
+    const rawRec = risk.recommendation?.trim();
+    const recommendation = rawRec ? rawRec.replace(/_/g, " ") : "-";
+    return { score, severity, recommendation };
+  } catch {
+    return { score: "-", severity: "-", recommendation: "-" };
+  }
 }
 
 function hasGlobChars(pattern: string): boolean {
@@ -373,7 +384,6 @@ async function scanSkills(
     skills.map((skill, i) => ({ skill, index: i })),
     async ({ skill, index }) => {
       let status: ScanResult["status"] = "OK";
-      let markdown = "";
       let score = "-";
       let severity = "-";
       let recommendation = "-";
@@ -391,19 +401,17 @@ async function scanSkills(
           console.error(`  [FAILED] Path not found: ${skill.skillPath}`);
         }
 
-        // Markdown scan
+        // JSON scan
         if (status === "OK") {
-          const cmd = ["skillspector", "scan", scanDir, "--format", "markdown"];
+          const cmd = ["skillspector", "scan", scanDir, "--format", "json"];
           if (NO_LLM) cmd.push("--no-llm");
 
           const r = await runCmd(cmd, TIMEOUT_MS);
           if (r.timedOut) {
             status = "TIMEOUT";
           } else if (r.stdout) {
-            markdown = r.stdout;
-            score = parseScore(markdown);
-            severity = parseSeverity(markdown);
-            recommendation = parseRecommendation(markdown);
+            ({ score, severity, recommendation } = parseScanJson(r.stdout));
+            if (score === "-") status = "FAILED";
           } else {
             status = "FAILED";
           }
@@ -424,7 +432,7 @@ async function scanSkills(
       }
 
       const result: ScanResult = {
-        index, skill, status, markdown, score, severity, recommendation, sarif,
+        index, skill, status, score, severity, recommendation, sarif,
       };
       results[index] = result;
       return result;

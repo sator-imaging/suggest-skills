@@ -4,7 +4,7 @@ import {
   appendTableCell,
   formatStats,
   manifestHasSecurityRisk,
-  parseRecommendation,
+  parseScanJson,
   parseSkillsFromManifest,
   resolveManifestTargets,
   riskCellValue,
@@ -39,24 +39,40 @@ describe("skillspector manifest table helpers", () => {
   });
 });
 
-describe("skillspector recommendation parsing", () => {
-  const sampleMarkdown = [
-    "# SkillSpector Security Report",
-    "",
-    "## Risk Assessment",
-    "",
-    "| Metric | Value |",
-    "|--------|-------|",
-    "| Score | 26/100 |",
-    "| Severity | MEDIUM |",
-    "| Recommendation | CAUTION |",
-  ].join("\n");
+describe("skillspector scan json parsing", () => {
+  const sampleJson = JSON.stringify({
+    risk_assessment: {
+      score: 26,
+      severity: "MEDIUM",
+      recommendation: "CAUTION",
+    },
+  });
 
-  test("parseRecommendation reads the recommendation from markdown output", () => {
-    expect(parseRecommendation(sampleMarkdown)).toBe("CAUTION");
-    expect(parseRecommendation("| Recommendation | DO NOT INSTALL |")).toBe("DO NOT INSTALL");
-    expect(parseRecommendation("| Recommendation | SAFE |")).toBe("SAFE");
-    expect(parseRecommendation("no recommendation here")).toBe("-");
+  test("parseScanJson reads risk fields from JSON output", () => {
+    expect(parseScanJson(sampleJson)).toEqual({
+      score: "26/100",
+      severity: "MEDIUM",
+      recommendation: "CAUTION",
+    });
+    expect(parseScanJson(JSON.stringify({
+      risk_assessment: { score: 100, severity: "CRITICAL", recommendation: "DO_NOT_INSTALL" },
+    }))).toEqual({
+      score: "100/100",
+      severity: "CRITICAL",
+      recommendation: "DO NOT INSTALL",
+    });
+    expect(parseScanJson(JSON.stringify({
+      risk_assessment: { score: 0, severity: "LOW", recommendation: "SAFE" },
+    }))).toEqual({
+      score: "0/100",
+      severity: "LOW",
+      recommendation: "SAFE",
+    });
+    expect(parseScanJson("not json")).toEqual({
+      score: "-",
+      severity: "-",
+      recommendation: "-",
+    });
   });
 
   test("riskCellValue includes score and recommendation", () => {
