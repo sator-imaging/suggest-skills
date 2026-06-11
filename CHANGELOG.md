@@ -5,6 +5,8 @@
 ### 🚀 Features
 * feat(skillspector): include recommendation in Security Risk column by [@sator-ai-dev](https://github.com/sator-ai-dev) in [#214](https://github.com/sator-imaging/suggest-skills/pull/214)
 * Split markdown stats into Advisory and Dangerous skill tiers by [@sator-ai-dev](https://github.com/sator-ai-dev) in [#216](https://github.com/sator-imaging/suggest-skills/pull/216)
+### ✨ Bug Fixes
+* Fix skillspector test ScanResult fixtures for strict typing by [@sator-ai-dev](https://github.com/sator-ai-dev) in [#219](https://github.com/sator-imaging/suggest-skills/pull/219)
 ### 📚 Other Changes
 * deps: ts-fibers[@1.0.2](https://github.com/1.0.2) by [@sator-imaging](https://github.com/sator-imaging) in [#217](https://github.com/sator-imaging/suggest-skills/pull/217)
 
