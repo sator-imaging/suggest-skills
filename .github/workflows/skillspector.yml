@@ -77,8 +77,8 @@ jobs:
 
       - name: Run SkillSpector scan
         run: |
+          # No SARIF export (thousands of errors/warns): --sarif  skillspector.sarif \
           bun eng/skillspector.ts \
-            #--sarif  skillspector.sarif \
             --markdown skillspector-report.md \
             --target '**/skills/*.md'
 
