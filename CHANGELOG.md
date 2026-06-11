@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.0.5](https://github.com/sator-imaging/suggest-skills/releases/tag/v2.0.5) (2026-06-11)
+
+### 🚀 Features
+* feat(skillspector): include recommendation in Security Risk column by [@sator-ai-dev](https://github.com/sator-ai-dev) in [#214](https://github.com/sator-imaging/suggest-skills/pull/214)
+* Split markdown stats into Advisory and Dangerous skill tiers by [@sator-ai-dev](https://github.com/sator-ai-dev) in [#216](https://github.com/sator-imaging/suggest-skills/pull/216)
+### 📚 Other Changes
+* deps: ts-fibers[@1.0.2](https://github.com/1.0.2) by [@sator-imaging](https://github.com/sator-imaging) in [#217](https://github.com/sator-imaging/suggest-skills/pull/217)
+
+
+**Full Changelog**: https://github.com/sator-imaging/suggest-skills/compare/v2.0.4...v2.0.5
+
+
 ## [2.0.4](https://github.com/sator-imaging/suggest-skills/releases/tag/v2.0.4) (2026-06-10)
 
 ### 📚 Other Changes
