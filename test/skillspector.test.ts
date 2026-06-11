@@ -97,21 +97,22 @@ describe("skillspector report formatting", () => {
   test("riskEmojiPrefix maps score ranges to emojis", () => {
     expect(riskEmojiPrefix("0")).toBe("");
     expect(riskEmojiPrefix("1")).toBe("🟡 ");
-    expect(riskEmojiPrefix("29")).toBe("🟡 ");
-    expect(riskEmojiPrefix("30")).toBe("🟠 ");
-    expect(riskEmojiPrefix("59")).toBe("🟠 ");
-    expect(riskEmojiPrefix("60")).toBe("🔥 ");
-    expect(riskEmojiPrefix("89")).toBe("🔥 ");
-    expect(riskEmojiPrefix("90")).toBe("☠️ ");
+    expect(riskEmojiPrefix("20")).toBe("🟡 ");
+    expect(riskEmojiPrefix("21")).toBe("🟠 ");
+    expect(riskEmojiPrefix("50")).toBe("🟠 ");
+    expect(riskEmojiPrefix("51")).toBe("🔥 ");
+    expect(riskEmojiPrefix("80")).toBe("🔥 ");
+    expect(riskEmojiPrefix("81")).toBe("☠️ ");
     expect(riskEmojiPrefix("100")).toBe("☠️ ");
     expect(riskEmojiPrefix("1000")).toBe("☠️ ");
     expect(riskEmojiPrefix("n/a")).toBe("");
     expect(riskEmojiPrefix("timeout")).toBe("");
   });
 
-  test("formatStats renders a bullet list with risky-skill percentage", () => {
+  test("formatStats renders advisory and dangerous skill percentages", () => {
     const results = [
       { status: "OK", score: "0/100" },
+      { status: "OK", score: "10/100" },
       { status: "OK", score: "42/100" },
       { status: "FAILED" },
       { status: "CLONE_FAILED" },
@@ -120,12 +121,13 @@ describe("skillspector report formatting", () => {
 
     expect(formatStats(results)).toBe(
       [
-        "📊 Scanned: 5",
-        "- Succeeded: 2",
+        "📊 Scanned: 6",
+        "- Succeeded: 3",
         "- Failed: 1",
         "- Clone failed: 1",
         "- Timed out: 1",
-        "- Risky Skills: 1 (20%)",
+        "- Advisory Skills: 1 (17%)",
+        "- Dangerous Skills: 1 (17%)",
       ].join("\n"),
     );
   });
