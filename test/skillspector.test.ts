@@ -109,9 +109,10 @@ describe("skillspector report formatting", () => {
     expect(riskEmojiPrefix("timeout")).toBe("");
   });
 
-  test("formatStats renders a bullet list with risky-skill percentage", () => {
+  test("formatStats renders advisory and dangerous skill percentages", () => {
     const results = [
       { status: "OK", score: "0/100" },
+      { status: "OK", score: "10/100" },
       { status: "OK", score: "42/100" },
       { status: "FAILED" },
       { status: "CLONE_FAILED" },
@@ -120,12 +121,13 @@ describe("skillspector report formatting", () => {
 
     expect(formatStats(results)).toBe(
       [
-        "📊 Scanned: 5",
-        "- Succeeded: 2",
+        "📊 Scanned: 6",
+        "- Succeeded: 3",
         "- Failed: 1",
         "- Clone failed: 1",
         "- Timed out: 1",
-        "- Risky Skills: 1 (20%)",
+        "- Advisory Skills: 1 (17%)",
+        "- Dangerous Skills: 1 (17%)",
       ].join("\n"),
     );
   });

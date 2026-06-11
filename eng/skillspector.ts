@@ -637,7 +637,8 @@ export function formatStats(results: ScanResult[]): string {
   let failed = 0;
   let cloneFailed = 0;
   let succeeded = 0;
-  let riskySkills = 0;
+  let advisorySkills = 0;
+  let dangerousSkills = 0;
 
   for (const r of results) {
     switch (r?.status) {
@@ -654,8 +655,11 @@ export function formatStats(results: ScanResult[]): string {
         succeeded++;
         {
           const n = Number(scoreNumber(r.score ?? ""));
-          if (Number.isFinite(n) && n > 0) {
-            riskySkills++;
+          // https://github.com/nvidia/skillspector#severity-levels
+          if (Number.isFinite(n) && n > 0 && n <= 20) {
+            advisorySkills++;
+          } else if (Number.isFinite(n) && n > 20) {
+            dangerousSkills++;
           }
         }
         break;
@@ -663,7 +667,8 @@ export function formatStats(results: ScanResult[]): string {
   }
 
   const scanned = results.length;
-  const riskyPct = scanned > 0 ? Math.round((riskySkills / scanned) * 100) : 0;
+  const advisoryPct = scanned > 0 ? Math.round((advisorySkills / scanned) * 100) : 0;
+  const dangerousPct = scanned > 0 ? Math.round((dangerousSkills / scanned) * 100) : 0;
 
   return [
     `📊 Scanned: ${scanned}`,
@@ -671,7 +676,8 @@ export function formatStats(results: ScanResult[]): string {
     `- Failed: ${failed}`,
     `- Clone failed: ${cloneFailed}`,
     `- Timed out: ${timedOut}`,
-    `- Risky Skills: ${riskySkills} (${riskyPct}%)`,
+    `- Advisory Skills: ${advisorySkills} (${advisoryPct}%)`,
+    `- Dangerous Skills: ${dangerousSkills} (${dangerousPct}%)`,
   ].join("\n");
 }
 
