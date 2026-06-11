@@ -30,7 +30,7 @@ import { availableParallelism } from "node:os";
 const { values: args } = parseArgs({
   args: Bun.argv.slice(2),
   options: {
-    sarif: { type: "string", default: "skillspector.sarif" },
+    sarif: { type: "string" },
     markdown: { type: "string", default: "skillspector-report.md" },
     "no-llm": { type: "boolean", default: false },
     timeout: { type: "string" },
@@ -40,7 +40,7 @@ const { values: args } = parseArgs({
   strict: true,
 });
 
-const SARIF_OUTPUT = resolve(args.sarif!);
+const SARIF_OUTPUT = args.sarif ? resolve(args.sarif) : null;
 const MARKDOWN_OUTPUT = resolve(args.markdown!);
 const NO_LLM = args["no-llm"]!;
 
@@ -409,8 +409,8 @@ async function scanSkills(
           }
         }
 
-        // SARIF scan
-        if (status === "OK") {
+        // SARIF scan (skipped when --sarif is not specified)
+        if (SARIF_OUTPUT && status === "OK") {
           const cmd = ["skillspector", "scan", scanDir, "--format", "sarif"];
           if (NO_LLM) cmd.push("--no-llm");
 
@@ -719,37 +719,38 @@ function writeReport(results: ScanResult[]) {
 
   writeFileSync(MARKDOWN_OUTPUT, lines.join("\n") + "\n");
 
-  // Merge SARIF
-  const allSarifResults: any[] = [];
-  const allRules: any[] = [];
-  const ruleIdsSeen = new Set<string>();
+  if (SARIF_OUTPUT) {
+    const allSarifResults: any[] = [];
+    const allRules: any[] = [];
+    const ruleIdsSeen = new Set<string>();
 
-  for (const r of results) {
-    if (!r?.sarif) continue;
-    const sarif = r.sarif as any;
-    for (const run of sarif.runs ?? []) {
-      allSarifResults.push(...(run.results ?? []));
-      for (const rule of run.tool?.driver?.rules ?? []) {
-        if (!ruleIdsSeen.has(rule.id)) {
-          ruleIdsSeen.add(rule.id);
-          allRules.push(rule);
+    for (const r of results) {
+      if (!r?.sarif) continue;
+      const sarif = r.sarif as any;
+      for (const run of sarif.runs ?? []) {
+        allSarifResults.push(...(run.results ?? []));
+        for (const rule of run.tool?.driver?.rules ?? []) {
+          if (!ruleIdsSeen.has(rule.id)) {
+            ruleIdsSeen.add(rule.id);
+            allRules.push(rule);
+          }
         }
       }
     }
-  }
 
-  writeFileSync(SARIF_OUTPUT, JSON.stringify({
-    $schema: "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/sarif-2.1/schema/sarif-schema-2.1.0.json",
-    version: "2.1.0",
-    runs: [{
-      tool: { driver: { name: "SkillSpector", informationUri: "https://github.com/NVIDIA/skillspector", rules: allRules } },
-      results: allSarifResults,
-    }],
-  }, null, 2) + "\n");
+    writeFileSync(SARIF_OUTPUT, JSON.stringify({
+      $schema: "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/sarif-2.1/schema/sarif-schema-2.1.0.json",
+      version: "2.1.0",
+      runs: [{
+        tool: { driver: { name: "SkillSpector", informationUri: "https://github.com/NVIDIA/skillspector", rules: allRules } },
+        results: allSarifResults,
+      }],
+    }, null, 2) + "\n");
+  }
 
   console.log("");
   console.log(`[INFO] Done. Succeeded: ${succeeded.length}, Failed: ${failed.length}, Clone failed: ${cloneFailed.length}, Timed out: ${timedOut.length}`);
-  console.log(`[INFO] SARIF:    ${SARIF_OUTPUT}`);
+  if (SARIF_OUTPUT) console.log(`[INFO] SARIF:    ${SARIF_OUTPUT}`);
   console.log(`[INFO] Markdown: ${MARKDOWN_OUTPUT}`);
 }
 
