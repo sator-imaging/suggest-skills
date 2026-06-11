@@ -334,7 +334,7 @@ jobs:
                 continue
               fi
 
-              sed -E '/\|[[:space:]]*[1-9][0-9]*[[:space:]]*\|$/d' \
+              sed -E '/[[:space:]]*\(SAFE\)[[:space:]]*\|$/d' \
                 "$file" > "$out"
 
               git add -f "$out" || true
