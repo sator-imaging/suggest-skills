@@ -15,9 +15,18 @@ import { dirname, join } from "path";
 
 type ScanResultArg = NonNullable<Parameters<typeof riskCellValue>[0]>;
 
-function makeScanResult(overrides: Partial<ScanResultArg> & Pick<ScanResultArg, "status">): ScanResultArg {
+function makeScanResult(
+  overrides: Omit<Partial<ScanResultArg>, "skill"> & {
+    skill?: Partial<ScanResultArg["skill"]>;
+  } & Pick<ScanResultArg, "status">,
+): ScanResultArg {
   return {
     index: 0,
+    score: "-",
+    severity: "-",
+    recommendation: "-",
+    sarif: null,
+    ...overrides,
     skill: {
       name: "test-skill",
       url: "https://github.com/o/r/tree/main/skills/test",
@@ -25,12 +34,8 @@ function makeScanResult(overrides: Partial<ScanResultArg> & Pick<ScanResultArg, 
       ref: "main",
       skillPath: "skills/test",
       manifest: "test.skills.md",
+      ...overrides.skill,
     },
-    score: "-",
-    severity: "-",
-    recommendation: "-",
-    sarif: null,
-    ...overrides,
   };
 }
 
