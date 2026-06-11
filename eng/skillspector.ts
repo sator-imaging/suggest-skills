@@ -656,10 +656,9 @@ export function formatStats(results: ScanResult[]): string {
         {
           const n = Number(scoreNumber(r.score ?? ""));
           // https://github.com/nvidia/skillspector#severity-levels
-          if (Number.isFinite(n) && n > 0 && n <= 20) {
-            advisorySkills++;
-          } else if (Number.isFinite(n) && n > 20) {
-            dangerousSkills++;
+          if (Number.isFinite(n) && n > 0) {
+            if (n > 20) dangerousSkills++;
+            else advisorySkills++;
           }
         }
         break;
