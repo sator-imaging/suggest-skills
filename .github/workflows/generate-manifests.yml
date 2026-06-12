@@ -334,8 +334,18 @@ jobs:
                 continue
               fi
 
-              sed -E '/[[:space:]]*\(SAFE\)[[:space:]]*\|$/d' \
-                "$file" > "$out"
+              awk '
+                /\|$/ {
+                  if ($0 ~ /(\| Security Risk \||\|---\|| \(SAFE\) \|)$/) {
+                    print
+                  }
+                  next
+                }
+
+                {
+                  print
+                }
+              ' "$file" > "$out"
 
               git add -f "$out" || true
               git commit -m "[bot] $out" || true
