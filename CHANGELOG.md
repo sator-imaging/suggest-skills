@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.0.6](https://github.com/sator-imaging/suggest-skills/releases/tag/v2.0.6) (2026-06-13)
+
+
+
+
 ## [2.0.5](https://github.com/sator-imaging/suggest-skills/releases/tag/v2.0.5) (2026-06-11)
 
 ### 🚀 Features
