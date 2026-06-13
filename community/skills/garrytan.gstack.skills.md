@@ -15,6 +15,7 @@
 | [design-review](https://github.com/garrytan/gstack/tree/main/design-review) | Designer's eye QA: finds visual inconsistency, spacing issues, hierarchy problems, AI slop patterns, and slow interactions — then fixes them. (gstack) | `SKILL.md.tmpl` | 100 (DO NOT INSTALL) |
 | [design-shotgun](https://github.com/garrytan/gstack/tree/main/design-shotgun) | Design shotgun: generate multiple AI design variants, open a comparison board, collect structured feedback, and iterate. (gstack) | `SKILL.md.tmpl` | 100 (DO NOT INSTALL) |
 | [devex-review](https://github.com/garrytan/gstack/tree/main/devex-review) | Live developer experience audit. (gstack) | `SKILL.md.tmpl` | 100 (DO NOT INSTALL) |
+| [diagram](https://github.com/garrytan/gstack/tree/main/diagram) | Turn an English description (or mermaid source) into a diagram triplet: the source, an editable .excalidraw file you can open (gstack) | `SKILL.md.tmpl` | 100 (DO NOT INSTALL) |
 | [document-generate](https://github.com/garrytan/gstack/tree/main/document-generate) | Generate missing documentation from scratch for a feature, module, or entire project. (gstack) | `SKILL.md.tmpl` | 100 (DO NOT INSTALL) |
 | [document-release](https://github.com/garrytan/gstack/tree/main/document-release) | Post-ship documentation update. (gstack) | `SKILL.md.tmpl`, `sections` (3 files) | 100 (DO NOT INSTALL) |
 | [freeze](https://github.com/garrytan/gstack/tree/main/freeze) | Restrict file edits to a specific directory for the session. (gstack) | `bin/check-freeze.sh`, `SKILL.md.tmpl` | 39 (CAUTION) |
@@ -30,7 +31,7 @@
 | [land-and-deploy](https://github.com/garrytan/gstack/tree/main/land-and-deploy) | Land and deploy workflow. (gstack) | `SKILL.md.tmpl` | 100 (DO NOT INSTALL) |
 | [landing-report](https://github.com/garrytan/gstack/tree/main/landing-report) | Read-only queue dashboard for workspace-aware ship. (gstack) | `SKILL.md.tmpl` | 100 (DO NOT INSTALL) |
 | [learn](https://github.com/garrytan/gstack/tree/main/learn) | Manage project learnings. | `SKILL.md.tmpl` | 100 (DO NOT INSTALL) |
-| [make-pdf](https://github.com/garrytan/gstack/tree/main/make-pdf) | Turn any markdown file into a publication-quality PDF. (gstack) | `SKILL.md.tmpl`, `src` (10 files), `test` (3 files), `test/e2e` (2 files), `test/fixtures` (3 files) | 100 (DO NOT INSTALL) |
+| [make-pdf](https://github.com/garrytan/gstack/tree/main/make-pdf) | Turn any markdown file into a publication-quality PDF. (gstack) | `SKILL.md.tmpl`, `src` (13 files), `test` (6 files), `test/e2e` (5 files), `test/fixtures` (5 files), `test/fixtures/diagram-assets` (4 files) | 100 (DO NOT INSTALL) |
 | [office-hours](https://github.com/garrytan/gstack/tree/main/office-hours) | YC Office Hours — two modes. (gstack) | `SKILL.md.tmpl`, `sections` (3 files) | 100 (DO NOT INSTALL) |
 | [open-gstack-browser](https://github.com/garrytan/gstack/tree/main/open-gstack-browser) | Launch GStack Browser — AI-controlled Chromium with the sidebar extension baked in. | `SKILL.md.tmpl` | 100 (DO NOT INSTALL) |
 | [pair-agent](https://github.com/garrytan/gstack/tree/main/pair-agent) | Pair a remote AI agent with your browser. (gstack) | `SKILL.md.tmpl` | 100 (DO NOT INSTALL) |
