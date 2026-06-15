@@ -19,7 +19,7 @@
 | [document-generate](https://github.com/garrytan/gstack/tree/main/document-generate) | Generate missing documentation from scratch for a feature, module, or entire project. (gstack) | `SKILL.md.tmpl` | 100 (DO NOT INSTALL) |
 | [document-release](https://github.com/garrytan/gstack/tree/main/document-release) | Post-ship documentation update. (gstack) | `SKILL.md.tmpl`, `sections` (3 files) | 100 (DO NOT INSTALL) |
 | [freeze](https://github.com/garrytan/gstack/tree/main/freeze) | Restrict file edits to a specific directory for the session. (gstack) | `bin/check-freeze.sh`, `SKILL.md.tmpl` | 39 (CAUTION) |
-| [gstack-upgrade](https://github.com/garrytan/gstack/tree/main/gstack-upgrade) | Upgrade gstack to the latest version. | `SKILL.md.tmpl`, `migrations` (9 files) | 100 (DO NOT INSTALL) |
+| [gstack-upgrade](https://github.com/garrytan/gstack/tree/main/gstack-upgrade) | Upgrade gstack to the latest version. | `SKILL.md.tmpl`, `migrations` (10 files) | 100 (DO NOT INSTALL) |
 | [guard](https://github.com/garrytan/gstack/tree/main/guard) | Full safety mode: destructive command warnings + directory-scoped edits. (gstack) | `SKILL.md.tmpl` | 20 (SAFE) |
 | [health](https://github.com/garrytan/gstack/tree/main/health) | Code quality dashboard. (gstack) | `SKILL.md.tmpl` | 100 (DO NOT INSTALL) |
 | [investigate](https://github.com/garrytan/gstack/tree/main/investigate) | Systematic debugging with root cause investigation. (gstack) | `SKILL.md.tmpl` | 100 (DO NOT INSTALL) |

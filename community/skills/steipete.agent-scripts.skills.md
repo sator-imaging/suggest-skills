@@ -1,6 +1,6 @@
 | Name | Description | Bundled Assets | Security Risk |
 | -----|-------------|----------------|---|
-| [agent-transcript](https://github.com/steipete/agent-scripts/tree/main/skills/agent-transcript) | Add a redacted agent transcript section to GitHub PR or issue bodies during OpenClaw agent-created PR/issue workflows. | `scripts/agent-transcript` | 0 (SAFE) |
+| [agent-transcript](https://github.com/steipete/agent-scripts/tree/main/skills/agent-transcript) | GitHub PR/issue agent transcripts: redact, preview, and insert safely. | `scripts/agent-transcript` | 0 (SAFE) |
 | [beeper](https://github.com/steipete/agent-scripts/tree/main/skills/beeper) | Beeper cache: contact hints, room lookup, WhatsApp/iMessage traces, FTS. | None | 0 (SAFE) |
 | [browser-use](https://github.com/steipete/agent-scripts/tree/main/skills/browser-use) | Existing Chrome automation: Chrome plugin first, mcporter fallback. | `mcporter-config.md` | 0 (SAFE) |
 | [clawsweeper-status](https://github.com/steipete/agent-scripts/tree/main/skills/clawsweeper-status) | ClawSweeper status: URLs, workflow health, active workers, ops snapshot. | `agents/openai.yaml`, `scripts/clawsweeper-status.sh` | 0 (SAFE) |
@@ -14,11 +14,11 @@
 | [github-author-context](https://github.com/steipete/agent-scripts/tree/main/skills/github-author-context) | GitHub contributor context: identity, activity, trust, company/team signal. | `agents/openai.yaml` | 0 (SAFE) |
 | [github-cache-hygiene](https://github.com/steipete/agent-scripts/tree/main/skills/github-cache-hygiene) | GitHub quota/cache hygiene: gh, ghx, xcache, gitcrawl, mirrors, limits. | `agents/openai.yaml` | 0 (SAFE) |
 | [github-deep-review](https://github.com/steipete/agent-scripts/tree/main/skills/github-deep-review) | GitHub deep review: bugs, PRs, best fix, stale-or-real, read code first. | `agents/openai.yaml` | 0 (SAFE) |
-| [github-project-triage](https://github.com/steipete/agent-scripts/tree/main/skills/github-project-triage) | Use whenever the user types triage or asks to triage GitHub issues, PRs, queues, CI, blockers, risk, proof, or next actions. | `agents/openai.yaml`, `scripts/github-activity.sh` | 0 (SAFE) |
+| [github-project-triage](https://github.com/steipete/agent-scripts/tree/main/skills/github-project-triage) | GitHub issue/PR triage: queues, CI, blockers, risk, proof, next actions. | `agents/openai.yaml`, `scripts/github-activity.sh` | 0 (SAFE) |
 | [hopper-debugger](https://github.com/steipete/agent-scripts/tree/main/skills/hopper-debugger) | Hopper debugging: macOS/iOS binaries, ObjC/Swift symbols, dyld, LLDB. | `agents/openai.yaml` | 0 (SAFE) |
 | [instruments-profiling](https://github.com/steipete/agent-scripts/tree/main/skills/instruments-profiling) | Instruments/xctrace profiling: macOS/iOS traces, binaries, args, exports. | None | 0 (SAFE) |
 | [mac-maintenance](https://github.com/steipete/agent-scripts/tree/main/skills/mac-maintenance) | Mac upkeep: brew update/upgrade, pull clean repos, empty Trash. | None | 0 (SAFE) |
-| [maintainer-orchestrator](https://github.com/steipete/agent-scripts/tree/main/skills/maintainer-orchestrator) | Orchestrate delegated maintainer work across Peter-majority repositories: prepare decision-ready PRs, monitor workers, clear queues, and release. | `agents/openai.yaml` | 0 (SAFE) |
+| [maintainer-orchestrator](https://github.com/steipete/agent-scripts/tree/main/skills/maintainer-orchestrator) | Delegated maintainer ops: decision-ready PRs, worker monitoring, queue cleanup, releases. | `agents/openai.yaml` | 0 (SAFE) |
 | [markdown-converter](https://github.com/steipete/agent-scripts/tree/main/skills/markdown-converter) | Markdown conversion: PDF, Office, HTML, data, OCR, audio, ZIP, YouTube. | None | 0 (SAFE) |
 | [nano-banana-pro](https://github.com/steipete/agent-scripts/tree/main/skills/nano-banana-pro) | Nano Banana/Gemini image gen/edit: text/image input, 512-4K workflows. | `scripts/generate_image.py` | 100 (DO NOT INSTALL) |
 | [native-app-performance](https://github.com/steipete/agent-scripts/tree/main/skills/native-app-performance) | Native app performance: xctrace, Time Profiler, traces, hotspots. | `scripts/extract_time_samples.py`, `scripts/record_time_profiler.sh`, `scripts/top_hotspots.py` | 52 (DO NOT INSTALL) |
@@ -34,7 +34,7 @@
 | [release-tweets](https://github.com/steipete/agent-scripts/tree/main/skills/release-tweets) | Release tweets: draft/copy/post from changelog, tags, npm/appcast, artifacts. | `agents/openai.yaml` | 0 (SAFE) |
 | [reminders](https://github.com/steipete/agent-scripts/tree/main/skills/reminders) | Apple Reminders via rem CLI: add, list, search, update, complete, delete. | None | 0 (SAFE) |
 | [remote-mac](https://github.com/steipete/agent-scripts/tree/main/skills/remote-mac) | Remote Macs: MacBook, Mac Studio, clawmac, Tailscale, SSH, OpenClaw. | None | 75 (DO NOT INSTALL) |
-| [skill-cleaner](https://github.com/steipete/agent-scripts/tree/main/skills/skill-cleaner) | Audit Codex/OpenClaw skills: loaded roots, duplicate skills, unused skills, prompt-budget costs, compact descriptions. | `agents/openai.yaml`, `scripts/skill-cleaner.ts` | 13 (SAFE) |
+| [skill-cleaner](https://github.com/steipete/agent-scripts/tree/main/skills/skill-cleaner) | Codex/OpenClaw skill audit: live budget, usage, duplicates, compact descriptions. | `agents/openai.yaml`, `scripts/skill-cleaner.test.ts`, `scripts/skill-cleaner.ts` | 13 (SAFE) |
 | [sonos](https://github.com/steipete/agent-scripts/tree/main/skills/sonos) | Sonos control: search, queue, playlists, rooms/groups, volume, YouTube. | `agents/openai.yaml` | 0 (SAFE) |
 | [speaking](https://github.com/steipete/agent-scripts/tree/main/skills/speaking) | Speaking ops: invites, keynotes, panels, Gmail/calendar, conferences. | `agents/openai.yaml` | 0 (SAFE) |
 | [ssh-doctor](https://github.com/steipete/agent-scripts/tree/main/skills/ssh-doctor) | SSH triage: Remote Login, launchd sshd, pre-auth closes, stale sessions. | None | 75 (DO NOT INSTALL) |
