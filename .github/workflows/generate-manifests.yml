@@ -89,6 +89,7 @@ jobs:
           - steipete/agent-scripts/tree/main/skills
           - google/skills
           - Leonxlnx/taste-skill/tree/main/skills
+          - DietrichGebert/ponytail/tree/main/skills
     env:
       # DO NOT forget add '/' at the end
       OFFICIAL_URL_PREFIXES: |
