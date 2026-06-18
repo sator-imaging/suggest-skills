@@ -370,7 +370,7 @@ async function summarizeDirectory(
     sourcePath: directoryPath,
     summary,
   });
-  const design = await buildEntry({
+  let design = await buildEntry({
     descriptionFallback: "None",
     fileLabel: "Design",
     fileName: "DESIGN.md",
@@ -380,11 +380,17 @@ async function summarizeDirectory(
     summary,
   });
 
+  const designWasSkipped = design !== undefined && design.description === "None" && design.assets.length === 0;
+  if (designWasSkipped) {
+    logInfo(`Skipped design: ${directoryPath}`);
+    design = undefined;
+  }
+
   if (manifest) {
     logInfo(`Skill summarized: ${fallbackName}`);
   } else if (design) {
     logInfo(`Design summarized: ${fallbackName}`);
-  } else {
+  } else if (!designWasSkipped) {
     logInfo(`Skipped skill: ${directoryPath}`);
   }
 
