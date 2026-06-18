@@ -160,9 +160,10 @@ describe("generateOutputs", () => {
       expect(outputs.manifest.markdown).toContain(
         "| [nameless](https://github.com/octo/demo/tree/main/skills/nameless) | Missing skill name | None |",
       );
-      expect(outputs.design.markdown).toContain(
+      expect(outputs.design.markdown).not.toContain(
         "| [nameless](https://github.com/octo/demo/tree/main/skills/nameless) | None | None |",
       );
+      expect(writes.join("")).toContain("Skipped design: skills/nameless");
       expect(writes.join("")).toContain(
         '[WARN] Filled missing "name" in agent "skills/unnamed-agent.md" with "unnamed-agent".',
       );
@@ -189,7 +190,6 @@ describe("generateOutputs", () => {
 | -----|-------------|----------------|
 | [alpha-design](https://github.com/octo/demo/tree/main/skills/alpha) | Alpha design | [examples.md](https://github.com/octo/demo/blob/main/skills/alpha/examples.md), [frameworks.md](https://github.com/octo/demo/blob/main/skills/alpha/frameworks.md), [refinement-criteria.md](https://github.com/octo/demo/blob/main/skills/alpha/refinement-criteria.md), [.config/settings.json](https://github.com/octo/demo/blob/main/skills/alpha/.config/settings.json), [assets/example.txt](https://github.com/octo/demo/blob/main/skills/alpha/assets/example.txt), [assets/templates/config.json](https://github.com/octo/demo/blob/main/skills/alpha/assets/templates/config.json), [refs](https://github.com/octo/demo/tree/main/skills/alpha/refs) (2 files), [refs/sub/details.md](https://github.com/octo/demo/blob/main/skills/alpha/refs/sub/details.md), [scripts/deploy.sh](https://github.com/octo/demo/blob/main/skills/alpha/scripts/deploy.sh) |
 | [beta-design](https://github.com/octo/demo/tree/main/skills/beta) | None | [notes.txt](https://github.com/octo/demo/blob/main/skills/beta/notes.txt) |
-| [nameless](https://github.com/octo/demo/tree/main/skills/nameless) | None | None |
 `);
     } finally {
       globalThis.fetch = originalFetch;
@@ -262,7 +262,7 @@ describe("generateOutputs", () => {
         recursive: true,
       });
 
-      expect(outputs.design.markdown).toContain(
+      expect(outputs.design.markdown).not.toContain(
         "| [examples](https://github.com/octo/demo/tree/main/skills/stitch-design/examples) | None | None |",
       );
     } finally {
