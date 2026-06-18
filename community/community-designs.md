@@ -339,6 +339,12 @@
 | [zojirushi](https://github.com/kzhrknt/awesome-design-md-jp/tree/main/design-md/zojirushi) | None | [preview-screenshot.png](https://github.com/kzhrknt/awesome-design-md-jp/blob/main/design-md/zojirushi/preview-screenshot.png), [preview.html](https://github.com/kzhrknt/awesome-design-md-jp/blob/main/design-md/zojirushi/preview.html) |
 | [zozo](https://github.com/kzhrknt/awesome-design-md-jp/tree/main/design-md/zozo) | None | [preview-screenshot.png](https://github.com/kzhrknt/awesome-design-md-jp/blob/main/design-md/zozo/preview-screenshot.png), [preview.html](https://github.com/kzhrknt/awesome-design-md-jp/blob/main/design-md/zozo/preview.html) |
 
+# Leonxlnx.taste-skill.skills.designs
+
+| Name | Description | Bundled Assets |
+| -----|-------------|----------------|
+| [stitch-skill](https://github.com/Leonxlnx/taste-skill/tree/main/skills/stitch-skill) | None | None |
+
 # VoltAgent.awesome-design-md.design-md.designs
 
 | Name | Description | Bundled Assets |
