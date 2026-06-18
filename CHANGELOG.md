@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.0.6](https://github.com/sator-imaging/suggest-skills/releases/tag/v2.0.6) (2026-06-18)
+
+### ✨ Bug Fixes
+* Skip and log empty DESIGN manifest entries by [@google-labs-jules](https://github.com/google-labs-jules)[bot] in [#238](https://github.com/sator-imaging/suggest-skills/pull/238)
+
+
+**Full Changelog**: https://github.com/sator-imaging/suggest-skills/compare/v2.0.5...v2.0.6
+
+
 ## [2.0.5](https://github.com/sator-imaging/suggest-skills/releases/tag/v2.0.5) (2026-06-11)
 
 ### 🚀 Features
