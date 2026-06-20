@@ -3,7 +3,7 @@
 | [agent-transcript](https://github.com/steipete/agent-scripts/tree/main/skills/agent-transcript) | GitHub PR/issue agent transcripts: redact, preview, and insert safely. | `scripts/agent-transcript` | 0 (SAFE) |
 | [beeper](https://github.com/steipete/agent-scripts/tree/main/skills/beeper) | Beeper cache: contact hints, room lookup, WhatsApp/iMessage traces, FTS. | None | 0 (SAFE) |
 | [browser-use](https://github.com/steipete/agent-scripts/tree/main/skills/browser-use) | Existing Chrome automation: Chrome plugin first, mcporter fallback. | `mcporter-config.md` | 0 (SAFE) |
-| [clawsweeper-status](https://github.com/steipete/agent-scripts/tree/main/skills/clawsweeper-status) | ClawSweeper status: URLs, workflow health, active workers, ops snapshot. | `agents/openai.yaml`, `scripts/clawsweeper-status.sh` | 0 (SAFE) |
+| [clawsweeper-status](https://github.com/steipete/agent-scripts/tree/main/skills/clawsweeper-status) | ClawSweeper status: URLs, workflow health, active workers, ops snapshot. | `agents/openai.yaml`, `scripts/clawsweeper-status.sh`, `scripts/clawsweeper-status.test.sh` | 26 (CAUTION) |
 | [clickclack](https://github.com/steipete/agent-scripts/tree/main/skills/clickclack) | ClickClack ops: chat app, Hetzner deploy, DNS/docs/app, Docker rollout. | `agents/openai.yaml` | 50 (CAUTION) |
 | [cloudflare-registrar](https://github.com/steipete/agent-scripts/tree/main/skills/cloudflare-registrar) | Cloudflare Registrar: domain availability, prices, registration via mcporter. | None | 0 (SAFE) |
 | [codex-debugging](https://github.com/steipete/agent-scripts/tree/main/skills/codex-debugging) | Codex debugging: codex-rs core/tui/exec/cli/app-server/config. | None | 0 (SAFE) |

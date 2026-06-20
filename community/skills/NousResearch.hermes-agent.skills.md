@@ -68,7 +68,7 @@
 | [plan](https://github.com/NousResearch/hermes-agent/tree/main/skills/software-development/plan) | Plan mode: write an actionable markdown plan to .hermes/plans/, no execution. Bite-sized tasks, exact paths, complete code. | None | 0 (SAFE) |
 | [python-debugpy](https://github.com/NousResearch/hermes-agent/tree/main/skills/software-development/python-debugpy) | Debug Python: pdb REPL + debugpy remote (DAP). | None | 25 (CAUTION) |
 | [requesting-code-review](https://github.com/NousResearch/hermes-agent/tree/main/skills/software-development/requesting-code-review) | Pre-commit review: security scan, quality gates, auto-fix. | None | 0 (SAFE) |
-| [simplify-code](https://github.com/NousResearch/hermes-agent/tree/main/skills/software-development/simplify-code) | Parallel 3-agent cleanup of recent code changes. | None | 0 (SAFE) |
+| [simplify-code](https://github.com/NousResearch/hermes-agent/tree/main/skills/software-development/simplify-code) | Parallel 3-agent cleanup of recent code changes. | None | 10 (SAFE) |
 | [spike](https://github.com/NousResearch/hermes-agent/tree/main/skills/software-development/spike) | Throwaway experiments to validate an idea before build. | None | 0 (SAFE) |
 | [systematic-debugging](https://github.com/NousResearch/hermes-agent/tree/main/skills/software-development/systematic-debugging) | 4-phase root cause debugging: understand bugs before fixing. | None | 0 (SAFE) |
 | [test-driven-development](https://github.com/NousResearch/hermes-agent/tree/main/skills/software-development/test-driven-development) | TDD: enforce RED-GREEN-REFACTOR, tests before code. | None | 0 (SAFE) |
