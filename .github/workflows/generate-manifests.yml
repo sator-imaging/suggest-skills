@@ -160,6 +160,7 @@ jobs:
           if [[ "$SOURCE_URL" != https://* ]]; then
             SOURCE_URL="https://github.com/$SOURCE_URL"
           fi
+          echo "SOURCE_URL=$SOURCE_URL" >> "$GITHUB_ENV"
 
           generate_args=(generate "$SOURCE_URL")
           while IFS= read -r prefix; do
@@ -220,7 +221,7 @@ jobs:
           git add -f "$OFFICIAL_DIR"/skills
           git add -f "$OFFICIAL_DIR"/designs
 
-          git commit -m "[bot] ${{ matrix.url }}" || {
+          git commit -m "[bot] $SOURCE_URL" || {
             echo "No changes to commit."
             exit 0
           }
