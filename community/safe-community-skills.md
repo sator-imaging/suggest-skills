@@ -37,7 +37,7 @@
 | [llm-wiki](https://github.com/NousResearch/hermes-agent/tree/main/skills/research/llm-wiki) | Karpathy's LLM Wiki: build/query interlinked markdown KB. | None | 20 (SAFE) |
 | [polymarket](https://github.com/NousResearch/hermes-agent/tree/main/skills/research/polymarket) | Query Polymarket: markets, prices, orderbooks, history. | `references/api-endpoints.md`, `scripts/polymarket.py` | 13 (SAFE) |
 | [openhue](https://github.com/NousResearch/hermes-agent/tree/main/skills/smart-home/openhue) | Control Philips Hue lights, scenes, rooms via OpenHue CLI. | None | 0 (SAFE) |
-| [hermes-agent-skill-authoring](https://github.com/NousResearch/hermes-agent/tree/main/skills/software-development/hermes-agent-skill-authoring) | Author in-repo SKILL.md: frontmatter, validator, structure. | None | 0 (SAFE) |
+| [hermes-agent-skill-authoring](https://github.com/NousResearch/hermes-agent/tree/main/skills/software-development/hermes-agent-skill-authoring) | Author in-repo SKILL.md: frontmatter, validator, structure, and writing-quality principles. | None | 0 (SAFE) |
 | [node-inspect-debugger](https://github.com/NousResearch/hermes-agent/tree/main/skills/software-development/node-inspect-debugger) | Debug Node.js via --inspect + Chrome DevTools Protocol CLI. | None | 0 (SAFE) |
 | [plan](https://github.com/NousResearch/hermes-agent/tree/main/skills/software-development/plan) | Plan mode: write an actionable markdown plan to .hermes/plans/, no execution. Bite-sized tasks, exact paths, complete code. | None | 0 (SAFE) |
 | [requesting-code-review](https://github.com/NousResearch/hermes-agent/tree/main/skills/software-development/requesting-code-review) | Pre-commit review: security scan, quality gates, auto-fix. | None | 0 (SAFE) |
