@@ -339,7 +339,7 @@ jobs:
 
               awk '
                 /\|$/ {
-                  if ($0 ~ /(\| Security Risk \||---\|| \| SAFE\) \|)$/) {
+                  if ($0 ~ /(\| Security Risk \||---\|| \(SAFE\) \|| \| SAFE\) \|)$/) {
                     print
                   }
                   next

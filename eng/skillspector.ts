@@ -466,13 +466,15 @@ export function riskCellValue(result: ScanResult | undefined): string {
   if (!num) return "n/a";
   const severity = result.severity?.trim() ?? "";
   const rec = result.recommendation?.trim() ?? "";
-  if (severity && severity !== "-" && rec && rec !== "-") {
+  const hasSeverity = severity !== "" && severity !== "-";
+  const hasRecommendation = rec !== "" && rec !== "-";
+  if (hasSeverity && hasRecommendation) {
     return `${num} (${severity} | ${rec})`;
   }
-  if (severity && severity !== "-") {
+  if (hasSeverity) {
     return `${num} (${severity})`;
   }
-  if (rec && rec !== "-") {
+  if (hasRecommendation) {
     return `${num} (${rec})`;
   }
   return num;
