@@ -469,10 +469,10 @@ export function riskCellValue(result: ScanResult | undefined): string {
   const hasSeverity = severity !== "" && severity !== "-";
   const hasRecommendation = rec !== "" && rec !== "-";
   if (hasSeverity && hasRecommendation) {
-    return `${num} ${severity} (${rec})`;
+    return `${num} *${severity}* (${rec})`;
   }
   if (hasSeverity) {
-    return `${num} (${severity})`;
+    return `${num} *${severity}*`;
   }
   if (hasRecommendation) {
     return `${num} (${rec})`;
