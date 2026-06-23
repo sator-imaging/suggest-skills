@@ -108,7 +108,7 @@ describe("skillspector scan json parsing", () => {
       recommendation: "CAUTION",
     });
 
-    expect(riskCellValue(ok)).toBe("26 *CAUTION*");
+    expect(riskCellValue(ok)).toBe("26 (CAUTION)");
     expect(riskCellValue({ ...ok, score: "100/100", severity: "CRITICAL", recommendation: "DO NOT INSTALL" })).toBe(
       "100 *CRITICAL* (DO NOT INSTALL)",
     );
