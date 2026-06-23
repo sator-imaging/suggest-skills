@@ -52,7 +52,7 @@ Prebuilt skill manifests can be found in this repository:
 - [Community Skills, Agents and Designs](./community/)
 
 > [!TIP]
-> Security scanning is provided by [NVIDIA SkillSpector](https://github.com/NVIDIA/skillspector) via the [CI workflow](https://github.com/sator-imaging/suggest-skills/actions/workflows/generate-manifests.yml). Each skill is scanned individually and the resulting risk score is written to the `Security Risk` column.
+> Security scanning is provided by [NVIDIA SkillSpector](https://github.com/NVIDIA/skillspector) via the [CI workflow](https://github.com/sator-imaging/suggest-skills/actions/workflows/generate-manifests.yml). Each skill is scanned individually and the resulting risk value is written to the `Security Risk` column.
 
 
 ## Generate a Manifest
