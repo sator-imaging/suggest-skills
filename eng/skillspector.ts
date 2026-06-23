@@ -464,7 +464,14 @@ export function riskCellValue(result: ScanResult | undefined): string {
   if (result.status === "CLONE_FAILED" || result.status === "FAILED") return "n/a";
   const num = scoreNumber(result.score);
   if (!num) return "n/a";
+  const severity = result.severity?.trim() ?? "";
   const rec = result.recommendation?.trim() ?? "";
+  if (severity && severity !== "-" && rec && rec !== "-") {
+    return `${num} (${severity} | ${rec})`;
+  }
+  if (severity && severity !== "-") {
+    return `${num} (${severity})`;
+  }
   if (rec && rec !== "-") {
     return `${num} (${rec})`;
   }
