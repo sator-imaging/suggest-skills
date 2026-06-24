@@ -343,7 +343,8 @@ jobs:
                 local filename
                 filename=$(basename "$file")
 
-                [[ "$filename" == "$prefix"* ]] && continue
+                # Ignore 'safe/zerorisk-*-skills.md'
+                [[ "$filename" == *-*-* ]] && continue
 
                 local out="$BASE_DIR/${prefix}${filename}"
 
