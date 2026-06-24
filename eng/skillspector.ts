@@ -476,12 +476,12 @@ export function riskCellValue(result: ScanResult | undefined): string {
   }
 
   const scoreLabel = hasSeverity
-    ? `**${scoreLabel} ${severity}**`
+    ? `**${num} ${severity}**`
     : `**${num}**`;
 
   return hasRecommendation
     ? `${scoreLabel} (${rec})`
-    : $scoreLabel;
+    : scoreLabel;
 }
 
 const SECURITY_RISK_HEADER = "Security Risk";
