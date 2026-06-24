@@ -38,6 +38,7 @@
 | [maps](https://github.com/NousResearch/hermes-agent/tree/main/skills/productivity/maps) | Geocode, POIs, routes, timezones via OpenStreetMap/OSRM. | `scripts/maps_client.py` | 9 *LOW* (SAFE) |
 | [nano-pdf](https://github.com/NousResearch/hermes-agent/tree/main/skills/productivity/nano-pdf) | Edit PDF text/typos/titles via nano-pdf CLI (NL prompts). | None | 0 *LOW* (SAFE) |
 | [ocr-and-documents](https://github.com/NousResearch/hermes-agent/tree/main/skills/productivity/ocr-and-documents) | Extract text from PDFs/scans (pymupdf, marker-pdf). | `DESCRIPTION.md`, `scripts/extract_marker.py`, `scripts/extract_pymupdf.py` | 0 *LOW* (SAFE) |
+| [petdex](https://github.com/NousResearch/hermes-agent/tree/main/skills/productivity/petdex) | Install and select animated petdex mascots for Hermes. | None | 0 *LOW* (SAFE) |
 | [teams-meeting-pipeline](https://github.com/NousResearch/hermes-agent/tree/main/skills/productivity/teams-meeting-pipeline) | Operate the Teams meeting summary pipeline via Hermes CLI — summarize meetings, inspect pipeline status, replay jobs, manage Microsoft Graph subscriptions. | None | 0 *LOW* (SAFE) |
 | [arxiv](https://github.com/NousResearch/hermes-agent/tree/main/skills/research/arxiv) | Search arXiv papers by keyword, author, category, or ID. | `scripts/search_arxiv.py` | 15 *LOW* (SAFE) |
 | [blogwatcher](https://github.com/NousResearch/hermes-agent/tree/main/skills/research/blogwatcher) | Monitor blogs and RSS/Atom feeds via blogwatcher-cli tool. | None | 8 *LOW* (SAFE) |
