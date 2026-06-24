@@ -108,16 +108,28 @@ describe("skillspector scan json parsing", () => {
       recommendation: "CAUTION",
     });
 
-    expect(riskCellValue(ok)).toBe("26 (CAUTION)");
+    expect(riskCellValue(ok)).toBe("**26** (CAUTION)");
     expect(riskCellValue({ ...ok, score: "100/100", severity: "CRITICAL", recommendation: "DO NOT INSTALL" })).toBe(
-      "100 *CRITICAL* (DO NOT INSTALL)",
+      "**100** CRITICAL (DO NOT INSTALL)",
     );
-    expect(riskCellValue({ ...ok, severity: "MEDIUM", recommendation: "-" })).toBe("26 *MEDIUM*");
-    expect(riskCellValue(makeScanResult({ status: "OK", score: "26/100" }))).toBe("26");
+    expect(riskCellValue({ ...ok, severity: "MEDIUM", recommendation: "-" })).toBe("**26** MEDIUM");
+    expect(riskCellValue(makeScanResult({ status: "OK", score: "26/100" }))).toBe("**26**");
     expect(riskCellValue(makeScanResult({ status: "TIMEOUT", score: "26/100", recommendation: "CAUTION" }))).toBe(
       "timeout",
     );
     expect(riskCellValue(undefined)).toBe("n/a");
+  });
+
+  test("riskCellValue special handling for zero score", () => {
+    const zero = makeScanResult({
+      status: "OK",
+      score: "0/100",
+      severity: "LOW",
+      recommendation: "SAFE",
+    });
+
+    expect(riskCellValue(zero)).toBe("0 (SAFE)");
+    expect(riskCellValue({ ...zero, recommendation: "-" })).toBe("0");
   });
 });
 

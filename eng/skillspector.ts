@@ -468,16 +468,27 @@ export function riskCellValue(result: ScanResult | undefined): string {
   const rec = result.recommendation?.trim() ?? "";
   const hasSeverity = severity !== "" && severity !== "-";
   const hasRecommendation = rec !== "" && rec !== "-";
+
+  const isZero = num === "0";
+  const scoreLabel = isZero ? num : `**${num}**`;
+
+  if (isZero) {
+    if (hasRecommendation) {
+      return `${scoreLabel} (${rec})`;
+    }
+    return scoreLabel;
+  }
+
   if (hasSeverity && hasRecommendation) {
-    return `${num} *${severity}* (${rec})`;
+    return `${scoreLabel} ${severity} (${rec})`;
   }
   if (hasSeverity) {
-    return `${num} *${severity}*`;
+    return `${scoreLabel} ${severity}`;
   }
   if (hasRecommendation) {
-    return `${num} (${rec})`;
+    return `${scoreLabel} (${rec})`;
   }
-  return num;
+  return scoreLabel;
 }
 
 const SECURITY_RISK_HEADER = "Security Risk";
