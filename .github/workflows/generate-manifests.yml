@@ -285,7 +285,9 @@ jobs:
             || exit 0  # No changes
           git checkout -B "$BRANCH_NAME" "origin/$BRANCH_NAME"
 
-          # Create and commit
+          echo "================================"
+          echo " Create manifest and commit"
+          echo "================================"
 
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -326,37 +328,72 @@ jobs:
             done
           done
 
-          for BASE_DIR in "$COMMUNITY_DIR" "$OFFICIAL_DIR"; do
-            for file in "$BASE_DIR"/*-skills.md; do
-              [ -e "$file" ] || continue
+          echo "================================"
+          echo " Collect Skills"
+          echo "================================"
 
-              filename=$(basename "$file")
-              out="$BASE_DIR/safe-$filename"
+          collect_skills() {
+            local prefix="$1"
+            local awk_script="$2"
 
-              if [[ "$filename" == safe-* ]]; then
-                continue
-              fi
+            for BASE_DIR in "$COMMUNITY_DIR" "$OFFICIAL_DIR"; do
+              for file in "$BASE_DIR"/*-skills.md; do
+                [ -e "$file" ] || continue
 
-              awk '
-                /\|$/ {
-                  if ($0 ~ /\| Security Risk \|$/ ||
-                      $0 ~ /---\|$/ ||
-                      $0 ~ / \(SAFE\) \|$/ )
-                  {
-                    print
-                  }
-                  next
-                }
+                local filename
+                filename=$(basename "$file")
 
-                {
-                  print
-                }
-              ' "$file" > "$out"
+                [[ "$filename" == "$prefix"* ]] && continue
 
-              git add -f "$out" || true
-              git commit -m "[bot] $out" || true
+                local out="$BASE_DIR/${prefix}${filename}"
+
+                awk "$awk_script" "$file" > "$out"
+
+                git add -f "$out" || true
+                git commit -m "[bot] $out" || true
+              done
             done
-          done
+          }
+
+          echo "--- Safe Skills --------------------------------"
+
+          collect_skills "safe-" '
+            /\|$/ {
+              if ($0 ~ / \| Security Risk \|$/ ||
+                  $0 ~ /---\|$/ ||
+                  $0 ~ / \(SAFE\) \|$/ )
+              {
+                print
+              }
+              next
+            }
+
+            {
+              print
+            }
+            '
+
+          echo "--- Zero-Risk Skills --------------------------------"
+
+          collect_skills "zerorisk-" '
+            /\|$/ {
+              if ($0 ~ / \| Security Risk \|$/ ||
+                  $0 ~ /---\|$/ ||
+                  $0 ~ / \| 0 \(SAFE\) \|$/ )
+              {
+                print
+              }
+              next
+            }
+
+            {
+              print
+            }
+            '
+
+          echo "================================"
+          echo " Push to origin"
+          echo "================================"
 
           git push --set-upstream origin "$BRANCH_NAME" || true
 
