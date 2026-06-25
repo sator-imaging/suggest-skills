@@ -235,7 +235,7 @@
 
 | Name | Description |
 | -----|-------------|
-| [gstack](https://github.com/garrytan/gstack/blob/main/SKILL.md) | Fast headless browser for QA testing and site dogfooding. (gstack) |
+| [gstack](https://github.com/garrytan/gstack/blob/main/SKILL.md) | Router for the gstack skill suite. (gstack) |
 
 # runceel.ai-dev-template..github.agents
 
