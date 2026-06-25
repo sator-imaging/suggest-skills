@@ -13,7 +13,7 @@
 | [frontend-design](https://github.com/steipete/agent-scripts/tree/main/skills/frontend-design) | Frontend UI: pages, apps, components, polished non-generic design. | `LICENSE.txt` | **3 LOW** (SAFE) |
 | [github-author-context](https://github.com/steipete/agent-scripts/tree/main/skills/github-author-context) | GitHub contributor context: identity, activity, trust, company/team signal. | `agents/openai.yaml` | 0 (SAFE) |
 | [github-cache-hygiene](https://github.com/steipete/agent-scripts/tree/main/skills/github-cache-hygiene) | GitHub quota/cache hygiene: gh, ghx, xcache, gitcrawl, mirrors, limits. | `agents/openai.yaml` | 0 (SAFE) |
-| [github-deep-review](https://github.com/steipete/agent-scripts/tree/main/skills/github-deep-review) | GitHub deep review: bugs, PRs, best fix, stale-or-real, read code first. | `agents/openai.yaml` | 0 (SAFE) |
+| [github-deep-review](https://github.com/steipete/agent-scripts/tree/main/skills/github-deep-review) | GitHub deep review: bugs, PRs, best fix, stale-or-real, read code first. | `agents/openai.yaml` | **17 LOW** (SAFE) |
 | [github-project-triage](https://github.com/steipete/agent-scripts/tree/main/skills/github-project-triage) | GitHub issue/PR triage: queues, CI, blockers, risk, proof, next actions. | `agents/openai.yaml`, `scripts/github-activity.sh` | 0 (SAFE) |
 | [hopper-debugger](https://github.com/steipete/agent-scripts/tree/main/skills/hopper-debugger) | Hopper debugging: macOS/iOS binaries, ObjC/Swift symbols, dyld, LLDB. | `agents/openai.yaml` | 0 (SAFE) |
 | [instruments-profiling](https://github.com/steipete/agent-scripts/tree/main/skills/instruments-profiling) | Instruments/xctrace profiling: macOS/iOS traces, binaries, args, exports. | None | 0 (SAFE) |
