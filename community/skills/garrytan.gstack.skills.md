@@ -2,7 +2,7 @@
 | -----|-------------|----------------|---|
 | [autoplan](https://github.com/garrytan/gstack/tree/main/autoplan) | Auto-review pipeline — reads the full CEO, design, eng, and DX review skills from disk and runs them sequentially with auto-decisions using 6 decision principles. (gstack) | `SKILL.md.tmpl` | **90 CRITICAL** (DO NOT INSTALL) |
 | [benchmark](https://github.com/garrytan/gstack/tree/main/benchmark) | Performance regression detection using the browse daemon. (gstack) | `SKILL.md.tmpl` | **47 MEDIUM** (CAUTION) |
-| [benchmark-models](https://github.com/garrytan/gstack/tree/main/benchmark-models) | Cross-model benchmark for gstack skills. (gstack) | `SKILL.md.tmpl` | **46 MEDIUM** (CAUTION) |
+| [benchmark-models](https://github.com/garrytan/gstack/tree/main/benchmark-models) | Cross-model benchmark for gstack skills. (gstack) | `SKILL.md.tmpl` | **47 MEDIUM** (CAUTION) |
 | [browse](https://github.com/garrytan/gstack/tree/main/browse) | Fast headless browser for QA testing and site dogfooding. (gstack) | `PLAN-snapshot-dropdown-interactive.md`, `SKILL.md.tmpl`, `bin` (2 files), `scripts/build-node-server.sh`, `src` (65 files), `test` (124 files), `test/fixtures` (22 files), `test/fixtures/mock-claude/claude` | **100 CRITICAL** (DO NOT INSTALL) |
 | [canary](https://github.com/garrytan/gstack/tree/main/canary) | Post-deploy canary monitoring. (gstack) | `SKILL.md.tmpl` | **57 HIGH** (DO NOT INSTALL) |
 | [careful](https://github.com/garrytan/gstack/tree/main/careful) | Safety guardrails for destructive commands. (gstack) | `bin/check-careful.sh`, `SKILL.md.tmpl` | **100 CRITICAL** (DO NOT INSTALL) |
@@ -31,7 +31,7 @@
 | [land-and-deploy](https://github.com/garrytan/gstack/tree/main/land-and-deploy) | Land and deploy workflow. (gstack) | `SKILL.md.tmpl` | **83 CRITICAL** (DO NOT INSTALL) |
 | [landing-report](https://github.com/garrytan/gstack/tree/main/landing-report) | Read-only queue dashboard for workspace-aware ship. (gstack) | `SKILL.md.tmpl` | **76 HIGH** (DO NOT INSTALL) |
 | [learn](https://github.com/garrytan/gstack/tree/main/learn) | Manage project learnings. | `SKILL.md.tmpl` | **64 HIGH** (DO NOT INSTALL) |
-| [make-pdf](https://github.com/garrytan/gstack/tree/main/make-pdf) | Turn any markdown file into a publication-quality PDF. (gstack) | `SKILL.md.tmpl`, `src` (13 files), `test` (6 files), `test/e2e` (5 files), `test/fixtures` (5 files), `test/fixtures/diagram-assets` (4 files) | **88 CRITICAL** (DO NOT INSTALL) |
+| [make-pdf](https://github.com/garrytan/gstack/tree/main/make-pdf) | Turn any markdown file into a publication-quality PDF. (gstack) | `SKILL.md.tmpl`, `src` (13 files), `test` (6 files), `test/e2e` (5 files), `test/fixtures` (5 files), `test/fixtures/diagram-assets` (4 files) | **90 CRITICAL** (DO NOT INSTALL) |
 | [office-hours](https://github.com/garrytan/gstack/tree/main/office-hours) | YC Office Hours — two modes. (gstack) | `SKILL.md.tmpl`, `sections` (3 files) | **75 HIGH** (DO NOT INSTALL) |
 | [open-gstack-browser](https://github.com/garrytan/gstack/tree/main/open-gstack-browser) | Launch GStack Browser — AI-controlled Chromium with the sidebar extension baked in. | `SKILL.md.tmpl` | **57 HIGH** (DO NOT INSTALL) |
 | [pair-agent](https://github.com/garrytan/gstack/tree/main/pair-agent) | Pair a remote AI agent with your browser. (gstack) | `SKILL.md.tmpl` | **57 HIGH** (DO NOT INSTALL) |
@@ -45,7 +45,7 @@
 | [retro](https://github.com/garrytan/gstack/tree/main/retro) | Weekly engineering retrospective. (gstack) | `SKILL.md.tmpl` | **57 HIGH** (DO NOT INSTALL) |
 | [review](https://github.com/garrytan/gstack/tree/main/review) | Pre-landing PR review. (gstack) | `checklist.md`, `design-checklist.md`, `greptile-triage.md`, `SKILL.md.tmpl`, `TODOS-format.md`, `specialists` (7 files) | **93 CRITICAL** (DO NOT INSTALL) |
 | [scrape](https://github.com/garrytan/gstack/tree/main/scrape) | Pull data from a web page. (gstack) | `SKILL.md.tmpl` | **64 HIGH** (DO NOT INSTALL) |
-| [setup-browser-cookies](https://github.com/garrytan/gstack/tree/main/setup-browser-cookies) | Import cookies from your real Chromium browser into the headless browse session. (gstack) | `SKILL.md.tmpl` | **63 HIGH** (DO NOT INSTALL) |
+| [setup-browser-cookies](https://github.com/garrytan/gstack/tree/main/setup-browser-cookies) | Import cookies from your real Chromium browser into the headless browse session. (gstack) | `SKILL.md.tmpl` | **65 HIGH** (DO NOT INSTALL) |
 | [setup-deploy](https://github.com/garrytan/gstack/tree/main/setup-deploy) | Configure deployment settings for /land-and-deploy. | `SKILL.md.tmpl` | **65 HIGH** (DO NOT INSTALL) |
 | [setup-gbrain](https://github.com/garrytan/gstack/tree/main/setup-gbrain) | Set up gbrain for this coding agent: install the CLI, initialize a local PGLite or Supabase brain, register MCP, capture per-remote trust policy. (gstack) | `memory.md`, `SKILL.md.tmpl` | **100 CRITICAL** (DO NOT INSTALL) |
 | [ship](https://github.com/garrytan/gstack/tree/main/ship) | Ship workflow: detect + merge base branch, run tests, review diff, bump VERSION, update CHANGELOG, commit, push, create PR. (gstack) | `SKILL.md.tmpl`, `sections` (17 files) | **98 CRITICAL** (DO NOT INSTALL) |
