@@ -33,7 +33,7 @@
 | [release-mac-app](https://github.com/steipete/agent-scripts/tree/main/skills/release-mac-app) | macOS app release: Sparkle, notarization, GitHub Release, Homebrew, closeout. | `scripts/lib/mac_release.sh`, `scripts/mac-release` | **100 CRITICAL** (DO NOT INSTALL) |
 | [release-tweets](https://github.com/steipete/agent-scripts/tree/main/skills/release-tweets) | Release tweets: draft/copy/post from changelog, tags, npm/appcast, artifacts. | `agents/openai.yaml` | 0 (SAFE) |
 | [reminders](https://github.com/steipete/agent-scripts/tree/main/skills/reminders) | Apple Reminders via rem CLI: add, list, search, update, complete, delete. | None | 0 (SAFE) |
-| [remote-mac](https://github.com/steipete/agent-scripts/tree/main/skills/remote-mac) | Remote Macs: MacBook, Mac Studio, clawmac, Tailscale, SSH, OpenClaw. | None | **26 MEDIUM** (CAUTION) |
+| [remote-mac](https://github.com/steipete/agent-scripts/tree/main/skills/remote-mac) | Remote Macs: MacBook, Mac Studio, clawmac, Tailscale, SSH, OpenClaw. | None | **32 MEDIUM** (CAUTION) |
 | [skill-cleaner](https://github.com/steipete/agent-scripts/tree/main/skills/skill-cleaner) | Codex/OpenClaw skill audit: live budget, usage, duplicates, compact descriptions. | `agents/openai.yaml`, `scripts/skill-cleaner.test.ts`, `scripts/skill-cleaner.ts` | **15 LOW** (SAFE) |
 | [sonos](https://github.com/steipete/agent-scripts/tree/main/skills/sonos) | Sonos control: search, queue, playlists, rooms/groups, volume, YouTube. | `agents/openai.yaml` | 0 (SAFE) |
 | [speaking](https://github.com/steipete/agent-scripts/tree/main/skills/speaking) | Speaking ops: invites, keynotes, panels, Gmail/calendar, conferences. | `agents/openai.yaml` | 0 (SAFE) |
