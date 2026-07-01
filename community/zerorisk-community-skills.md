@@ -407,7 +407,7 @@
 | [dispatching-parallel-agents](https://github.com/obra/superpowers/tree/main/skills/dispatching-parallel-agents) | Use when facing 2+ independent tasks that can be worked on without shared state or sequential dependencies | None | 0 (SAFE) |
 | [receiving-code-review](https://github.com/obra/superpowers/tree/main/skills/receiving-code-review) | Use when receiving code review feedback, before implementing suggestions, especially if feedback seems unclear or technically questionable - requires technical rigor and verification, not performative agreement or blind implementation | None | 0 (SAFE) |
 | [test-driven-development](https://github.com/obra/superpowers/tree/main/skills/test-driven-development) | Use when implementing any feature or bugfix, before writing implementation code | `testing-anti-patterns.md` | 0 (SAFE) |
-| [using-superpowers](https://github.com/obra/superpowers/tree/main/skills/using-superpowers) | Use when starting any conversation - establishes how to find and use skills, requiring skill invocation before ANY response including clarifying questions | `references` (6 files) | 0 (SAFE) |
+| [using-superpowers](https://github.com/obra/superpowers/tree/main/skills/using-superpowers) | Use when starting any conversation - establishes how to find and use skills, requiring skill invocation before ANY response including clarifying questions | `references/antigravity-tools.md`, `references/codex-tools.md`, `references/pi-tools.md` | 0 (SAFE) |
 | [writing-plans](https://github.com/obra/superpowers/tree/main/skills/writing-plans) | Use when you have a spec or requirements for a multi-step task, before touching code | `plan-document-reviewer-prompt.md` | 0 (SAFE) |
 
 # runceel.ai-dev-template..github.skills
