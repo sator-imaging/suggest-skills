@@ -9,7 +9,7 @@ export type SuggestSkillsConfig = {
 
 export type CliRuntimeMode =
   | { kind: "stdio"; config: SuggestSkillsConfig }
-  | { kind: "generate"; url: string; recursive: boolean; config: SuggestSkillsConfig }
+  | { kind: "generate"; url: string; recursive: boolean; delay?: number; config: SuggestSkillsConfig }
   | { kind: "download"; url: string; recursive: boolean; config: SuggestSkillsConfig }
   | { kind: "server"; port: number; config: SuggestSkillsConfig };
 
@@ -23,7 +23,7 @@ export class ConfigError extends Error {
 }
 
 type CliActions = {
-  onGenerate: (url: string, options: { recursive?: boolean }) => void;
+  onGenerate: (url: string, options: { recursive?: boolean; delay?: string }) => void;
   onDownload: (url: string, options: { recursive?: boolean }) => void;
   onServer: (args: string[], options: { port?: string; output?: string }) => void;
   onStdio: (args: string[], options: { output?: string }) => void;
@@ -35,6 +35,7 @@ function registerCommands(cli: ReturnType<typeof cac>, actions: CliActions) {
   cli
     .command("generate <url>", "Generate markdown inventories from a GitHub skills directory or repo root")
     .option("-r, --recursive", "Recursive scan")
+    .option("--delay <milliseconds>", "Delay for each skill generation (ms)")
     .action(actions.onGenerate);
 
   cli
@@ -59,11 +60,12 @@ export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode
   let runtimeMode: CliRuntimeMode | undefined;
 
   const actions: CliActions = {
-    onGenerate: (url: string, options: { recursive?: boolean }) => {
+    onGenerate: (url: string, options: { recursive?: boolean; delay?: string }) => {
       runtimeMode = {
         kind: "generate",
         url: normalizeGithubRawUrl(url) ?? url,
         recursive: !!options.recursive,
+        delay: options.delay ? Number.parseInt(options.delay, 10) : undefined,
         config: {
           outputDirectory: DEFAULT_OUTPUT_DIRECTORY,
           sourceUrls: [],
