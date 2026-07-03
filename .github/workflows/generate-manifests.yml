@@ -38,7 +38,8 @@ jobs:
 
   generate:
     name: "${{ matrix.url }}"
-    needs: prepare
+    needs:
+      - prepare
     timeout-minutes: 60
 
     strategy:
