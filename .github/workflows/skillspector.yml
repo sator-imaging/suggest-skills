@@ -20,8 +20,15 @@ env:
 
 jobs:
 
-  skillspector-scan:
+  scan:
     timeout-minutes: 60
+
+    strategy:
+      fail-fast: true
+      matrix:
+        base_dir:
+          - community
+          - official
 
     runs-on: ubuntu-latest
     steps:
@@ -79,12 +86,34 @@ jobs:
         run: |
           # No SARIF export (thousands of errors/warns): --sarif  skillspector.sarif \
           bun eng/skillspector.ts \
-            --markdown skillspector-report.md \
-            --target '**/skills/*.md'
+            --markdown "skillspector-report.md" \
+            --target '${{ matrix.base_dir }}/**/skills/*.md'
 
-          git add -f '**/skills/*.md'
-          git commit -m "[bot] Update Security Risk Scores"
-          git push -u origin "$BRANCH"
+          cat "skillspector-report.md" >> $GITHUB_STEP_SUMMARY || true
+
+          git add -f '${{ matrix.base_dir }}/**/skills/*.md'
+          git commit -m "[bot] Update Security Risk Scores (${{ matrix.base_dir }})"
+
+          echo "================================"
+          echo " Push to origin"
+          echo "================================"
+
+          for i in 1 2 3 4 5 6 7 8 9; do
+            git fetch origin "$BRANCH" || true
+
+            if git show-ref --verify --quiet "refs/remotes/origin/$BRANCH"; then
+              git rebase "origin/$BRANCH"
+            fi
+
+            if git push --set-upstream origin "$BRANCH"; then
+              exit 0
+            fi
+
+            git rebase --abort || true
+            sleep $((i * 3))
+          done
+
+          exit 1
 
       #- name: Upload SARIF to GitHub Security
       #  uses: github/codeql-action/upload-sarif@v3
@@ -92,17 +121,20 @@ jobs:
       #    sarif_file: skillspector.sarif
       #  if: always() && hashFiles('skillspector.sarif') != ''
 
+  create-pr:
+    needs:
+      - scan
+    if: |
+      !inputs.branch
+
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@v6
+
       - name: Create PR
-        if: |
-          !inputs.branch
         run: |
           gh pr create \
             --base main \
             --head "$BRANCH" \
             --fill \
             || echo "::warning title=PR already exists::Skipped"
-
-      - name: Post markdown to step summary
-        if: always()
-        run: |
-          cat skillspector-report.md >> $GITHUB_STEP_SUMMARY || true
