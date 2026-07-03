@@ -31,13 +31,14 @@ jobs:
     outputs:
       branch: ${{ steps.vars.outputs.branch }}
 
+
   generate:
     name: "${{ matrix.url }}"
     needs: prepare
-    timeout-minutes: 10
+    timeout-minutes: 60
 
     strategy:
-      max-parallel: 3   # To avoid GitHub API rate limit
+      max-parallel: 1   # To avoid GitHub API rate limit
       fail-fast: true
 
       # DO NOT forget to update url prefixes list
@@ -171,7 +172,9 @@ jobs:
             fi
           done <<< "$RECURSIVE_URL_PREFIXES"
 
-          bun "$GITHUB_WORKSPACE/src/index.ts" "${generate_args[@]}"
+          bun "$GITHUB_WORKSPACE/src/index.ts" \
+            "${generate_args[@]}" \
+            --delay 1000
 
           output_root="$COMMUNITY_DIR"
           while IFS= read -r prefix; do
@@ -249,6 +252,7 @@ jobs:
 
           exit 1
 
+
   scan:
     name: Security Scan
     needs: 
@@ -262,11 +266,20 @@ jobs:
       pull-requests: write
       security-events: write
 
-  collect-and-pr:
-    name: Collect Skills & Create PR
+
+  collect:
+    name: Collect Skills
     needs:
       - prepare  # For needs.outputs
       - scan
+
+    strategy:
+      max-parallel: 2
+      fail-fast: true
+      matrix:
+        base_dir:
+          - ${{ env.COMMUNITY_DIR }}
+          - ${{ env.OFFICIAL_DIR }}
 
     runs-on: ubuntu-latest
     steps:
@@ -292,40 +305,39 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          for BASE_DIR in "$COMMUNITY_DIR" "$OFFICIAL_DIR"; do
-            for SUB_DIR in agents skills designs; do
-              TARGET_DIR="$BASE_DIR/$SUB_DIR"
-              ALL_MD="$BASE_DIR/$BASE_DIR-$SUB_DIR.md"
+          BASE_DIR="${{ matrix.base_dir }}"
+          for SUB_DIR in agents skills designs; do
+            TARGET_DIR="$BASE_DIR/$SUB_DIR"
+            ALL_MD="$BASE_DIR/$BASE_DIR-$SUB_DIR.md"
 
-              rm -f "$ALL_MD"
+            rm -f "$ALL_MD"
 
-              find "$TARGET_DIR" -maxdepth 1 -type f -name "*.md" | while IFS= read -r MD_FILE; do
-                FILENAME="$(basename "$MD_FILE")"
+            find "$TARGET_DIR" -maxdepth 1 -type f -name "*.md" | while IFS= read -r MD_FILE; do
+              FILENAME="$(basename "$MD_FILE")"
 
-                # NOTE: Large files are placed BEFORE others,
-                #       as AI prioritize later context.
-                PRIORITY=1
-                LINE_COUNT=$(wc -l < "$MD_FILE")
-                if (( LINE_COUNT > 64 )); then
-                  PRIORITY=0
-                fi
+              # NOTE: Large files are placed BEFORE others,
+              #       as AI prioritize later context.
+              PRIORITY=1
+              LINE_COUNT=$(wc -l < "$MD_FILE")
+              if (( LINE_COUNT > 64 )); then
+                PRIORITY=0
+              fi
 
-                printf "%d|%s\n" "$PRIORITY" "$MD_FILE"
-              done | sort -n | cut -d'|' -f2- | while IFS= read -r MD_FILE; do
+              printf "%d|%s\n" "$PRIORITY" "$MD_FILE"
+            done | sort -n | cut -d'|' -f2- | while IFS= read -r MD_FILE; do
 
-                BASENAME="$(basename "$MD_FILE" .md)"
-                {
-                  echo "# $BASENAME"
-                  echo
-                  cat "$MD_FILE"
-                  echo
-                } >> "$ALL_MD"
+              BASENAME="$(basename "$MD_FILE" .md)"
+              {
+                echo "# $BASENAME"
+                echo
+                cat "$MD_FILE"
+                echo
+              } >> "$ALL_MD"
 
-              done
-
-              git add -f "$ALL_MD" || true
-              git commit -m "[bot] $ALL_MD" || true
             done
+
+            git add -f "$ALL_MD" || true
+            git commit -m "[bot] $ALL_MD" || true
           done
 
           echo "================================"
@@ -336,23 +348,21 @@ jobs:
             local prefix="$1"
             local awk_script="$2"
 
-            for BASE_DIR in "$COMMUNITY_DIR" "$OFFICIAL_DIR"; do
-              for file in "$BASE_DIR"/*-skills.md; do
-                [ -e "$file" ] || continue
+            for file in "$BASE_DIR"/*-skills.md; do
+              [ -e "$file" ] || continue
 
-                local filename
-                filename=$(basename "$file")
+              local filename
+              filename=$(basename "$file")
 
-                # Ignore 'safe/zerorisk-*-skills.md'
-                [[ "$filename" == *-*-* ]] && continue
+              # Ignore 'safe/zerorisk-*-skills.md'
+              [[ "$filename" == *-*-* ]] && continue
 
-                local out="$BASE_DIR/${prefix}${filename}"
+              local out="$BASE_DIR/${prefix}${filename}"
 
-                awk "$awk_script" "$file" > "$out"
+              awk "$awk_script" "$file" > "$out"
 
-                git add -f "$out" || true
-                git commit -m "[bot] $out" || true
-              done
+              git add -f "$out" || true
+              git commit -m "[bot] $out" || true
             done
           }
 
@@ -396,7 +406,32 @@ jobs:
           echo " Push to origin"
           echo "================================"
 
-          git push --set-upstream origin "$BRANCH_NAME" || true
+          for i in 1 2 3 4 5 6 7 8 9; do
+            git fetch origin "$BRANCH_NAME" || true
+
+            if git show-ref --verify --quiet "refs/remotes/origin/$BRANCH_NAME"; then
+              git rebase "origin/$BRANCH_NAME"
+            fi
+
+            if git push --set-upstream origin "$BRANCH_NAME"; then
+              exit 0
+            fi
+
+            git rebase --abort || true
+            sleep $((i * 3))
+          done
+
+          exit 1
+
+
+  create-pr:
+    name: Create PR
+    needs:
+      - collect
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
 
       - name: Create PR
         env:
