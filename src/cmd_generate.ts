@@ -34,6 +34,7 @@ export type GeneratedOutputs = {
 
 export type GenerateOptions = {
   recursive?: boolean;
+  delayMillis?: number;
 };
 
 type GeneratedEntry = {
@@ -119,11 +120,12 @@ export async function generateOutputs(
       .filter((entry) => entry.type === "dir")
       .map((entry) => entry.path)
       .sort((left, right) => left.localeCompare(right));
-  const agentEntries = await summarizeAgentFiles(rootLocation, agentFiles);
+  const agentEntries = await summarizeAgentFiles(rootLocation, agentFiles, options.delayMillis);
   const summaries = await summarizeDirectories(
     rootLocation,
     candidateDirectories,
     analysis.summariesByDirectory,
+    options.delayMillis,
   );
 
   const manifestEntries = summaries
@@ -215,6 +217,7 @@ export async function runGenerateCommand(
 async function summarizeAgentFiles(
   rootLocation: GithubDirectoryLocation,
   agentFiles: GithubContentEntry[],
+  delayMillis = 0,
 ): Promise<GeneratedEntry[]> {
   const results = Array.from<GeneratedEntry | undefined>({ length: agentFiles.length });
   const fibers = Fibers.forEach(
@@ -226,10 +229,16 @@ async function summarizeAgentFiles(
         url: formatGithubFileUrl(rootLocation, entry.path),
       },
     })),
-    async ({ index, summary }) => ({
-      entry: await summarizeAgentFile(summary),
-      index,
-    }),
+    async ({ index, summary }) => {
+      const result = {
+        entry: await summarizeAgentFile(summary),
+        index,
+      };
+      if (delayMillis > 0) {
+        await Fibers.delay(delayMillis);
+      }
+      return result;
+    },
   );
 
   for await (const result of fibers) {
@@ -243,6 +252,7 @@ async function summarizeDirectories(
   rootLocation: GithubDirectoryLocation,
   candidateDirectories: string[],
   summariesByDirectory: ReadonlyMap<string, DirectorySummary>,
+  delayMillis = 0,
 ): Promise<Array<{ design?: GeneratedEntry; manifest?: GeneratedEntry }>> {
   const results = Array.from<{ design?: GeneratedEntry; manifest?: GeneratedEntry } | undefined>({
     length: candidateDirectories.length,
@@ -250,10 +260,16 @@ async function summarizeDirectories(
   const fibers = Fibers.forEach(
     MANIFEST_DOWNLOAD_CONCURRENCY,
     candidateDirectories.map((path, index) => ({ index, path })),
-    async ({ index, path }) => ({
-      index,
-      summary: await summarizeDirectory(rootLocation, path, summariesByDirectory),
-    }),
+    async ({ index, path }) => {
+      const result = {
+        index,
+        summary: await summarizeDirectory(rootLocation, path, summariesByDirectory),
+      };
+      if (delayMillis > 0) {
+        await Fibers.delay(delayMillis);
+      }
+      return result;
+    },
   );
 
   for await (const result of fibers) {

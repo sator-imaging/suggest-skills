@@ -219,6 +219,19 @@ describe("parseCli", () => {
     expect(stdoutData).toContain("Usage:");
     expect(stdoutData).toContain("suggest-skills server");
   });
+
+  test("parses --delay option for generate subcommand", () => {
+    const runtimeMode = parseCli(
+      ["node", "index.js", "generate", "https://github.com/owner/repo", "--delay", "500"],
+      {},
+    );
+
+    if (runtimeMode.kind !== "generate") {
+      throw new Error("Expected generate runtime mode");
+    }
+
+    expect(runtimeMode.delay).toBe(500);
+  });
 });
 
 describe("stdio MCP server", () => {

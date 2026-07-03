@@ -10,7 +10,10 @@ async function main(): Promise<void> {
     const runtimeMode = parseCli();
 
     if (runtimeMode.kind === "generate") {
-      await runGenerateCommand(runtimeMode.url, { recursive: runtimeMode.recursive });
+      await runGenerateCommand(runtimeMode.url, {
+        recursive: runtimeMode.recursive,
+        delayMillis: runtimeMode.delay,
+      });
       return;
     }
 
