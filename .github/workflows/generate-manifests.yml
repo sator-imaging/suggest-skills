@@ -27,9 +27,13 @@ jobs:
       - id: vars
         run: |
           echo "branch=bot/generate-manifests-${{ github.run_id }}-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+          echo "community_dir=${{ env.COMMUNITY_DIR }}" >> "$GITHUB_OUTPUT"
+          echo "official_dir=${{ env.OFFICIAL_DIR }}" >> "$GITHUB_OUTPUT"
 
     outputs:
       branch: ${{ steps.vars.outputs.branch }}
+      community_dir: ${{ steps.vars.outputs.community_dir }}
+      official_dir: ${{ steps.vars.outputs.official_dir }}
 
 
   generate:
@@ -278,8 +282,8 @@ jobs:
       fail-fast: true
       matrix:
         base_dir:
-          - ${{ env.COMMUNITY_DIR }}
-          - ${{ env.OFFICIAL_DIR }}
+          - ${{ needs.prepare.outputs.community_dir }}
+          - ${{ needs.prepare.outputs.official_dir }}
 
     runs-on: ubuntu-latest
     steps:
