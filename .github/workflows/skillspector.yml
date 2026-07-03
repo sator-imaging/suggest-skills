@@ -24,7 +24,7 @@ jobs:
     timeout-minutes: 60
 
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         base_dir:
           - community
@@ -123,7 +123,8 @@ jobs:
     needs:
       - scan
     if: |
-      !inputs.branch
+      !inputs.branch &&
+      always()
 
     runs-on: ubuntu-slim
     steps:
