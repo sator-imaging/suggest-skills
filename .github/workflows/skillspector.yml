@@ -33,10 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-
       - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
 
       - uses: actions/setup-python@v5
         with:
@@ -121,6 +118,7 @@ jobs:
       #    sarif_file: skillspector.sarif
       #  if: always() && hashFiles('skillspector.sarif') != ''
 
+
   create-pr:
     needs:
       - scan
@@ -130,11 +128,13 @@ jobs:
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.branch }}
 
       - name: Create PR
         run: |
           gh pr create \
             --base main \
-            --head "$BRANCH" \
+            --head "${{ inputs.branch }}" \
             --fill \
             || echo "::warning title=PR already exists::Skipped"

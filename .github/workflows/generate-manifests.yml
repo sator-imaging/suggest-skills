@@ -22,7 +22,7 @@ jobs:
   prepare:
     name: Prepare Branch
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - id: vars
         run: |
@@ -284,7 +284,7 @@ jobs:
           - ${{ needs.prepare.outputs.community_dir }}
           - ${{ needs.prepare.outputs.official_dir }}
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v6
         with:
@@ -430,11 +430,14 @@ jobs:
   create-pr:
     name: Create PR
     needs:
+      - prepare  # For needs.outputs
       - collect
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.prepare.outputs.branch }}
 
       - name: Create PR
         env:
@@ -442,6 +445,6 @@ jobs:
         run: |
           gh pr create \
             --base main \
-            --head "$BRANCH_NAME" \
+            --head "${{ needs.prepare.outputs.branch }}" \
             --title "[bot] ${{ github.workflow }}" \
             --fill
