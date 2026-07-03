@@ -88,7 +88,7 @@ jobs:
 
           cat "skillspector-report.md" >> $GITHUB_STEP_SUMMARY || true
 
-          git add -f "${{ matrix.base_dir }}/**/*.md"
+          git add -f "${{ matrix.base_dir }}"/**/skills/*.md
           git commit -m "[bot] Update Security Risk Scores (${{ matrix.base_dir }})"
 
           echo "================================"
