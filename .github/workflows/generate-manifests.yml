@@ -16,11 +16,11 @@ concurrency:
 env:
   COMMUNITY_DIR: community
   OFFICIAL_DIR: official
+  GH_TOKEN: ${{ github.token }}
 
 jobs:
 
   prepare:
-    name: Prepare Branch
 
     runs-on: ubuntu-slim
     steps:
@@ -259,7 +259,6 @@ jobs:
 
 
   scan:
-    name: Security Scan
     needs: 
       - prepare  # For needs.outputs
       - generate
@@ -273,7 +272,6 @@ jobs:
 
 
   collect:
-    name: Collect Skills
     needs:
       - prepare  # For needs.outputs
       - scan
@@ -429,7 +427,6 @@ jobs:
 
 
   create-pr:
-    name: Create PR
     needs:
       - prepare  # For needs.outputs
       - collect
@@ -438,12 +435,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ needs.prepare.outputs.branch }}
+          fetch-depth: 0
 
-      - name: Create PR
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
+      - run: |
           gh pr create \
             --base main \
             --head "${{ needs.prepare.outputs.branch }}" \

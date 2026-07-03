@@ -20,7 +20,7 @@ env:
 
 jobs:
 
-  scan:
+  skillspector:
     timeout-minutes: 60
 
     strategy:
@@ -121,7 +121,7 @@ jobs:
 
   create-pr:
     needs:
-      - scan
+      - skillspector
     if: |
       !inputs.branch &&
       always()
@@ -130,10 +130,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.branch }}
+          fetch-depth: 0
 
-      - name: Create PR
-        run: |
+      - run: |
           gh pr create \
             --base main \
             --head "${{ inputs.branch }}" \
