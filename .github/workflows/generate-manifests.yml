@@ -436,6 +436,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ needs.prepare.outputs.branch }}
 
       - run: |
           gh pr create \
