@@ -23,7 +23,7 @@
 | [nano-banana-pro](https://github.com/steipete/agent-scripts/tree/main/skills/nano-banana-pro) | Nano Banana/Gemini image gen/edit: text/image input, 512-4K workflows. | `scripts/generate_image.py` | **78 HIGH** (DO NOT INSTALL) |
 | [native-app-performance](https://github.com/steipete/agent-scripts/tree/main/skills/native-app-performance) | Native app performance: xctrace, Time Profiler, traces, hotspots. | `scripts/extract_time_samples.py`, `scripts/record_time_profiler.sh`, `scripts/top_hotspots.py` | **22 MEDIUM** (CAUTION) |
 | [notcrawl](https://github.com/steipete/agent-scripts/tree/main/skills/notcrawl) | Notion archive: desktop/API sync, Markdown export, page search, read-only SQL. | None | 0 (SAFE) |
-| [npm](https://github.com/steipete/agent-scripts/tree/main/skills/npm) | npm registry ops: login, whoami, names, publish; 1Password tmux. | `scripts/reserve-packages.sh` | **51 HIGH** (DO NOT INSTALL) |
+| [npm](https://github.com/steipete/agent-scripts/tree/main/skills/npm) | npm registry ops: login, whoami, names, publish; 1Password tmux. | `scripts` (9 files) | **57 HIGH** (DO NOT INSTALL) |
 | [obsidian](https://github.com/steipete/agent-scripts/tree/main/skills/obsidian) | Obsidian vault: search/read/write notes, backlinks, Bases, Canvas. | None | 0 (SAFE) |
 | [one-password](https://github.com/steipete/agent-scripts/tree/main/skills/one-password) | 1Password/op: service-account first, targeted secret read/store/inject, tmux. | `references/cli-examples.md`, `references/get-started.md` | **15 LOW** (SAFE) |
 | [openai-image-gen](https://github.com/steipete/agent-scripts/tree/main/skills/openai-image-gen) | OpenAI Images API: batches, prompt sampler, gallery. | `scripts/gen.py` | **71 HIGH** (DO NOT INSTALL) |
