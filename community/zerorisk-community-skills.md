@@ -385,7 +385,7 @@
 | [to-prd](https://github.com/mattpocock/skills/tree/main/skills/engineering/to-prd) | Turn the current conversation into a PRD and publish it to the project issue tracker — no interview, just synthesis of what you've already discussed. | None | 0 (SAFE) |
 | [triage](https://github.com/mattpocock/skills/tree/main/skills/engineering/triage) | Move issues and external PRs through a state machine of triage roles — categorise, verify, grill if needed, and write agent-ready briefs. | `AGENT-BRIEF.md`, `OUT-OF-SCOPE.md` | 0 (SAFE) |
 | [claude-handoff](https://github.com/mattpocock/skills/tree/main/skills/in-progress/claude-handoff) | Hand the current conversation off to a fresh background agent that picks up the work immediately. | None | 0 (SAFE) |
-| [wayfinder](https://github.com/mattpocock/skills/tree/main/skills/in-progress/wayfinder) | Plan a huge chunk of work — more than one agent session can hold — as a shared map of investigation tickets on your issue tracker, and resolve them one at a time until the way to the goal is clear. | None | 0 (SAFE) |
+| [wayfinder](https://github.com/mattpocock/skills/tree/main/skills/in-progress/wayfinder) | Plan a huge chunk of work — more than one agent session can hold — as a shared map of investigation tickets on your issue tracker, and resolve them one at a time until the way to the destination is clear. | None | 0 (SAFE) |
 | [writing-beats](https://github.com/mattpocock/skills/tree/main/skills/in-progress/writing-beats) | Writing, exploit — assemble raw material into a journey of beats, grounding each term before a beat leans on it. | None | 0 (SAFE) |
 | [writing-fragments](https://github.com/mattpocock/skills/tree/main/skills/in-progress/writing-fragments) | Writing, explore — mine raw fragments, no structure yet. | None | 0 (SAFE) |
 | [writing-shape](https://github.com/mattpocock/skills/tree/main/skills/in-progress/writing-shape) | Writing, exploit — shape raw material into an article, paragraph by paragraph. | None | 0 (SAFE) |
@@ -446,6 +446,8 @@
 | -----|-------------|----------------|---|
 | [agent-transcript](https://github.com/steipete/agent-scripts/tree/main/skills/agent-transcript) | GitHub PR/issue agent transcripts: redact, preview, and insert safely. | `scripts/agent-transcript` | 0 (SAFE) |
 | [beeper](https://github.com/steipete/agent-scripts/tree/main/skills/beeper) | Beeper cache: contact hints, room lookup, WhatsApp/iMessage traces, FTS. | None | 0 (SAFE) |
+| [clickclack](https://github.com/steipete/agent-scripts/tree/main/skills/clickclack) | ClickClack ops: chat app, Cloudflare Workers deploy, DNS/docs/app, container rollout. | `agents/openai.yaml` | 0 (SAFE) |
+| [codex-first](https://github.com/steipete/agent-scripts/tree/main/skills/codex-first) | Route implementation work to Codex CLI; Claude specs, reviews, verifies. | None | 0 (SAFE) |
 | [discord-clawd](https://github.com/steipete/agent-scripts/tree/main/skills/discord-clawd) | Discord-backed OpenClaw agent/session relay; not archive search. | `agents/openai.yaml` | 0 (SAFE) |
 | [domain-dns-ops](https://github.com/steipete/agent-scripts/tree/main/skills/domain-dns-ops) | DNS/domain ops: registrars, zones, redirects, DNS/HTTP verify, manager truth. | `references/manager-repo.md` | 0 (SAFE) |
 | [github-author-context](https://github.com/steipete/agent-scripts/tree/main/skills/github-author-context) | GitHub contributor context: identity, activity, trust, company/team signal. | `agents/openai.yaml` | 0 (SAFE) |
