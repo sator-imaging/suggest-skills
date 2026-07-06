@@ -4,9 +4,10 @@
 | [beeper](https://github.com/steipete/agent-scripts/tree/main/skills/beeper) | Beeper cache: contact hints, room lookup, WhatsApp/iMessage traces, FTS. | None | 0 (SAFE) |
 | [browser-use](https://github.com/steipete/agent-scripts/tree/main/skills/browser-use) | Existing Chrome automation: Chrome plugin first, mcporter fallback. | `mcporter-config.md` | **7 LOW** (SAFE) |
 | [clawsweeper-status](https://github.com/steipete/agent-scripts/tree/main/skills/clawsweeper-status) | ClawSweeper status: URLs, workflow health, active workers, ops snapshot. | `agents/openai.yaml`, `scripts/clawsweeper-status.sh`, `scripts/clawsweeper-status.test.sh` | **14 LOW** (SAFE) |
-| [clickclack](https://github.com/steipete/agent-scripts/tree/main/skills/clickclack) | ClickClack ops: chat app, Hetzner deploy, DNS/docs/app, Docker rollout. | `agents/openai.yaml` | **40 MEDIUM** (CAUTION) |
+| [clickclack](https://github.com/steipete/agent-scripts/tree/main/skills/clickclack) | ClickClack ops: chat app, Cloudflare Workers deploy, DNS/docs/app, container rollout. | `agents/openai.yaml` | 0 (SAFE) |
 | [cloudflare-registrar](https://github.com/steipete/agent-scripts/tree/main/skills/cloudflare-registrar) | Cloudflare Registrar: domain availability, prices, registration via mcporter. | None | **7 LOW** (SAFE) |
 | [codex-debugging](https://github.com/steipete/agent-scripts/tree/main/skills/codex-debugging) | Codex debugging: codex-rs core/tui/exec/cli/app-server/config. | None | **22 MEDIUM** (CAUTION) |
+| [codex-first](https://github.com/steipete/agent-scripts/tree/main/skills/codex-first) | Route implementation work to Codex CLI; Claude specs, reviews, verifies. | None | 0 (SAFE) |
 | [create-cli](https://github.com/steipete/agent-scripts/tree/main/skills/create-cli) | CLI UX/spec: args, flags, help, output, errors, config, dry-run. | `references/cli-guidelines.md` | **21 MEDIUM** (CAUTION) |
 | [discord-clawd](https://github.com/steipete/agent-scripts/tree/main/skills/discord-clawd) | Discord-backed OpenClaw agent/session relay; not archive search. | `agents/openai.yaml` | 0 (SAFE) |
 | [domain-dns-ops](https://github.com/steipete/agent-scripts/tree/main/skills/domain-dns-ops) | DNS/domain ops: registrars, zones, redirects, DNS/HTTP verify, manager truth. | `references/manager-repo.md` | 0 (SAFE) |
@@ -33,7 +34,7 @@
 | [release-mac-app](https://github.com/steipete/agent-scripts/tree/main/skills/release-mac-app) | macOS app release: Sparkle, notarization, GitHub Release, Homebrew, closeout. | `scripts/lib/mac_release.sh`, `scripts/mac-release` | **100 CRITICAL** (DO NOT INSTALL) |
 | [release-tweets](https://github.com/steipete/agent-scripts/tree/main/skills/release-tweets) | Release tweets: draft/copy/post from changelog, tags, npm/appcast, artifacts. | `agents/openai.yaml` | 0 (SAFE) |
 | [reminders](https://github.com/steipete/agent-scripts/tree/main/skills/reminders) | Apple Reminders via rem CLI: add, list, search, update, complete, delete. | None | 0 (SAFE) |
-| [remote-mac](https://github.com/steipete/agent-scripts/tree/main/skills/remote-mac) | Remote Macs: MacBook, Mac Studio, clawmac, Tailscale, SSH, OpenClaw. | None | **32 MEDIUM** (CAUTION) |
+| [remote-mac](https://github.com/steipete/agent-scripts/tree/main/skills/remote-mac) | Remote Macs: MacBook, Mac Studio, clawmac, megaclaw, Tailscale, SSH, OpenClaw. | None | **32 MEDIUM** (CAUTION) |
 | [skill-cleaner](https://github.com/steipete/agent-scripts/tree/main/skills/skill-cleaner) | Codex/OpenClaw skill audit: live budget, usage, duplicates, compact descriptions. | `agents/openai.yaml`, `scripts/skill-cleaner.test.ts`, `scripts/skill-cleaner.ts` | **15 LOW** (SAFE) |
 | [sonos](https://github.com/steipete/agent-scripts/tree/main/skills/sonos) | Sonos control: search, queue, playlists, rooms/groups, volume, YouTube. | `agents/openai.yaml` | 0 (SAFE) |
 | [speaking](https://github.com/steipete/agent-scripts/tree/main/skills/speaking) | Speaking ops: invites, keynotes, panels, Gmail/calendar, conferences. | `agents/openai.yaml` | 0 (SAFE) |
