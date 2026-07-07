@@ -7,6 +7,7 @@ import { Fibers } from "ts-fibers";
 import type { GithubDirectoryLocation } from "./utils.js";
 import { logInfo, logWarning, parseMarkdownFrontMatterFields, parseUrl } from "./utils.js";
 import {
+  fetchCommitSha,
   fetchTextContent,
   listGithubDirectoryRecursive,
   resolveGithubFolderUrl,
@@ -108,6 +109,7 @@ export async function generateOutputs(
 ): Promise<GeneratedOutputs> {
   const rootLocation = resolveGenerateRootLocation(url)
     ?? await resolveGithubFolderUrl(url);
+  rootLocation.ref = await fetchCommitSha(rootLocation);
   const treeEntries = await listGithubDirectoryRecursive(rootLocation);
   const analysis = analyzeTreeEntries(rootLocation.path, treeEntries);
   const rootEntries = analysis.immediateEntries;
