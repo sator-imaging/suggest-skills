@@ -12,7 +12,7 @@ async function main(): Promise<void> {
     if (runtimeMode.kind === "generate") {
       await runGenerateCommand(runtimeMode.url, {
         recursive: runtimeMode.recursive,
-        delayMillis: runtimeMode.delay,
+        ...(runtimeMode.delay !== undefined ? { delayMillis: runtimeMode.delay } : {}),
       });
       return;
     }

@@ -65,7 +65,7 @@ export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode
         kind: "generate",
         url: normalizeGithubRawUrl(url) ?? url,
         recursive: !!options.recursive,
-        delay: options.delay ? Number.parseInt(options.delay, 10) : undefined,
+        ...(options.delay !== undefined ? { delay: Number.parseInt(options.delay, 10) } : {}),
         config: {
           outputDirectory: DEFAULT_OUTPUT_DIRECTORY,
           sourceUrls: [],
