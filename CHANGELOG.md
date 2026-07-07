@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.0.7](https://github.com/sator-imaging/suggest-skills/releases/tag/v2.0.7) (2026-07-07)
+
+### 🚀 Features
+* Add `--delay` option for `generate` subcommand by [@google-labs-jules](https://github.com/google-labs-jules)[bot] in [#265](https://github.com/sator-imaging/suggest-skills/pull/265)
+### 📚 Other Changes
+* deps: typescript[@rc](https://github.com/rc) by [@sator-imaging](https://github.com/sator-imaging) in [#242](https://github.com/sator-imaging/suggest-skills/pull/242)
+* Update skillspector risk formatting by [@sator-imaging](https://github.com/sator-imaging) with [@Copilot](https://github.com/Copilot) in [#249](https://github.com/sator-imaging/suggest-skills/pull/249)
+* skillspector: Update risk score formatting by [@google-labs-jules](https://github.com/google-labs-jules)[bot] in [#253](https://github.com/sator-imaging/suggest-skills/pull/253)
+
+### 🎉 New Contributors
+* [@sator-imaging](https://github.com/sator-imaging) with [@Copilot](https://github.com/Copilot) made their first contribution in [#249](https://github.com/sator-imaging/suggest-skills/pull/249)
+
+**Full Changelog**: https://github.com/sator-imaging/suggest-skills/compare/v2.0.6...v2.0.7
+
+
 ## [2.0.6](https://github.com/sator-imaging/suggest-skills/releases/tag/v2.0.6) (2026-06-18)
 
 ### ✨ Bug Fixes
