@@ -322,19 +322,24 @@ function buildCommitApiUrl(location: GithubDirectoryLocation): string {
 }
 
 export async function fetchCommitSha(location: GithubDirectoryLocation): Promise<string> {
-  const response = await fetchGithub(buildCommitApiUrl(location));
+  try {
+    const response = await fetchGithub(buildCommitApiUrl(location));
 
-  if (!response.ok) {
-    throw new Error(await formatGithubApiError(response));
+    if (!response.ok) {
+      return location.ref;
+    }
+
+    const payload = (await response.json()) as any;
+    const sha = Array.isArray(payload) ? payload[0]?.sha : payload?.sha;
+
+    if (typeof sha !== "string" || sha === "") {
+      return location.ref;
+    }
+
+    return sha;
+  } catch {
+    return location.ref;
   }
-
-  const payload = (await response.json()) as { sha?: unknown };
-
-  if (typeof payload.sha !== "string" || payload.sha === "") {
-    throw new Error(`Missing commit SHA for "${location.ref}".`);
-  }
-
-  return payload.sha;
 }
 
 async function resolveGithubTreeSha(location: GithubDirectoryLocation): Promise<string> {
