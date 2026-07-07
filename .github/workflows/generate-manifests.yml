@@ -3,7 +3,7 @@ name: Generate Manifests
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 22 * * 6'  # Every saturday only (reduce GH api usage)
+    - cron: '0 22 * * 3,6'  # Not everyday (Reduce GH api usage)
 
 permissions:
   contents: write
