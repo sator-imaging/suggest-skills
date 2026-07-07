@@ -4,6 +4,8 @@
 
 ### 🚀 Features
 * Add `--delay` option for `generate` subcommand by [@google-labs-jules](https://github.com/google-labs-jules)[bot] in [#265](https://github.com/sator-imaging/suggest-skills/pull/265)
+### ✨ Bug Fixes
+* fix: resolve exactOptionalPropertyTypes violations in delay option handling by [@sator-imaging](https://github.com/sator-imaging) with [@Copilot](https://github.com/Copilot) in [#272](https://github.com/sator-imaging/suggest-skills/pull/272)
 ### 📚 Other Changes
 * deps: typescript[@rc](https://github.com/rc) by [@sator-imaging](https://github.com/sator-imaging) in [#242](https://github.com/sator-imaging/suggest-skills/pull/242)
 * Update skillspector risk formatting by [@sator-imaging](https://github.com/sator-imaging) with [@Copilot](https://github.com/Copilot) in [#249](https://github.com/sator-imaging/suggest-skills/pull/249)
