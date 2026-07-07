@@ -61,11 +61,19 @@ export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode
 
   const actions: CliActions = {
     onGenerate: (url: string, options: { recursive?: boolean; delay?: string }) => {
+      let delay: number | undefined;
+      if (options.delay !== undefined) {
+        const parsed = Number.parseInt(options.delay, 10);
+        if (Number.isNaN(parsed)) {
+          throw new ConfigError(`Invalid delay value: ${options.delay}`);
+        }
+        delay = parsed;
+      }
       runtimeMode = {
         kind: "generate",
         url: normalizeGithubRawUrl(url) ?? url,
         recursive: !!options.recursive,
-        ...(options.delay !== undefined ? { delay: Number.parseInt(options.delay, 10) } : {}),
+        ...(delay !== undefined ? { delay } : {}),
         config: {
           outputDirectory: DEFAULT_OUTPUT_DIRECTORY,
           sourceUrls: [],
