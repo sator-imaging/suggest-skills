@@ -106,11 +106,10 @@ export async function generateSkillsManifest(
 export async function generateOutputs(
   url: string,
   options: GenerateOptions = {},
-  pinnedLocation?: GithubDirectoryLocation,
 ): Promise<GeneratedOutputs> {
-  const rootLocation = pinnedLocation
-    ?? resolveGenerateRootLocation(url)
+  const rootLocation = resolveGenerateRootLocation(url)
     ?? await resolveGithubFolderUrl(url);
+  rootLocation.ref = await fetchCommitSha(rootLocation);
   const treeEntries = await listGithubDirectoryRecursive(rootLocation);
   const analysis = analyzeTreeEntries(rootLocation.path, treeEntries);
   const rootEntries = analysis.immediateEntries;
@@ -192,12 +191,7 @@ export async function runGenerateCommand(
   options: GenerateOptions = {},
 ): Promise<void> {
   let writtenCount = 0;
-
-  const rootLocation = resolveGenerateRootLocation(url)
-    ?? await resolveGithubFolderUrl(url);
-  rootLocation.ref = await fetchCommitSha(rootLocation);
-
-  const outputs = await generateOutputs(url, options, rootLocation);
+  const outputs = await generateOutputs(url, options);
   const agentsPath = await writeGeneratedManifest(outputs.agents, "agents");
   const manifestPath = await writeGeneratedManifest(outputs.manifest, "skills");
   const designPath = await writeGeneratedManifest(outputs.design, "designs");
