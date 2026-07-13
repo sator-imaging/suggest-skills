@@ -36,7 +36,6 @@ export type GeneratedOutputs = {
 export type GenerateOptions = {
   recursive?: boolean;
   delayMillis?: number;
-  pinCommitHash?: boolean;
 };
 
 type GeneratedEntry = {
@@ -107,17 +106,12 @@ export async function generateSkillsManifest(
 export async function generateOutputs(
   url: string,
   options: GenerateOptions = {},
+  pinnedLocation?: GithubDirectoryLocation,
 ): Promise<GeneratedOutputs> {
-  const rootLocation = resolveGenerateRootLocation(url)
+  const rootLocation = pinnedLocation
+    ?? resolveGenerateRootLocation(url)
     ?? await resolveGithubFolderUrl(url);
   const treeEntries = await listGithubDirectoryRecursive(rootLocation);
-
-  const pinCommitHash = options.pinCommitHash ?? process.env.NODE_ENV !== "test";
-
-  if (pinCommitHash) {
-    rootLocation.ref = await fetchCommitSha(rootLocation);
-  }
-
   const analysis = analyzeTreeEntries(rootLocation.path, treeEntries);
   const rootEntries = analysis.immediateEntries;
   const agentFiles = rootEntries
@@ -198,7 +192,12 @@ export async function runGenerateCommand(
   options: GenerateOptions = {},
 ): Promise<void> {
   let writtenCount = 0;
-  const outputs = await generateOutputs(url, options);
+
+  const rootLocation = resolveGenerateRootLocation(url)
+    ?? await resolveGithubFolderUrl(url);
+  rootLocation.ref = await fetchCommitSha(rootLocation);
+
+  const outputs = await generateOutputs(url, options, rootLocation);
   const agentsPath = await writeGeneratedManifest(outputs.agents, "agents");
   const manifestPath = await writeGeneratedManifest(outputs.manifest, "skills");
   const designPath = await writeGeneratedManifest(outputs.design, "designs");
