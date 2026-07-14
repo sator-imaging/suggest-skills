@@ -92,38 +92,27 @@ interface SkillSpectorScanJson {
 
 // --- Helpers ---
 
-async function drainStream(stream: ReadableStream<Uint8Array>): Promise<void> {
-  const reader = stream.getReader();
-  try {
-    while (!(await reader.read()).done) {
-      // discard
-    }
-  } finally {
-    reader.releaseLock();
-  }
-}
-
 async function runCmd(
   cmd: string[],
   timeoutMs: number,
-): Promise<{ stdout: string; timedOut: boolean; exitCode: number }> {
+): Promise<{ stdout: string; stderr: string; timedOut: boolean; exitCode: number }> {
   const ac = new AbortController();
   const timeoutPromise = Fibers.delay(timeoutMs, ac.signal);
 
   const proc = spawn(cmd, { stdout: "pipe", stderr: "pipe" });
 
   const stdoutPromise = new Response(proc.stdout).text();
-  // Consume stderr even when unused to avoid pipe deadlock, but do not
-  // buffer it or block successful completion on it.
-  const stderrPromise = drainStream(proc.stderr);
+  const stderrPromise = new Response(proc.stderr).text();
 
   const resultPromise = Promise.all([
     proc.exited,
     stdoutPromise,
-  ]).then(([exitCode, stdout]) => ({
+    stderrPromise,
+  ]).then(([exitCode, stdout, stderr]) => ({
     kind: "done" as const,
     exitCode,
     stdout,
+    stderr,
   })).catch(() => ({
     kind: "error" as const,
   }));
@@ -136,18 +125,16 @@ async function runCmd(
   if (race.kind === "timeout") {
     proc.kill(9);
     ac.abort();
-    void Promise.allSettled([stderrPromise]);
-    return { stdout: "", timedOut: true, exitCode: -1 };
+    return { stdout: "", stderr: "timeout", timedOut: true, exitCode: -1 };
   }
 
   ac.abort();
-  void Promise.allSettled([stderrPromise]);
 
   if (race.kind === "error") {
-    return { stdout: "", timedOut: false, exitCode: -1 };
+    return { stdout: "", stderr: "error", timedOut: false, exitCode: -1 };
   }
 
-  return { stdout: race.stdout, timedOut: false, exitCode: race.exitCode };
+  return { stdout: race.stdout, stderr: race.stderr, timedOut: false, exitCode: race.exitCode };
 }
 
 /** Extract just the number from "XX/100" or a bare score string. */
@@ -340,7 +327,10 @@ async function cloneRepos(targets: CloneTarget[]): Promise<Set<string>> {
       ], TIMEOUT_MS);
 
       if (result.timedOut || result.exitCode !== 0) {
-        console.error(`  [FAILED] ${t.repo}@${t.ref}`);
+        const errorDetail = result.timedOut
+          ? "Timeout"
+          : result.stderr.trim() || `Exit Code ${result.exitCode}`;
+        console.error(`  [FAILED] ${t.repo}@${t.ref} - Reason: ${errorDetail}`);
         failed.add(`${t.repo}@${t.ref}`);
       }
 
