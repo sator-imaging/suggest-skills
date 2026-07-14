@@ -321,6 +321,27 @@ function buildCommitApiUrl(location: GithubDirectoryLocation): string {
   ).toString();
 }
 
+export async function fetchCommitSha(location: GithubDirectoryLocation): Promise<string> {
+  try {
+    const response = await fetchGithub(buildCommitApiUrl(location));
+
+    if (!response.ok) {
+      return location.ref;
+    }
+
+    const payload = (await response.json()) as any;
+    const sha = Array.isArray(payload) ? payload[0]?.sha : payload?.sha;
+
+    if (typeof sha !== "string" || sha === "") {
+      return location.ref;
+    }
+
+    return sha;
+  } catch {
+    return location.ref;
+  }
+}
+
 async function resolveGithubTreeSha(location: GithubDirectoryLocation): Promise<string> {
   if (location.path === "") {
     const response = await fetchGithub(buildCommitApiUrl(location));
