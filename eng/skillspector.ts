@@ -320,11 +320,38 @@ async function cloneRepos(targets: CloneTarget[]): Promise<Set<string>> {
     async (t) => {
       mkdirSync(t.dir, { recursive: true });
 
-      const result = await runCmd([
-        "git", "clone", "--depth=1", "--branch", t.ref,
-        "--recurse-submodules", "--shallow-submodules",
-        `https://github.com/${t.repo}.git`, t.dir,
-      ], TIMEOUT_MS);
+      const isSha = /^[0-9a-f]{40}$/i.test(t.ref);
+
+      let result;
+      if (isSha) {
+        result = await runCmd(["git", "init", t.dir], TIMEOUT_MS);
+        if (result.exitCode === 0) {
+          result = await runCmd([
+            "git", "-C", t.dir, "remote", "add", "origin", `https://github.com/${t.repo}.git`,
+          ], TIMEOUT_MS);
+        }
+        if (result.exitCode === 0) {
+          result = await runCmd([
+            "git", "-C", t.dir, "fetch", "--depth=1", "origin", t.ref,
+          ], TIMEOUT_MS);
+        }
+        if (result.exitCode === 0) {
+          result = await runCmd([
+            "git", "-C", t.dir, "checkout", "FETCH_HEAD",
+          ], TIMEOUT_MS);
+        }
+        if (result.exitCode === 0) {
+          result = await runCmd([
+            "git", "-C", t.dir, "submodule", "update", "--init", "--recursive", "--depth=1",
+          ], TIMEOUT_MS);
+        }
+      } else {
+        result = await runCmd([
+          "git", "clone", "--depth=1", "--branch", t.ref,
+          "--recurse-submodules", "--shallow-submodules",
+          `https://github.com/${t.repo}.git`, t.dir,
+        ], TIMEOUT_MS);
+      }
 
       if (result.timedOut || result.exitCode !== 0) {
         const errorDetail = result.timedOut
