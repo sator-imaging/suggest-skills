@@ -324,12 +324,9 @@ async function cloneRepos(targets: CloneTarget[]): Promise<Set<string>> {
 
       let result;
       if (isSha) {
-        result = await runCmd(["git", "init", t.dir], TIMEOUT_MS);
-        if (result.exitCode === 0) {
-          result = await runCmd([
-            "git", "-C", t.dir, "remote", "add", "origin", `https://github.com/${t.repo}.git`,
-          ], TIMEOUT_MS);
-        }
+        result = await runCmd([
+          "git", "clone", "--depth=1", "--no-checkout", `https://github.com/${t.repo}.git`, t.dir,
+        ], TIMEOUT_MS);
         if (result.exitCode === 0) {
           result = await runCmd([
             "git", "-C", t.dir, "fetch", "--depth=1", "origin", t.ref,
