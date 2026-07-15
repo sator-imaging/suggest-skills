@@ -167,7 +167,7 @@ export async function writeGeneratedManifest(
     return undefined;
   }
 
-  if (manifest.outputFileName.endsWith(`${kind}.${kind}.md`)) {
+  if (manifest.outputFileName.endsWith(`.${kind}.${kind}.md`)) {
     manifest.outputFileName = fixRedundantTypeSuffix(manifest.outputFileName, kind);
   }
 
@@ -747,18 +747,18 @@ function normalizePathToDotted(path: string): string {
 
 function fixRedundantTypeSuffix(filename: string, kind: string): string {
   const extension = ".md";
-  const suffix = kind + ".";
-
-  let base = filename;
-  if (base.endsWith(extension)) {
-    base = base.slice(0, -2);  // Check extension but remove only "md"
+  if (!filename.endsWith(extension)) {
+    return filename;
   }
 
-  while (base.endsWith(suffix)) {
-    base = base.slice(0, -suffix.length);
+  const base = filename.slice(0, -extension.length);
+  const segments = base.split(".");
+
+  while (segments.length > 1 && segments[segments.length - 2] === kind) {
+    segments.splice(segments.length - 2, 1);
   }
 
-  return base + kind + extension;
+  return segments.join(".") + extension;
 }
 
 function createDefaultManifestWriter(): ManifestWriter {

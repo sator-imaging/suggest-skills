@@ -486,11 +486,36 @@ describe("writeGeneratedManifest", () => {
       },
     });
 
-    expect(outputPath).toBe(join(workingDirectory, "some-skills.md"));
+    expect(outputPath).toBe(join(workingDirectory, "some-skills.skills.md"));
     expect(writes).toEqual([
       {
         content: "manifest-body\n",
-        path: join(workingDirectory, "some-skills.md"),
+        path: join(workingDirectory, "some-skills.skills.md"),
+      },
+    ]);
+  });
+
+  test("does not remove redundant type suffix when preceded by non-dot delimiters", async () => {
+    const writes: Array<{ content: string; path: string }> = [];
+    const manifest: GeneratedDocument = {
+      markdown: "manifest-body\n",
+      outputFileName: "my-take-dev.inspired-mino-design-skills.skills.md",
+    };
+
+    const outputPath = await writeGeneratedManifest(manifest, "skills", {
+      confirmOverwrite: async () => true,
+      fileExists: async () => false,
+      workingDirectory: () => workingDirectory,
+      writeFile: async (path, content) => {
+        writes.push({ content, path });
+      },
+    });
+
+    expect(outputPath).toBe(join(workingDirectory, "my-take-dev.inspired-mino-design-skills.skills.md"));
+    expect(writes).toEqual([
+      {
+        content: "manifest-body\n",
+        path: join(workingDirectory, "my-take-dev.inspired-mino-design-skills.skills.md"),
       },
     ]);
   });

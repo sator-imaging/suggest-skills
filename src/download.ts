@@ -315,6 +315,15 @@ function buildTreeApiUrl(owner: string, repo: string, treeSha: string): string {
 }
 
 function buildCommitApiUrl(location: GithubDirectoryLocation): string {
+  if (location.path) {
+    const url = new URL(
+      `/repos/${encodeURIComponent(location.owner)}/${encodeURIComponent(location.repo)}/commits`,
+      GITHUB_API_BASE_URL,
+    );
+    url.searchParams.set("sha", location.ref);
+    url.searchParams.set("path", location.path);
+    return url.toString();
+  }
   return new URL(
     `/repos/${encodeURIComponent(location.owner)}/${encodeURIComponent(location.repo)}/commits/${encodeURIComponent(location.ref)}`,
     GITHUB_API_BASE_URL,
