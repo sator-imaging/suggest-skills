@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.1.0](https://github.com/sator-imaging/suggest-skills/releases/tag/v2.1.0) (2026-07-15)
+
+### 🚀 Features
+* feat: Pin commit hash in generated markdown by [@google-labs-jules](https://github.com/google-labs-jules)[bot] in [#274](https://github.com/sator-imaging/suggest-skills/pull/274)
+### ✨ Bug Fixes
+* Provide detailed error logging on Skillspector clone failures by [@google-labs-jules](https://github.com/google-labs-jules)[bot] in [#279](https://github.com/sator-imaging/suggest-skills/pull/279)
+### 📚 Other Changes
+* deps: typescript[@7.0.2](https://github.com/7.0.2) by [@sator-imaging](https://github.com/sator-imaging) in [#275](https://github.com/sator-imaging/suggest-skills/pull/275)
+* Fix SkillSpector repository cloning for pinned commit SHAs by [@google-labs-jules](https://github.com/google-labs-jules)[bot] in [#281](https://github.com/sator-imaging/suggest-skills/pull/281)
+
+
+**Full Changelog**: https://github.com/sator-imaging/suggest-skills/compare/v2.0.7...v2.1.0
+
+
 ## [2.0.7](https://github.com/sator-imaging/suggest-skills/releases/tag/v2.0.7) (2026-07-07)
 
 ### 🚀 Features
