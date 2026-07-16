@@ -205,6 +205,68 @@ describe("downloadGithubFolder", () => {
   });
 });
 
+import { fetchCommitSha } from "../src/download.js";
+
+describe("fetchCommitSha", () => {
+  test("queries the commits list API with path filtering when a path is present", async () => {
+    const originalFetch = globalThis.fetch;
+    const calls: string[] = [];
+    globalThis.fetch = mock(async (input: string | URL | Request) => {
+      const url = String(input);
+      calls.push(url);
+      if (url === "https://api.github.com/repos/octo/demo/commits?sha=main&path=skills%2Ftest-skill") {
+        return Response.json([{ sha: "abcd1234abcd1234abcd1234abcd1234abcd1234" }]);
+      }
+      throw new Error(`Unexpected fetch in fetchCommitSha test: ${url}`);
+    }) as unknown as typeof fetch;
+
+    try {
+      const sha = await fetchCommitSha({
+        owner: "octo",
+        repo: "demo",
+        ref: "main",
+        path: "skills/test-skill",
+      });
+
+      expect(sha).toBe("abcd1234abcd1234abcd1234abcd1234abcd1234");
+      expect(calls).toEqual([
+        "https://api.github.com/repos/octo/demo/commits?sha=main&path=skills%2Ftest-skill",
+      ]);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  test("queries the single commit API when a path is empty", async () => {
+    const originalFetch = globalThis.fetch;
+    const calls: string[] = [];
+    globalThis.fetch = mock(async (input: string | URL | Request) => {
+      const url = String(input);
+      calls.push(url);
+      if (url === "https://api.github.com/repos/octo/demo/commits/main") {
+        return Response.json({ sha: "xyz987" });
+      }
+      throw new Error(`Unexpected fetch in fetchCommitSha test: ${url}`);
+    }) as unknown as typeof fetch;
+
+    try {
+      const sha = await fetchCommitSha({
+        owner: "octo",
+        repo: "demo",
+        ref: "main",
+        path: "",
+      });
+
+      expect(sha).toBe("xyz987");
+      expect(calls).toEqual([
+        "https://api.github.com/repos/octo/demo/commits/main",
+      ]);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+});
+
 describe("fetchManifestText", () => {
   test("fetches manifest text from a GitHub blob URL", async () => {
     const content = await fetchManifestText(
