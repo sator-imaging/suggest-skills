@@ -167,7 +167,7 @@ export async function writeGeneratedManifest(
     return undefined;
   }
 
-  if (manifest.outputFileName.endsWith(`.${kind}.${kind}.md`)) {
+  if (manifest.outputFileName.endsWith(`.${kind}.md`)) {
     manifest.outputFileName = fixRedundantTypeSuffix(manifest.outputFileName, kind);
   }
 
@@ -751,14 +751,14 @@ function fixRedundantTypeSuffix(filename: string, kind: string): string {
     return filename;
   }
 
-  const base = filename.slice(0, -extension.length);
-  const segments = base.split(".");
+  let base = filename.slice(0, -extension.length);
+  const suffix = "." + kind;
 
-  while (segments.length > 1 && segments[segments.length - 2] === kind) {
-    segments.splice(segments.length - 2, 1);
+  while (base.endsWith(suffix)) {
+    base = base.slice(0, -suffix.length);
   }
 
-  return segments.join(".") + extension;
+  return base + suffix + extension;
 }
 
 function createDefaultManifestWriter(): ManifestWriter {
