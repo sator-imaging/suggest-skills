@@ -474,7 +474,7 @@ describe("writeGeneratedManifest", () => {
     const writes: Array<{ content: string; path: string }> = [];
     const manifest: GeneratedDocument = {
       markdown: "manifest-body\n",
-      outputFileName: "some-skills.skills.skills.md",
+      outputFileName: "some.skills.skills.skills.md",
     };
 
     const outputPath = await writeGeneratedManifest(manifest, "skills", {
@@ -486,11 +486,11 @@ describe("writeGeneratedManifest", () => {
       },
     });
 
-    expect(outputPath).toBe(join(workingDirectory, "some-skills.skills.md"));
+    expect(outputPath).toBe(join(workingDirectory, "some.skills.md"));
     expect(writes).toEqual([
       {
         content: "manifest-body\n",
-        path: join(workingDirectory, "some-skills.skills.md"),
+        path: join(workingDirectory, "some.skills.md"),
       },
     ]);
   });
