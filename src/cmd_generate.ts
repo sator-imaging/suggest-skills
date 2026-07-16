@@ -747,22 +747,17 @@ function normalizePathToDotted(path: string): string {
 
 function fixRedundantTypeSuffix(filename: string, kind: string): string {
   const extension = ".md";
-  const suffix = kind + ".";
-
   let base = filename;
   if (base.endsWith(extension)) {
-    base = base.slice(0, -2);  // Check extension but remove only "md"
+    base = base.slice(0, -extension.length);
   }
 
-  while (base.endsWith(suffix)) {
-    const preSuffixCharIndex = base.length - suffix.length - 1;
-    if (preSuffixCharIndex >= 0 && base[preSuffixCharIndex] !== ".") {
-      break;
-    }
-    base = base.slice(0, -suffix.length);
+  const regex = new RegExp(`[._-]${kind}$`);
+  while (regex.test(base)) {
+    base = base.replace(regex, "");
   }
 
-  return base + kind + extension;
+  return base + "." + kind + extension;
 }
 
 function createDefaultManifestWriter(): ManifestWriter {

@@ -486,16 +486,16 @@ describe("writeGeneratedManifest", () => {
       },
     });
 
-    expect(outputPath).toBe(join(workingDirectory, "some-skills.skills.md"));
+    expect(outputPath).toBe(join(workingDirectory, "some.skills.md"));
     expect(writes).toEqual([
       {
         content: "manifest-body\n",
-        path: join(workingDirectory, "some-skills.skills.md"),
+        path: join(workingDirectory, "some.skills.md"),
       },
     ]);
   });
 
-  test("does not strip suffix when preceded by non-dot delimiter like hyphen", async () => {
+  test("strips suffix when preceded by major delimiters like hyphen or underscore", async () => {
     const writes: Array<{ content: string; path: string }> = [];
     const manifest: GeneratedDocument = {
       markdown: "manifest-body\n",
@@ -511,11 +511,11 @@ describe("writeGeneratedManifest", () => {
       },
     });
 
-    expect(outputPath).toBe(join(workingDirectory, "my-take-dev.inspired-mino-design-skills.skills.md"));
+    expect(outputPath).toBe(join(workingDirectory, "my-take-dev.inspired-mino-design.skills.md"));
     expect(writes).toEqual([
       {
         content: "manifest-body\n",
-        path: join(workingDirectory, "my-take-dev.inspired-mino-design-skills.skills.md"),
+        path: join(workingDirectory, "my-take-dev.inspired-mino-design.skills.md"),
       },
     ]);
   });
