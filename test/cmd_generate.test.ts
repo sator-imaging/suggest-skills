@@ -345,6 +345,75 @@ describe("generateOutputs", () => {
       globalThis.fetch = originalFetch;
     }
   });
+
+  test("pins links to the newest commit of the related files discovered", async () => {
+    const originalFetch = globalThis.fetch;
+    const commitCalls: string[] = [];
+
+    globalThis.fetch = mock(async (input: string | URL | Request) => {
+      let url = String(input);
+
+      if (url.includes("/commits?")) {
+        commitCalls.push(url);
+        if (url.includes("path=catalog%2Fgroup%2Falpha")) {
+          return Response.json([{
+            sha: "alpha_commit_sha_123",
+            commit: { committer: { date: "2026-07-15T12:00:00Z" } }
+          }]);
+        }
+        if (url.includes("path=catalog%2Fgroup%2Fbeta")) {
+          return Response.json([{
+            sha: "beta_commit_sha_456",
+            commit: { committer: { date: "2026-07-16T10:00:00Z" } }
+          }]);
+        }
+        if (url.includes("path=catalog%2Froot-agent.md")) {
+          return Response.json([{
+            sha: "agent_commit_sha_789",
+            commit: { committer: { date: "2026-07-14T09:00:00Z" } }
+          }]);
+        }
+      }
+
+      if (url.includes("/beta_commit_sha_456/")) {
+        url = url.replace("/beta_commit_sha_456/", "/main/");
+      }
+
+      return fetchMock(url);
+    }) as unknown as typeof fetch;
+
+    try {
+      const pinnedLocation = {
+        owner: "octo",
+        repo: "demo",
+        ref: "main",
+        path: "catalog",
+      };
+
+      const outputs = await generateOutputs(
+        "https://github.com/octo/demo/tree/main/catalog",
+        { recursive: true },
+        pinnedLocation,
+      );
+
+      expect(commitCalls.length).toBe(3);
+      expect(commitCalls.some(c => c.includes("path=catalog%2Fgroup%2Falpha"))).toBe(true);
+      expect(commitCalls.some(c => c.includes("path=catalog%2Fgroup%2Fbeta"))).toBe(true);
+      expect(commitCalls.some(c => c.includes("path=catalog%2Froot-agent.md"))).toBe(true);
+
+      expect(outputs.manifest.markdown).toContain(
+        "| [alpha](https://github.com/octo/demo/tree/beta_commit_sha_456/catalog/group/alpha) |",
+      );
+      expect(outputs.manifest.markdown).toContain(
+        "| [beta](https://github.com/octo/demo/tree/beta_commit_sha_456/catalog/group/beta) |",
+      );
+      expect(outputs.agents.markdown).toContain(
+        "| [root-agent](https://github.com/octo/demo/blob/beta_commit_sha_456/catalog/root-agent.md) |",
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });
 
 describe("writeGeneratedManifest", () => {

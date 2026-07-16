@@ -331,6 +331,39 @@ function buildCommitApiUrl(location: GithubDirectoryLocation): string {
   ).toString();
 }
 
+export type CommitInfo = {
+  sha: string;
+  date: string;
+};
+
+export async function fetchCommitInfo(location: GithubDirectoryLocation): Promise<CommitInfo | null> {
+  try {
+    const response = await fetchGithub(buildCommitApiUrl(location));
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = (await response.json()) as any;
+    const firstCommit = Array.isArray(payload) ? payload[0] : payload;
+
+    if (!firstCommit) {
+      return null;
+    }
+
+    const sha = firstCommit.sha;
+    const date = firstCommit.commit?.committer?.date || firstCommit.commit?.author?.date;
+
+    if (typeof sha !== "string" || sha === "" || typeof date !== "string" || date === "") {
+      return null;
+    }
+
+    return { sha, date };
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchCommitSha(location: GithubDirectoryLocation): Promise<string> {
   try {
     const response = await fetchGithub(buildCommitApiUrl(location));
