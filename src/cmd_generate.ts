@@ -755,6 +755,10 @@ function fixRedundantTypeSuffix(filename: string, kind: string): string {
   }
 
   while (base.endsWith(suffix)) {
+    const preSuffixCharIndex = base.length - suffix.length - 1;
+    if (preSuffixCharIndex >= 0 && base[preSuffixCharIndex] !== ".") {
+      break;
+    }
     base = base.slice(0, -suffix.length);
   }
 
