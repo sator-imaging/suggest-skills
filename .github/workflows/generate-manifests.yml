@@ -98,6 +98,7 @@ jobs:
           - Leonxlnx/taste-skill/tree/main/skills
           - DietrichGebert/ponytail/tree/main/skills
           - my-take-dev/inspired-mino-design-skills
+          - phuryn/pm-skills
     env:
       # DO NOT forget add '/' at the end
       OFFICIAL_URL_PREFIXES: |
@@ -131,6 +132,7 @@ jobs:
         NousResearch/hermes-agent/tree/main/skills
         google/skills
         my-take-dev/inspired-mino-design-skills
+        phuryn/pm-skills
       GENERATED_DIR: generate/${{ strategy.job-index }}
       BRANCH: ${{ needs.prepare.outputs.branch }}
 
