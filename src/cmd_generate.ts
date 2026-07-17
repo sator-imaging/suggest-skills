@@ -8,9 +8,11 @@ import type { GithubDirectoryLocation } from "./utils.js";
 import { logInfo, logWarning, parseMarkdownFrontMatterFields, parseUrl } from "./utils.js";
 import {
   fetchCommitSha,
+  fetchCommitInfo,
   fetchTextContent,
   listGithubDirectoryRecursive,
   resolveGithubFolderUrl,
+  type CommitInfo,
   type GithubContentEntry,
 } from "./download.js";
 import {
@@ -123,6 +125,15 @@ export async function generateOutputs(
       .filter((entry) => entry.type === "dir")
       .map((entry) => entry.path)
       .sort((left, right) => left.localeCompare(right));
+
+  if (pinnedLocation) {
+    const newestRef = await resolveNewestCommitSha(rootLocation, [
+      ...candidateDirectories,
+      ...agentFiles.map((f) => f.path),
+    ]);
+    rootLocation.ref = newestRef;
+  }
+
   const agentEntries = await summarizeAgentFiles(rootLocation, agentFiles, options.delayMillis);
   const summaries = await summarizeDirectories(
     rootLocation,
@@ -787,4 +798,55 @@ async function promptForOverwrite(path: string): Promise<boolean> {
   } finally {
     terminal.close();
   }
+}
+
+export function getTopmostPaths(paths: string[]): string[] {
+  const sorted = [...paths].sort((left, right) => left.length - right.length);
+  const filtered: string[] = [];
+
+  for (const path of sorted) {
+    let isNested = false;
+
+    for (const existing of filtered) {
+      if (path === existing || path.startsWith(existing + "/")) {
+        isNested = true;
+        break;
+      }
+    }
+
+    if (!isNested) {
+      filtered.push(path);
+    }
+  }
+
+  return filtered;
+}
+
+export async function resolveNewestCommitSha(
+  rootLocation: GithubDirectoryLocation,
+  paths: string[],
+): Promise<string> {
+  const topmostPaths = getTopmostPaths(paths);
+
+  if (topmostPaths.length === 0) {
+    return fetchCommitSha(rootLocation);
+  }
+
+  const commitInfos = await Promise.all(
+    topmostPaths.map(async (path) => {
+      return fetchCommitInfo({
+        ...rootLocation,
+        path,
+      });
+    }),
+  );
+
+  const validCommits = commitInfos.filter((c): c is CommitInfo => c !== null);
+
+  if (validCommits.length > 0) {
+    validCommits.sort((left, right) => Date.parse(right.date) - Date.parse(left.date));
+    return validCommits[0]!.sha;
+  }
+
+  return fetchCommitSha(rootLocation);
 }
