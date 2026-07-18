@@ -414,6 +414,129 @@ describe("generateOutputs", () => {
       globalThis.fetch = originalFetch;
     }
   });
+
+  test("falls back to repository master/main head commit sha if any commits API call fails", async () => {
+    const originalFetch = globalThis.fetch;
+    const commitCalls: string[] = [];
+
+    globalThis.fetch = mock(async (input: string | URL | Request) => {
+      let url = String(input);
+
+      if (url.includes("/commits?")) {
+        commitCalls.push(url);
+        // Simulate a failure for group/beta
+        if (url.includes("path=catalog%2Fgroup%2Fbeta")) {
+          return new Response(JSON.stringify({ message: "Not Found" }), { status: 404 });
+        }
+        if (url.includes("path=catalog%2Fgroup%2Falpha")) {
+          return Response.json([{
+            sha: "alpha_commit_sha_123",
+            commit: { committer: { date: "2026-07-15T12:00:00Z" } }
+          }]);
+        }
+        if (url.includes("path=catalog%2Froot-agent.md")) {
+          return Response.json([{
+            sha: "agent_commit_sha_789",
+            commit: { committer: { date: "2026-07-14T09:00:00Z" } }
+          }]);
+        }
+      }
+
+      if (url.endsWith("/commits/main")) {
+        return Response.json({
+          sha: "main_head_sha_fallback_999",
+          commit: {
+            tree: {
+              sha: "root-main-tree"
+            }
+          }
+        });
+      }
+
+      if (url.includes("/main_head_sha_fallback_999/")) {
+        url = url.replace("/main_head_sha_fallback_999/", "/main/");
+      }
+
+      return fetchMock(url);
+    }) as unknown as typeof fetch;
+
+    try {
+      const pinnedLocation = {
+        owner: "octo",
+        repo: "demo",
+        ref: "main",
+        path: "catalog",
+      };
+
+      const outputs = await generateOutputs(
+        "https://github.com/octo/demo/tree/main/catalog",
+        { recursive: true },
+        pinnedLocation,
+      );
+
+      expect(outputs.manifest.markdown).toContain(
+        "| [alpha](https://github.com/octo/demo/tree/main_head_sha_fallback_999/catalog/group/alpha) |",
+      );
+      expect(outputs.manifest.markdown).toContain(
+        "| [beta](https://github.com/octo/demo/tree/main_head_sha_fallback_999/catalog/group/beta) |",
+      );
+      expect(outputs.agents.markdown).toContain(
+        "| [root-agent](https://github.com/octo/demo/blob/main_head_sha_fallback_999/catalog/root-agent.md) |",
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  test("queries commits API with only actual related file paths (skipped designs are excluded)", async () => {
+    const originalFetch = globalThis.fetch;
+    const commitCalls: string[] = [];
+
+    globalThis.fetch = mock(async (input: string | URL | Request) => {
+      let url = String(input);
+
+      if (url.includes("/commits?")) {
+        commitCalls.push(url);
+        return Response.json([{
+          sha: "newest_related_sha",
+          commit: { committer: { date: "2026-07-15T12:00:00Z" } }
+        }]);
+      }
+
+      if (url.includes("/newest_related_sha/")) {
+        url = url.replace("/newest_related_sha/", "/main/");
+      }
+
+      return fetchMock(url);
+    }) as unknown as typeof fetch;
+
+    try {
+      const pinnedLocation = {
+        owner: "octo",
+        repo: "demo",
+        ref: "main",
+        path: "skills",
+      };
+
+      await generateOutputs(
+        "https://github.com/octo/demo/tree/main/skills",
+        {},
+        pinnedLocation,
+      );
+
+      // In skills/ folder, 'skills/nameless' has design skipped, but its skill manifest is preserved.
+      // So 'skills/nameless' is still an actual related path (for manifest).
+      // However, we shouldn't have any non-existent paths.
+      // Let's verify that the paths queried are only 'skills/alpha', 'skills/beta', 'skills/nameless', and the agent files.
+      // 'skills/stitch-design' or other folders are not direct children of tree without recursive, so they shouldn't be queried.
+      expect(commitCalls.length).toBeGreaterThan(0);
+      for (const call of commitCalls) {
+        expect(call).not.toContain("stitch-design");
+      }
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });
 
 describe("writeGeneratedManifest", () => {

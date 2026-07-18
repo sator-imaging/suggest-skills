@@ -41,6 +41,7 @@ export type GenerateOptions = {
 };
 
 type GeneratedEntry = {
+  path?: string;
   assets: string[];
   assetBlobBaseUrl: string;
   assetTreeBaseUrl: string;
@@ -126,14 +127,6 @@ export async function generateOutputs(
       .map((entry) => entry.path)
       .sort((left, right) => left.localeCompare(right));
 
-  if (pinnedLocation) {
-    const newestRef = await resolveNewestCommitSha(rootLocation, [
-      ...candidateDirectories,
-      ...agentFiles.map((f) => f.path),
-    ]);
-    rootLocation.ref = newestRef;
-  }
-
   const agentEntries = await summarizeAgentFiles(rootLocation, agentFiles, options.delayMillis);
   const summaries = await summarizeDirectories(
     rootLocation,
@@ -152,6 +145,35 @@ export async function generateOutputs(
   logInfo(`Finished summarize all agents: ${agentEntries.length}`);
   logInfo(`Finished summarize all skills: ${manifestEntries.length}`);
   logInfo(`Finished summarize all designs: ${designEntries.length}`);
+
+  if (pinnedLocation) {
+    const actualRelatedPaths: string[] = [];
+    for (const entry of agentEntries) {
+      if (entry.path) actualRelatedPaths.push(entry.path);
+    }
+    for (const entry of manifestEntries) {
+      if (entry.path) actualRelatedPaths.push(entry.path);
+    }
+    for (const entry of designEntries) {
+      if (entry.path) actualRelatedPaths.push(entry.path);
+    }
+
+    const newestRef = await resolveNewestCommitSha(rootLocation, actualRelatedPaths);
+    rootLocation.ref = newestRef;
+
+    // Since we updated rootLocation.ref, we need to rebuild the URLs for actual entries.
+    for (const entry of agentEntries) {
+      entry.url = formatGithubFileUrl(rootLocation, entry.path || "");
+    }
+    for (const entry of manifestEntries) {
+      entry.url = formatGithubFolderUrl(rootLocation, entry.path || "");
+    }
+    for (const entry of designEntries) {
+      entry.url = formatGithubFolderUrl(rootLocation, entry.path || "");
+      entry.assetBlobBaseUrl = formatGithubFileUrl(rootLocation, entry.path || "");
+      entry.assetTreeBaseUrl = formatGithubFolderUrl(rootLocation, entry.path || "");
+    }
+  }
 
   return {
     agents: {
@@ -376,6 +398,7 @@ async function summarizeAgentFile(
   }
 
   const entry = {
+    path: summary.path,
     assets: [],
     assetBlobBaseUrl: summary.url,
     assetTreeBaseUrl: summary.url,
@@ -488,6 +511,7 @@ async function buildEntry({
 
   if (fileName === "DESIGN.md" && frontMatter.source === null) {
     return {
+      path: sourcePath,
       assets: summary.assets,
       assetBlobBaseUrl: formatGithubFileUrl(rootLocation, sourcePath),
       assetTreeBaseUrl: formatGithubFolderUrl(rootLocation, sourcePath),
@@ -511,6 +535,7 @@ async function buildEntry({
   }
 
   return {
+    path: sourcePath,
     assets: summary.assets,
     assetBlobBaseUrl: formatGithubFileUrl(rootLocation, sourcePath),
     assetTreeBaseUrl: formatGithubFolderUrl(rootLocation, sourcePath),
@@ -829,24 +854,28 @@ export async function resolveNewestCommitSha(
   const topmostPaths = getTopmostPaths(paths);
 
   if (topmostPaths.length === 0) {
-    return fetchCommitSha(rootLocation);
+    return fetchCommitSha({ ...rootLocation, path: "" });
   }
 
-  const commitInfos = await Promise.all(
-    topmostPaths.map(async (path) => {
-      return fetchCommitInfo({
-        ...rootLocation,
-        path,
-      });
-    }),
-  );
+  try {
+    const commitInfos = await Promise.all(
+      topmostPaths.map(async (path) => {
+        return fetchCommitInfo({
+          ...rootLocation,
+          path,
+        });
+      }),
+    );
 
-  const validCommits = commitInfos.filter((c): c is CommitInfo => c !== null);
+    const validCommits = commitInfos.filter((c): c is CommitInfo => c !== null);
 
-  if (validCommits.length > 0) {
-    validCommits.sort((left, right) => Date.parse(right.date) - Date.parse(left.date));
-    return validCommits[0]!.sha;
+    if (validCommits.length === topmostPaths.length && validCommits.length > 0) {
+      validCommits.sort((left, right) => Date.parse(right.date) - Date.parse(left.date));
+      return validCommits[0]!.sha;
+    }
+  } catch {
+    // Treat any error as a failure to retrieve, fallback below.
   }
 
-  return fetchCommitSha(rootLocation);
+  return fetchCommitSha({ ...rootLocation, path: "" });
 }
