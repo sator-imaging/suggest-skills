@@ -99,6 +99,7 @@ jobs:
           - DietrichGebert/ponytail/tree/main/skills
           - my-take-dev/inspired-mino-design-skills
           - phuryn/pm-skills
+          - Unity-Technologies/skills/tree/main/skills
     env:
       # DO NOT forget add '/' at the end
       OFFICIAL_URL_PREFIXES: |
@@ -121,6 +122,7 @@ jobs:
         aws/
         GoogleChrome/
         google/
+        Unity-Technologies/
       RECURSIVE_URL_PREFIXES: |
         android/skills
         aws/agent-toolkit-for-aws/tree/main/skills
