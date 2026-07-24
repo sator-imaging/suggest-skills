@@ -415,7 +415,7 @@ describe("generateOutputs", () => {
     }
   });
 
-  test("falls back to repository master/main head commit sha if any commits API call fails", async () => {
+  test("falls back to repository master/main head commit sha if any commits API call fails, only for that skill and not entire skills", async () => {
     const originalFetch = globalThis.fetch;
     const commitCalls: string[] = [];
 
@@ -457,6 +457,10 @@ describe("generateOutputs", () => {
         url = url.replace("/main_head_sha_fallback_999/", "/main/");
       }
 
+      if (url.includes("/alpha_commit_sha_123/")) {
+        url = url.replace("/alpha_commit_sha_123/", "/main/");
+      }
+
       return fetchMock(url);
     }) as unknown as typeof fetch;
 
@@ -474,14 +478,16 @@ describe("generateOutputs", () => {
         pinnedLocation,
       );
 
+      // alpha and root-agent succeeded, so they should use the newest among the successful ones (alpha_commit_sha_123, which is 2026-07-15 vs 2026-07-14)
       expect(outputs.manifest.markdown).toContain(
-        "| [alpha](https://github.com/octo/demo/tree/main_head_sha_fallback_999/catalog/group/alpha) |",
+        "| [alpha](https://github.com/octo/demo/tree/alpha_commit_sha_123/catalog/group/alpha) |",
       );
+      // beta failed, so it should fall back to main HEAD SHA
       expect(outputs.manifest.markdown).toContain(
         "| [beta](https://github.com/octo/demo/tree/main_head_sha_fallback_999/catalog/group/beta) |",
       );
       expect(outputs.agents.markdown).toContain(
-        "| [root-agent](https://github.com/octo/demo/blob/main_head_sha_fallback_999/catalog/root-agent.md) |",
+        "| [root-agent](https://github.com/octo/demo/blob/alpha_commit_sha_123/catalog/root-agent.md) |",
       );
     } finally {
       globalThis.fetch = originalFetch;

@@ -158,20 +158,29 @@ export async function generateOutputs(
       if (entry.path) actualRelatedPaths.push(entry.path);
     }
 
-    const newestRef = await resolveNewestCommitSha(rootLocation, actualRelatedPaths);
-    rootLocation.ref = newestRef;
+    const topmostPaths = getTopmostPaths(actualRelatedPaths);
+    const pathRefMap = await resolveRelatedPathsToRefs(rootLocation, actualRelatedPaths);
 
-    // Since we updated rootLocation.ref, we need to rebuild the URLs for actual entries.
+    // Since we updated refs individually, we need to rebuild the URLs for actual entries.
     for (const entry of agentEntries) {
-      entry.url = formatGithubFileUrl(rootLocation, entry.path || "");
+      const topmostPath = entry.path ? topmostPaths.find(topmost => entry.path === topmost || entry.path!.startsWith(topmost + "/")) : undefined;
+      const ref = (topmostPath && pathRefMap.get(topmostPath)) || rootLocation.ref;
+      const entryLocation = { ...rootLocation, ref };
+      entry.url = formatGithubFileUrl(entryLocation, entry.path || "");
     }
     for (const entry of manifestEntries) {
-      entry.url = formatGithubFolderUrl(rootLocation, entry.path || "");
+      const topmostPath = entry.path ? topmostPaths.find(topmost => entry.path === topmost || entry.path!.startsWith(topmost + "/")) : undefined;
+      const ref = (topmostPath && pathRefMap.get(topmostPath)) || rootLocation.ref;
+      const entryLocation = { ...rootLocation, ref };
+      entry.url = formatGithubFolderUrl(entryLocation, entry.path || "");
     }
     for (const entry of designEntries) {
-      entry.url = formatGithubFolderUrl(rootLocation, entry.path || "");
-      entry.assetBlobBaseUrl = formatGithubFileUrl(rootLocation, entry.path || "");
-      entry.assetTreeBaseUrl = formatGithubFolderUrl(rootLocation, entry.path || "");
+      const topmostPath = entry.path ? topmostPaths.find(topmost => entry.path === topmost || entry.path!.startsWith(topmost + "/")) : undefined;
+      const ref = (topmostPath && pathRefMap.get(topmostPath)) || rootLocation.ref;
+      const entryLocation = { ...rootLocation, ref };
+      entry.url = formatGithubFolderUrl(entryLocation, entry.path || "");
+      entry.assetBlobBaseUrl = formatGithubFileUrl(entryLocation, entry.path || "");
+      entry.assetTreeBaseUrl = formatGithubFolderUrl(entryLocation, entry.path || "");
     }
   }
 
@@ -845,6 +854,66 @@ export function getTopmostPaths(paths: string[]): string[] {
   }
 
   return filtered;
+}
+
+export async function resolveRelatedPathsToRefs(
+  rootLocation: GithubDirectoryLocation,
+  paths: string[],
+): Promise<Map<string, string>> {
+  const topmostPaths = getTopmostPaths(paths);
+  const pathRefMap = new Map<string, string>();
+
+  if (topmostPaths.length === 0) {
+    return pathRefMap;
+  }
+
+  let rootHeadSha: string | null = null;
+  const getRootHeadSha = async () => {
+    if (rootHeadSha === null) {
+      rootHeadSha = await fetchCommitSha({ ...rootLocation, path: "" });
+    }
+    return rootHeadSha;
+  };
+
+  const results = await Promise.all(
+    topmostPaths.map(async (path) => {
+      try {
+        const info = await fetchCommitInfo({
+          ...rootLocation,
+          path,
+        });
+        return { path, info };
+      } catch {
+        return { path, info: null };
+      }
+    }),
+  );
+
+  const successfulCommits = results.filter((r): r is { path: string; info: CommitInfo } => r.info !== null);
+
+  if (successfulCommits.length > 0) {
+    // Determine the newest commit SHA among the successfully retrieved ones.
+    const sorted = [...successfulCommits].sort(
+      (left, right) => Date.parse(right.info.date) - Date.parse(left.info.date),
+    );
+    const newestSha = sorted[0]!.info.sha;
+
+    for (const r of results) {
+      if (r.info !== null) {
+        pathRefMap.set(r.path, newestSha);
+      } else {
+        pathRefMap.set(r.path, await getRootHeadSha());
+      }
+    }
+  } else {
+    // If none of them succeeded, fall back to main HEAD sha for all.
+    const fallbackRef = await getRootHeadSha();
+    for (const path of topmostPaths) {
+      pathRefMap.set(path, fallbackRef);
+    }
+  }
+
+  return pathRefMap;
 }
 
 export async function resolveNewestCommitSha(
