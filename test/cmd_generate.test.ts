@@ -3,6 +3,8 @@ import { join } from "node:path";
 import {
   generateOutputs,
   generateSkillsManifest,
+  getTopmostPaths,
+  resolveRelatedPathsToRefs,
   writeGeneratedManifest,
   type GeneratedDocument,
 } from "../src/cmd_generate.js";
@@ -489,6 +491,84 @@ describe("generateOutputs", () => {
       expect(outputs.agents.markdown).toContain(
         "| [root-agent](https://github.com/octo/demo/blob/alpha_commit_sha_123/catalog/root-agent.md) |",
       );
+      expect(outputs.design.markdown).toContain(
+        "| [alpha-design](https://github.com/octo/demo/tree/alpha_commit_sha_123/catalog/group/alpha) |",
+      );
+      expect(outputs.design.markdown).toContain(
+        "| [beta-design](https://github.com/octo/demo/tree/main_head_sha_fallback_999/catalog/group/beta) |",
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  test("falls back per nested skill when a parent commits lookup fails but the child succeeds", async () => {
+    const originalFetch = globalThis.fetch;
+    const commitCalls: string[] = [];
+
+    globalThis.fetch = mock(async (input: string | URL | Request) => {
+      let url = String(input);
+
+      if (url.includes("/commits?")) {
+        commitCalls.push(url);
+        if (url.includes("path=library%2Fparent&") || url.endsWith("path=library%2Fparent")) {
+          return new Response(JSON.stringify({ message: "Not Found" }), { status: 404 });
+        }
+        if (url.includes("path=library%2Fparent%2Fchild")) {
+          return Response.json([{
+            sha: "child_commit_sha_456",
+            commit: { committer: { date: "2026-07-16T10:00:00Z" } },
+          }]);
+        }
+      }
+
+      if (url.endsWith("/commits/main")) {
+        return Response.json({
+          sha: "main_head_sha_fallback_999",
+          commit: {
+            tree: {
+              sha: "root-main-tree",
+            },
+          },
+        });
+      }
+
+      if (url.includes("/main_head_sha_fallback_999/")) {
+        url = url.replace("/main_head_sha_fallback_999/", "/main/");
+      }
+
+      if (url.includes("/child_commit_sha_456/")) {
+        url = url.replace("/child_commit_sha_456/", "/main/");
+      }
+
+      return fetchMock(url);
+    }) as unknown as typeof fetch;
+
+    try {
+      const pinnedLocation = {
+        owner: "octo",
+        repo: "demo",
+        ref: "main",
+        path: "library",
+      };
+
+      const outputs = await generateOutputs(
+        "https://github.com/octo/demo/tree/main/library",
+        { recursive: true },
+        pinnedLocation,
+      );
+
+      expect(commitCalls.some((call) => call.includes("path=library%2Fparent"))).toBe(true);
+      expect(commitCalls.some((call) => call.includes("path=library%2Fparent%2Fchild"))).toBe(true);
+      expect(outputs.manifest.markdown).toContain(
+        "| [parent](https://github.com/octo/demo/tree/main_head_sha_fallback_999/library/parent) |",
+      );
+      expect(outputs.manifest.markdown).toContain(
+        "| [child](https://github.com/octo/demo/tree/child_commit_sha_456/library/parent/child) |",
+      );
+      expect(outputs.design.markdown).toContain(
+        "| [child-design](https://github.com/octo/demo/tree/child_commit_sha_456/library/parent/child) |",
+      );
     } finally {
       globalThis.fetch = originalFetch;
     }
@@ -539,6 +619,111 @@ describe("generateOutputs", () => {
       for (const call of commitCalls) {
         expect(call).not.toContain("stitch-design");
       }
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+});
+
+describe("getTopmostPaths", () => {
+  test("returns only paths that are not nested under another path", () => {
+    expect(getTopmostPaths([
+      "catalog/group/alpha",
+      "catalog/group/beta",
+      "catalog/root-agent.md",
+    ]).sort()).toEqual([
+      "catalog/group/alpha",
+      "catalog/group/beta",
+      "catalog/root-agent.md",
+    ]);
+  });
+
+  test("drops nested paths when a parent path is present", () => {
+    expect(getTopmostPaths([
+      "library/parent/child",
+      "library/parent",
+    ])).toEqual([
+      "library/parent",
+    ]);
+  });
+});
+
+describe("resolveRelatedPathsToRefs", () => {
+  test("keeps refs keyed by each actual path without collapsing nested skills", async () => {
+    const originalFetch = globalThis.fetch;
+
+    globalThis.fetch = mock(async (input: string | URL | Request) => {
+      const url = String(input);
+
+      if (url.includes("path=library%2Fparent&") || url.endsWith("path=library%2Fparent")) {
+        return new Response(JSON.stringify({ message: "Not Found" }), { status: 404 });
+      }
+
+      if (url.includes("path=library%2Fparent%2Fchild")) {
+        return Response.json([{
+          sha: "child_commit_sha_456",
+          commit: { committer: { date: "2026-07-16T10:00:00Z" } },
+        }]);
+      }
+
+      if (url.endsWith("/commits/main")) {
+        return Response.json({
+          sha: "main_head_sha_fallback_999",
+        });
+      }
+
+      throw new Error(`Unexpected fetch: ${url}`);
+    }) as unknown as typeof fetch;
+
+    try {
+      const pathRefMap = await resolveRelatedPathsToRefs(
+        {
+          owner: "octo",
+          repo: "demo",
+          ref: "main",
+          path: "library",
+        },
+        ["library/parent", "library/parent/child"],
+      );
+
+      expect(pathRefMap.get("library/parent")).toBe("main_head_sha_fallback_999");
+      expect(pathRefMap.get("library/parent/child")).toBe("child_commit_sha_456");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  test("deduplicates repeated paths before querying commits", async () => {
+    const originalFetch = globalThis.fetch;
+    const commitCalls: string[] = [];
+
+    globalThis.fetch = mock(async (input: string | URL | Request) => {
+      const url = String(input);
+
+      if (url.includes("/commits?")) {
+        commitCalls.push(url);
+        return Response.json([{
+          sha: "skill_commit_sha",
+          commit: { committer: { date: "2026-07-15T12:00:00Z" } },
+        }]);
+      }
+
+      throw new Error(`Unexpected fetch: ${url}`);
+    }) as unknown as typeof fetch;
+
+    try {
+      const pathRefMap = await resolveRelatedPathsToRefs(
+        {
+          owner: "octo",
+          repo: "demo",
+          ref: "main",
+          path: "skills",
+        },
+        ["skills/alpha", "skills/alpha", "skills/alpha"],
+      );
+
+      expect(commitCalls).toHaveLength(1);
+      expect(pathRefMap.get("skills/alpha")).toBe("skill_commit_sha");
     } finally {
       globalThis.fetch = originalFetch;
     }

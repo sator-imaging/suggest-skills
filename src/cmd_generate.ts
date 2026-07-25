@@ -158,26 +158,19 @@ export async function generateOutputs(
       if (entry.path) actualRelatedPaths.push(entry.path);
     }
 
-    const topmostPaths = getTopmostPaths(actualRelatedPaths);
     const pathRefMap = await resolveRelatedPathsToRefs(rootLocation, actualRelatedPaths);
 
     // Since we updated refs individually, we need to rebuild the URLs for actual entries.
     for (const entry of agentEntries) {
-      const topmostPath = entry.path ? topmostPaths.find(topmost => entry.path === topmost || entry.path!.startsWith(topmost + "/")) : undefined;
-      const ref = (topmostPath && pathRefMap.get(topmostPath)) || rootLocation.ref;
-      const entryLocation = { ...rootLocation, ref };
+      const entryLocation = locationWithEntryRef(rootLocation, entry.path, pathRefMap);
       entry.url = formatGithubFileUrl(entryLocation, entry.path || "");
     }
     for (const entry of manifestEntries) {
-      const topmostPath = entry.path ? topmostPaths.find(topmost => entry.path === topmost || entry.path!.startsWith(topmost + "/")) : undefined;
-      const ref = (topmostPath && pathRefMap.get(topmostPath)) || rootLocation.ref;
-      const entryLocation = { ...rootLocation, ref };
+      const entryLocation = locationWithEntryRef(rootLocation, entry.path, pathRefMap);
       entry.url = formatGithubFolderUrl(entryLocation, entry.path || "");
     }
     for (const entry of designEntries) {
-      const topmostPath = entry.path ? topmostPaths.find(topmost => entry.path === topmost || entry.path!.startsWith(topmost + "/")) : undefined;
-      const ref = (topmostPath && pathRefMap.get(topmostPath)) || rootLocation.ref;
-      const entryLocation = { ...rootLocation, ref };
+      const entryLocation = locationWithEntryRef(rootLocation, entry.path, pathRefMap);
       entry.url = formatGithubFolderUrl(entryLocation, entry.path || "");
       entry.assetBlobBaseUrl = formatGithubFileUrl(entryLocation, entry.path || "");
       entry.assetTreeBaseUrl = formatGithubFolderUrl(entryLocation, entry.path || "");
@@ -834,6 +827,15 @@ async function promptForOverwrite(path: string): Promise<boolean> {
   }
 }
 
+function locationWithEntryRef(
+  rootLocation: GithubDirectoryLocation,
+  path: string | undefined,
+  pathRefMap: ReadonlyMap<string, string>,
+): GithubDirectoryLocation {
+  const ref = path ? pathRefMap.get(path) ?? rootLocation.ref : rootLocation.ref;
+  return { ...rootLocation, ref };
+}
+
 export function getTopmostPaths(paths: string[]): string[] {
   const sorted = [...paths].sort((left, right) => left.length - right.length);
   const filtered: string[] = [];
@@ -860,10 +862,10 @@ export async function resolveRelatedPathsToRefs(
   rootLocation: GithubDirectoryLocation,
   paths: string[],
 ): Promise<Map<string, string>> {
-  const topmostPaths = getTopmostPaths(paths);
+  const relatedPaths = [...new Set(paths.filter((path) => path !== ""))];
   const pathRefMap = new Map<string, string>();
 
-  if (topmostPaths.length === 0) {
+  if (relatedPaths.length === 0) {
     return pathRefMap;
   }
 
@@ -876,16 +878,12 @@ export async function resolveRelatedPathsToRefs(
   };
 
   const results = await Promise.all(
-    topmostPaths.map(async (path) => {
-      try {
-        const info = await fetchCommitInfo({
-          ...rootLocation,
-          path,
-        });
-        return { path, info };
-      } catch {
-        return { path, info: null };
-      }
+    relatedPaths.map(async (path) => {
+      const info = await fetchCommitInfo({
+        ...rootLocation,
+        path,
+      });
+      return { path, info };
     }),
   );
 
@@ -908,43 +906,10 @@ export async function resolveRelatedPathsToRefs(
   } else {
     // If none of them succeeded, fall back to main HEAD sha for all.
     const fallbackRef = await getRootHeadSha();
-    for (const path of topmostPaths) {
+    for (const path of relatedPaths) {
       pathRefMap.set(path, fallbackRef);
     }
   }
 
   return pathRefMap;
-}
-
-export async function resolveNewestCommitSha(
-  rootLocation: GithubDirectoryLocation,
-  paths: string[],
-): Promise<string> {
-  const topmostPaths = getTopmostPaths(paths);
-
-  if (topmostPaths.length === 0) {
-    return fetchCommitSha({ ...rootLocation, path: "" });
-  }
-
-  try {
-    const commitInfos = await Promise.all(
-      topmostPaths.map(async (path) => {
-        return fetchCommitInfo({
-          ...rootLocation,
-          path,
-        });
-      }),
-    );
-
-    const validCommits = commitInfos.filter((c): c is CommitInfo => c !== null);
-
-    if (validCommits.length === topmostPaths.length && validCommits.length > 0) {
-      validCommits.sort((left, right) => Date.parse(right.date) - Date.parse(left.date));
-      return validCommits[0]!.sha;
-    }
-  } catch {
-    // Treat any error as a failure to retrieve, fallback below.
-  }
-
-  return fetchCommitSha({ ...rootLocation, path: "" });
 }
