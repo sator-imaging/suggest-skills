@@ -19,7 +19,7 @@ describe("parseCli", () => {
     expect(runtimeMode.config).toEqual({
       outputDirectory: ".agents/skills",
       sourceUrls: [DEFAULT_RAW_SOURCE_URL],
-      stateless: true,
+      stateless: false,
     });
   });
 
@@ -234,7 +234,7 @@ describe("parseCli", () => {
     expect(runtimeMode.delay).toBe(500);
   });
 
-  test("parses stateless by default for server subcommand", () => {
+  test("parses stateful by default for server subcommand", () => {
     const runtimeMode = parseCli(
       ["node", "index.js", "server", "--port", "3100", "https://example.com/manifest.md"],
       {},
@@ -244,12 +244,12 @@ describe("parseCli", () => {
       throw new Error("Expected server runtime mode");
     }
 
-    expect(runtimeMode.config.stateless).toBe(true);
+    expect(runtimeMode.config.stateless).toBe(false);
   });
 
-  test("parses stateful mode when --stateful is passed", () => {
+  test("parses stateless mode when --stateless is passed", () => {
     const runtimeMode = parseCli(
-      ["node", "index.js", "server", "--port", "3100", "--stateful", "https://example.com/manifest.md"],
+      ["node", "index.js", "server", "--port", "3100", "--stateless", "https://example.com/manifest.md"],
       {},
     );
 
@@ -257,7 +257,7 @@ describe("parseCli", () => {
       throw new Error("Expected server runtime mode");
     }
 
-    expect(runtimeMode.config.stateless).toBe(false);
+    expect(runtimeMode.config.stateless).toBe(true);
   });
 
   test("parses stateful mode when --stateless=false is passed", () => {
@@ -273,11 +273,11 @@ describe("parseCli", () => {
     expect(runtimeMode.config.stateless).toBe(false);
   });
 
-  test("parses stateful mode when SUGGEST_SKILLS_STATELESS is false", () => {
+  test("parses stateless mode when SUGGEST_SKILLS_STATELESS is true", () => {
     const runtimeMode = parseCli(
       ["node", "index.js", "server", "--port", "3100", "https://example.com/manifest.md"],
       {
-        SUGGEST_SKILLS_STATELESS: "false",
+        SUGGEST_SKILLS_STATELESS: "true",
       },
     );
 
@@ -285,7 +285,7 @@ describe("parseCli", () => {
       throw new Error("Expected server runtime mode");
     }
 
-    expect(runtimeMode.config.stateless).toBe(false);
+    expect(runtimeMode.config.stateless).toBe(true);
   });
 });
 
@@ -524,6 +524,7 @@ describe("streamable HTTP MCP server", () => {
     const runtimeMode = parseCli(["node", "index.js"], {
       SUGGEST_SKILLS_MANIFEST_URLS: JSON.stringify([DEFAULT_SOURCE_URL]),
     });
+    runtimeMode.config.stateless = true;
     const server = createHttpApp(runtimeMode.config, 0);
 
     try {
