@@ -19,6 +19,7 @@ describe("parseCli", () => {
     expect(runtimeMode.config).toEqual({
       outputDirectory: ".agents/skills",
       sourceUrls: [DEFAULT_RAW_SOURCE_URL],
+      stateless: true,
     });
   });
 
@@ -231,6 +232,60 @@ describe("parseCli", () => {
     }
 
     expect(runtimeMode.delay).toBe(500);
+  });
+
+  test("parses stateless by default for server subcommand", () => {
+    const runtimeMode = parseCli(
+      ["node", "index.js", "server", "--port", "3100", "https://example.com/manifest.md"],
+      {},
+    );
+
+    if (runtimeMode.kind !== "server") {
+      throw new Error("Expected server runtime mode");
+    }
+
+    expect(runtimeMode.config.stateless).toBe(true);
+  });
+
+  test("parses stateful mode when --stateful is passed", () => {
+    const runtimeMode = parseCli(
+      ["node", "index.js", "server", "--port", "3100", "--stateful", "https://example.com/manifest.md"],
+      {},
+    );
+
+    if (runtimeMode.kind !== "server") {
+      throw new Error("Expected server runtime mode");
+    }
+
+    expect(runtimeMode.config.stateless).toBe(false);
+  });
+
+  test("parses stateful mode when --stateless=false is passed", () => {
+    const runtimeMode = parseCli(
+      ["node", "index.js", "server", "--port", "3100", "--stateless=false", "https://example.com/manifest.md"],
+      {},
+    );
+
+    if (runtimeMode.kind !== "server") {
+      throw new Error("Expected server runtime mode");
+    }
+
+    expect(runtimeMode.config.stateless).toBe(false);
+  });
+
+  test("parses stateful mode when SUGGEST_SKILLS_STATELESS is false", () => {
+    const runtimeMode = parseCli(
+      ["node", "index.js", "server", "--port", "3100", "https://example.com/manifest.md"],
+      {
+        SUGGEST_SKILLS_STATELESS: "false",
+      },
+    );
+
+    if (runtimeMode.kind !== "server") {
+      throw new Error("Expected server runtime mode");
+    }
+
+    expect(runtimeMode.config.stateless).toBe(false);
   });
 });
 
@@ -502,6 +557,110 @@ describe("streamable HTTP MCP server", () => {
       expect(initializeResponse.status).toBe(200);
       expect(initializeResponse.headers.get("mcp-session-id")).toBeNull();
       expect(await initializeResponse.text()).toContain('"id":1');
+    } finally {
+      server.stop();
+    }
+  });
+
+  test("stateful server generates mcp-session-id and routes subsequent requests correctly", async () => {
+    const runtimeMode = parseCli(["node", "index.js"], {
+      SUGGEST_SKILLS_MANIFEST_URLS: JSON.stringify([DEFAULT_SOURCE_URL]),
+    });
+    // Explicitly set stateless to false
+    runtimeMode.config.stateless = false;
+    const server = createHttpApp(runtimeMode.config, 0);
+
+    try {
+      const baseUrl = `http://localhost:${server.port}`;
+
+      // 1. Send initialize request to start session
+      const initializeResponse = await fetch(`${baseUrl}/mcp`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          accept: "application/json, text/event-stream",
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "initialize",
+          params: {
+            protocolVersion: "2024-11-05",
+            capabilities: {},
+            clientInfo: {
+              name: "suggest-skills-http-test",
+              version: "1.0.0",
+            },
+          },
+        }),
+      });
+
+      expect(initializeResponse.status).toBe(200);
+      const sessionId = initializeResponse.headers.get("mcp-session-id");
+      expect(sessionId).not.toBeNull();
+      expect(sessionId!.length).toBeGreaterThan(0);
+
+      // 2. Send initialized notification using the session ID
+      const initializedResponse = await fetch(`${baseUrl}/mcp`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          accept: "application/json, text/event-stream",
+          "mcp-session-id": sessionId!,
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "notifications/initialized",
+        }),
+      });
+      expect(initializedResponse.status).toBe(202);
+
+      // 3. Send tools/list request using the session ID
+      const listToolsResponse = await fetch(`${baseUrl}/mcp`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          accept: "application/json, text/event-stream",
+          "mcp-session-id": sessionId!,
+          "mcp-protocol-version": "2024-11-05",
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 2,
+          method: "tools/list",
+        }),
+      });
+      expect(listToolsResponse.status).toBe(200);
+      const listToolsText = await listToolsResponse.text();
+      expect(listToolsText).toContain('"id":2');
+      expect(listToolsText).toContain("suggest_skills");
+
+      // 4. Send DELETE request to terminate session
+      const deleteResponse = await fetch(`${baseUrl}/mcp`, {
+        method: "DELETE",
+        headers: {
+          "mcp-session-id": sessionId!,
+          "mcp-protocol-version": "2024-11-05",
+        },
+      });
+      expect(deleteResponse.status).toBe(200);
+
+      // 5. Subsequent request with same session ID should now fail with 404
+      const postAfterDeleteResponse = await fetch(`${baseUrl}/mcp`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          accept: "application/json, text/event-stream",
+          "mcp-session-id": sessionId!,
+          "mcp-protocol-version": "2024-11-05",
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 3,
+          method: "tools/list",
+        }),
+      });
+      expect(postAfterDeleteResponse.status).toBe(404);
     } finally {
       server.stop();
     }
