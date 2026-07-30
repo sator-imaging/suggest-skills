@@ -877,15 +877,22 @@ export async function resolveRelatedPathsToRefs(
     return rootHeadSha;
   };
 
-  const results = await Promise.all(
-    relatedPaths.map(async (path) => {
-      const info = await fetchCommitInfo({
+  const results: Array<{ path: string; info: CommitInfo | null }> = [];
+  const fibers = Fibers.forEach(
+    MANIFEST_DOWNLOAD_CONCURRENCY,
+    relatedPaths,
+    async (path) => ({
+      path,
+      info: await fetchCommitInfo({
         ...rootLocation,
         path,
-      });
-      return { path, info };
+      }),
     }),
   );
+
+  for await (const result of fibers) {
+    results.push(result);
+  }
 
   const successfulCommits = results.filter((r): r is { path: string; info: CommitInfo } => r.info !== null);
 
