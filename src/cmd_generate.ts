@@ -158,20 +158,22 @@ export async function generateOutputs(
       if (entry.path) actualRelatedPaths.push(entry.path);
     }
 
-    const newestRef = await resolveNewestCommitSha(rootLocation, actualRelatedPaths);
-    rootLocation.ref = newestRef;
+    const pathRefMap = await resolveRelatedPathsToRefs(rootLocation, actualRelatedPaths);
 
-    // Since we updated rootLocation.ref, we need to rebuild the URLs for actual entries.
+    // Since we updated refs individually, we need to rebuild the URLs for actual entries.
     for (const entry of agentEntries) {
-      entry.url = formatGithubFileUrl(rootLocation, entry.path || "");
+      const entryLocation = locationWithEntryRef(rootLocation, entry.path, pathRefMap);
+      entry.url = formatGithubFileUrl(entryLocation, entry.path || "");
     }
     for (const entry of manifestEntries) {
-      entry.url = formatGithubFolderUrl(rootLocation, entry.path || "");
+      const entryLocation = locationWithEntryRef(rootLocation, entry.path, pathRefMap);
+      entry.url = formatGithubFolderUrl(entryLocation, entry.path || "");
     }
     for (const entry of designEntries) {
-      entry.url = formatGithubFolderUrl(rootLocation, entry.path || "");
-      entry.assetBlobBaseUrl = formatGithubFileUrl(rootLocation, entry.path || "");
-      entry.assetTreeBaseUrl = formatGithubFolderUrl(rootLocation, entry.path || "");
+      const entryLocation = locationWithEntryRef(rootLocation, entry.path, pathRefMap);
+      entry.url = formatGithubFolderUrl(entryLocation, entry.path || "");
+      entry.assetBlobBaseUrl = formatGithubFileUrl(entryLocation, entry.path || "");
+      entry.assetTreeBaseUrl = formatGithubFolderUrl(entryLocation, entry.path || "");
     }
   }
 
@@ -825,6 +827,15 @@ async function promptForOverwrite(path: string): Promise<boolean> {
   }
 }
 
+function locationWithEntryRef(
+  rootLocation: GithubDirectoryLocation,
+  path: string | undefined,
+  pathRefMap: ReadonlyMap<string, string>,
+): GithubDirectoryLocation {
+  const ref = path ? pathRefMap.get(path) ?? rootLocation.ref : rootLocation.ref;
+  return { ...rootLocation, ref };
+}
+
 export function getTopmostPaths(paths: string[]): string[] {
   const sorted = [...paths].sort((left, right) => left.length - right.length);
   const filtered: string[] = [];
@@ -847,35 +858,65 @@ export function getTopmostPaths(paths: string[]): string[] {
   return filtered;
 }
 
-export async function resolveNewestCommitSha(
+export async function resolveRelatedPathsToRefs(
   rootLocation: GithubDirectoryLocation,
   paths: string[],
-): Promise<string> {
-  const topmostPaths = getTopmostPaths(paths);
+): Promise<Map<string, string>> {
+  const relatedPaths = [...new Set(paths.filter((path) => path !== ""))];
+  const pathRefMap = new Map<string, string>();
 
-  if (topmostPaths.length === 0) {
-    return fetchCommitSha({ ...rootLocation, path: "" });
+  if (relatedPaths.length === 0) {
+    return pathRefMap;
   }
 
-  try {
-    const commitInfos = await Promise.all(
-      topmostPaths.map(async (path) => {
-        return fetchCommitInfo({
-          ...rootLocation,
-          path,
-        });
-      }),
-    );
-
-    const validCommits = commitInfos.filter((c): c is CommitInfo => c !== null);
-
-    if (validCommits.length === topmostPaths.length && validCommits.length > 0) {
-      validCommits.sort((left, right) => Date.parse(right.date) - Date.parse(left.date));
-      return validCommits[0]!.sha;
+  let rootHeadSha: string | null = null;
+  const getRootHeadSha = async () => {
+    if (rootHeadSha === null) {
+      rootHeadSha = await fetchCommitSha({ ...rootLocation, path: "" });
     }
-  } catch {
-    // Treat any error as a failure to retrieve, fallback below.
+    return rootHeadSha;
+  };
+
+  const results: Array<{ path: string; info: CommitInfo | null }> = [];
+  const fibers = Fibers.forEach(
+    MANIFEST_DOWNLOAD_CONCURRENCY,
+    relatedPaths,
+    async (path) => ({
+      path,
+      info: await fetchCommitInfo({
+        ...rootLocation,
+        path,
+      }),
+    }),
+  );
+
+  for await (const result of fibers) {
+    results.push(result);
   }
 
-  return fetchCommitSha({ ...rootLocation, path: "" });
+  const successfulCommits = results.filter((r): r is { path: string; info: CommitInfo } => r.info !== null);
+
+  if (successfulCommits.length > 0) {
+    // Determine the newest commit SHA among the successfully retrieved ones.
+    const sorted = [...successfulCommits].sort(
+      (left, right) => Date.parse(right.info.date) - Date.parse(left.info.date),
+    );
+    const newestSha = sorted[0]!.info.sha;
+
+    for (const r of results) {
+      if (r.info !== null) {
+        pathRefMap.set(r.path, newestSha);
+      } else {
+        pathRefMap.set(r.path, await getRootHeadSha());
+      }
+    }
+  } else {
+    // If none of them succeeded, fall back to main HEAD sha for all.
+    const fallbackRef = await getRootHeadSha();
+    for (const path of relatedPaths) {
+      pathRefMap.set(path, fallbackRef);
+    }
+  }
+
+  return pathRefMap;
 }
