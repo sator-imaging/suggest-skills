@@ -158,7 +158,11 @@ export async function generateOutputs(
       if (entry.path) actualRelatedPaths.push(entry.path);
     }
 
-    const pathRefMap = await resolveRelatedPathsToRefs(rootLocation, actualRelatedPaths);
+    const pathRefMap = await resolveRelatedPathsToRefs(
+      rootLocation,
+      actualRelatedPaths,
+      options.delayMillis,
+    );
 
     // Since we updated refs individually, we need to rebuild the URLs for actual entries.
     for (const entry of agentEntries) {
@@ -861,6 +865,7 @@ export function getTopmostPaths(paths: string[]): string[] {
 export async function resolveRelatedPathsToRefs(
   rootLocation: GithubDirectoryLocation,
   paths: string[],
+  delayMillis = 0,
 ): Promise<Map<string, string>> {
   const relatedPaths = [...new Set(paths.filter((path) => path !== ""))];
   const pathRefMap = new Map<string, string>();
@@ -881,13 +886,19 @@ export async function resolveRelatedPathsToRefs(
   const fibers = Fibers.forEach(
     MANIFEST_DOWNLOAD_CONCURRENCY,
     relatedPaths,
-    async (path) => ({
-      path,
-      info: await fetchCommitInfo({
-        ...rootLocation,
+    async (path) => {
+      const result = {
         path,
-      }),
-    }),
+        info: await fetchCommitInfo({
+          ...rootLocation,
+          path,
+        }),
+      };
+      if (delayMillis > 0) {
+        await Fibers.delay(delayMillis);
+      }
+      return result;
+    },
   );
 
   for await (const result of fibers) {
