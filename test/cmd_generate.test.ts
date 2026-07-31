@@ -115,6 +115,40 @@ describe("generateSkillsManifest", () => {
       globalThis.fetch = originalFetch;
     }
   });
+
+  test("applies delayMillis when querying commits", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = mock(async (input: string | URL | Request) => {
+      const url = String(input);
+      if (url.includes("/commits?")) {
+        return Response.json([{
+          sha: "skill_commit_sha",
+          commit: { committer: { date: "2026-07-15T12:00:00Z" } },
+        }]);
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    }) as unknown as typeof fetch;
+
+    try {
+      const start = Date.now();
+      await resolveRelatedPathsToRefs(
+        {
+          owner: "octo",
+          repo: "demo",
+          ref: "main",
+          path: "skills",
+        },
+        ["skills/alpha", "skills/beta"],
+        50, // 50ms delay
+      );
+      const elapsed = Date.now() - start;
+      // Since MANIFEST_DOWNLOAD_CONCURRENCY is 4, and we have 2 paths,
+      // they might run in parallel but Fibers.delay will suspend and wait at least 50ms.
+      expect(elapsed).toBeGreaterThanOrEqual(45);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });
 
 describe("generateOutputs", () => {
