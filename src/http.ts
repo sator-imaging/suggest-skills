@@ -25,7 +25,10 @@ export function createHttpApp(config: SuggestSkillsConfig, port?: number): Serve
         const isStateless = config.stateless !== false;
 
         if (isStateless) {
-          const transport = new WebStandardStreamableHTTPServerTransport({});
+          const transportOptions: any = {
+            sessionIdGenerator: undefined,
+          };
+          const transport = new WebStandardStreamableHTTPServerTransport(transportOptions);
           const server = createServer(config);
           await server.connect(transport);
           return transport.handleRequest(req);
