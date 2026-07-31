@@ -41,7 +41,7 @@ jobs:
     name: "${{ matrix.url }}"
     needs:
       - prepare
-    timeout-minutes: 60
+    timeout-minutes: 90
 
     strategy:
       max-parallel: 1   # To avoid GitHub API rate limit
