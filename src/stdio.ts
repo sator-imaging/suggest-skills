@@ -1,4 +1,4 @@
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { StdioServerTransport } from "@modelcontextprotocol/server/stdio";
 import type { SuggestSkillsConfig } from "./config.js";
 import { createServer } from "./core.js";
 
