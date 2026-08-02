@@ -26,7 +26,7 @@ export class ConfigError extends Error {
 type CliActions = {
   onGenerate: (url: string, options: { recursive?: boolean; delay?: string }) => void;
   onDownload: (url: string, options: { recursive?: boolean }) => void;
-  onServer: (args: string[], options: { port?: string; output?: string; stateless?: boolean }) => void;
+  onServer: (args: string[], options: { port?: string; output?: string; stateful?: boolean }) => void;
   onStdio: (args: string[], options: { output?: string }) => void;
 };
 
@@ -47,7 +47,7 @@ function registerCommands(cli: ReturnType<typeof cac>, actions: CliActions) {
   cli
     .command("server [...args]", "Run the streamable HTTP server")
     .option("--port <port>", "Port number")
-    .option("--stateless", "Run the HTTP server in stateless mode")
+    .option("--stateful", "Run the HTTP server in stateful mode")
     .action(actions.onServer);
 
   cli
@@ -93,7 +93,7 @@ export function parseCli(argv = process.argv, env = process.env): CliRuntimeMode
         },
       };
     },
-    onServer: (args: string[], options: { port?: string; output?: string; stateless?: boolean }) => {
+    onServer: (args: string[], options: { port?: string; output?: string; stateful?: boolean }) => {
       if (options.port === undefined) {
         throw new ConfigError("server subcommand requires --port <number>.");
       }
@@ -171,7 +171,7 @@ export function loadConfig(argv = process.argv, env = process.env): SuggestSkill
 
 function buildConfig(
   args: readonly string[],
-  options: { output?: string; stateless?: boolean },
+  options: { output?: string; stateful?: boolean },
   env: NodeJS.ProcessEnv,
 ): SuggestSkillsConfig {
   const outputDirectory = options.output ?? DEFAULT_OUTPUT_DIRECTORY;
@@ -187,11 +187,11 @@ function buildConfig(
     );
   }
 
-  let stateless = false;
-  if (options.stateless === true) {
-    stateless = true;
-  } else if (env["SUGGEST_SKILLS_STATELESS"] === "true") {
-    stateless = true;
+  let stateless = true;
+  if (options.stateful === true) {
+    stateless = false;
+  } else if (env["SUGGEST_SKILLS_STATELESS"] === "false") {
+    stateless = false;
   }
 
   return {
