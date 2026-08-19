@@ -739,11 +739,11 @@ function writeReport(results: ScanResult[]) {
     lines.push("");
 
     if (reportable.length > 0) {
-      lines.push("| Risk | Skill | Scan |");
-      lines.push("|------|-------|------|");
+      lines.push("| Risk | Skill | Scan | SHA Retrieval Failure Reason |");
+      lines.push("|------|-------|------|------------------------------|");
 
       for (const r of reportable) {
-        lines.push(`| ${formatRiskCell(r)} | ${r.skill.name} | ${scanLabel(r)} |`);
+        lines.push(`| ${formatRiskCell(r)} | ${r.skill.name} | ${scanLabel(r)} | - |`);
       }
 
       lines.push("");
