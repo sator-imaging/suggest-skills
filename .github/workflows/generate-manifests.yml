@@ -100,6 +100,7 @@ jobs:
           - my-take-dev/inspired-mino-design-skills
           - phuryn/pm-skills
           - Unity-Technologies/skills/tree/main/skills
+          - nowsprinting/unity-coding-skills
     env:
       # DO NOT forget add '/' at the end
       OFFICIAL_URL_PREFIXES: |
