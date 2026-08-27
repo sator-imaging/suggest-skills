@@ -101,6 +101,7 @@ jobs:
           - phuryn/pm-skills
           - Unity-Technologies/skills/tree/main/skills
           - nowsprinting/unity-coding-skills
+          - cursor/plugins
     env:
       # DO NOT forget add '/' at the end
       OFFICIAL_URL_PREFIXES: |
@@ -124,6 +125,7 @@ jobs:
         GoogleChrome/
         google/
         Unity-Technologies/
+        cursor/
       RECURSIVE_URL_PREFIXES: |
         android/skills
         aws/agent-toolkit-for-aws/tree/main/skills
@@ -136,6 +138,7 @@ jobs:
         google/skills
         my-take-dev/inspired-mino-design-skills
         phuryn/pm-skills
+        cursor/plugins
       GENERATED_DIR: generate/${{ strategy.job-index }}
       BRANCH: ${{ needs.prepare.outputs.branch }}
 
