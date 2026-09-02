@@ -1,4 +1,4 @@
-import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
+import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/server";
 import type { Server } from "bun";
 import type { SuggestSkillsConfig } from "./config.js";
 import { createServer } from "./core.js";
@@ -13,7 +13,10 @@ export function createHttpApp(config: SuggestSkillsConfig, port?: number): Serve
         return Response.json({ status: "ok" });
       }
       if (url.pathname === "/mcp") {
-        const transport = new WebStandardStreamableHTTPServerTransport({});
+        const transportOptions: any = {
+          sessionIdGenerator: undefined,
+        };
+        const transport = new WebStandardStreamableHTTPServerTransport(transportOptions);
         const server = createServer(config);
         await server.connect(transport);
         return transport.handleRequest(req);
