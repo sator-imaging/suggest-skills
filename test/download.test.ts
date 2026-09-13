@@ -265,6 +265,39 @@ describe("fetchCommitSha", () => {
       globalThis.fetch = originalFetch;
     }
   });
+
+  test("falls back to master branch when main branch commit SHA retrieval fails", async () => {
+    const originalFetch = globalThis.fetch;
+    const calls: string[] = [];
+    globalThis.fetch = mock(async (input: string | URL | Request) => {
+      const url = String(input);
+      calls.push(url);
+      if (url === "https://api.github.com/repos/octo/demo/commits/main") {
+        return new Response(JSON.stringify({ message: "Not Found" }), { status: 404 });
+      }
+      if (url === "https://api.github.com/repos/octo/demo/commits/master") {
+        return Response.json({ sha: "master_sha_123" });
+      }
+      throw new Error(`Unexpected fetch in fetchCommitSha test: ${url}`);
+    }) as unknown as typeof fetch;
+
+    try {
+      const sha = await fetchCommitSha({
+        owner: "octo",
+        repo: "demo",
+        ref: "main",
+        path: "",
+      });
+
+      expect(sha).toBe("master_sha_123");
+      expect(calls).toEqual([
+        "https://api.github.com/repos/octo/demo/commits/main",
+        "https://api.github.com/repos/octo/demo/commits/master",
+      ]);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });
 
 describe("fetchManifestText", () => {
