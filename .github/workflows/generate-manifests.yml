@@ -139,6 +139,7 @@ jobs:
         my-take-dev/inspired-mino-design-skills
         phuryn/pm-skills
         cursor/plugins
+        nowsprinting/unity-coding-skills
       GENERATED_DIR: generate/${{ strategy.job-index }}
       BRANCH: ${{ needs.prepare.outputs.branch }}
 
