@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
+import type { JSONRPCMessage } from "@modelcontextprotocol/server";
 import { parseCli } from "../src/config.js";
 import { createHttpApp } from "../src/http.js";
 import { logInfo } from "../src/utils.js";

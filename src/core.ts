@@ -1,5 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import * as z from "zod/v4";
+import { McpServer, fromJsonSchema } from "@modelcontextprotocol/server";
 import type { SuggestSkillsConfig } from "./config.js";
 import { buildSuggestionResponse } from "./suggest.js";
 import { downloadGithubFolder, fetchManifestText } from "./download.js";
@@ -17,12 +16,15 @@ export function createServer(config: SuggestSkillsConfig): McpServer {
     SUGGEST_TOOL_NAME,
     {
       description: toolDescriptions.suggestSkills,
-      inputSchema: {
-        manifestUrl: z
-          .string()
-          .optional()
-          .describe("Optional manifest URL to overwrite the default configuration."),
-      },
+      inputSchema: fromJsonSchema<{ manifestUrl?: string }>({
+        type: "object",
+        properties: {
+          manifestUrl: {
+            type: "string",
+            description: "Optional manifest URL to overwrite the default configuration.",
+          },
+        },
+      }),
     },
     async ({ manifestUrl }) => {
       const normalizedUrl = manifestUrl ? (normalizeGithubRawUrl(manifestUrl) ?? manifestUrl) : undefined;
@@ -42,20 +44,39 @@ export function createServer(config: SuggestSkillsConfig): McpServer {
     DOWNLOAD_TOOL_NAME,
     {
       description: toolDescriptions.downloadSkill,
-      inputSchema: {
-        url: z
-          .string()
-          .min(1)
-          .describe("GitHub folder URL in the form https://github.com/<owner>/<repo>/tree/<ref>/<path>."),
-      },
-      outputSchema: {
-        files: z.array(
-          z.object({
-            path: z.string().describe("File path relative to the requested GitHub folder."),
-            content: z.string().describe("UTF-8 text content fetched from GitHub."),
-          }),
-        ),
-      },
+      inputSchema: fromJsonSchema<{ url: string }>({
+        type: "object",
+        properties: {
+          url: {
+            type: "string",
+            description: "GitHub folder URL in the form https://github.com/<owner>/<repo>/tree/<ref>/<path>.",
+          },
+        },
+        required: ["url"],
+      }),
+      outputSchema: fromJsonSchema<{ files: Array<{ path: string; content: string }> }>({
+        type: "object",
+        properties: {
+          files: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                path: {
+                  type: "string",
+                  description: "File path relative to the requested GitHub folder.",
+                },
+                content: {
+                  type: "string",
+                  description: "UTF-8 text content fetched from GitHub.",
+                },
+              },
+              required: ["path", "content"],
+            },
+          },
+        },
+        required: ["files"],
+      }),
     },
     async ({ url }) => {
       const files = await downloadGithubFolder(url);
@@ -77,12 +98,26 @@ export function createServer(config: SuggestSkillsConfig): McpServer {
     FETCH_MANIFEST_TOOL_NAME,
     {
       description: toolDescriptions.fetchManifest,
-      inputSchema: {
-        url: z.string().min(1).describe("URL of the manifest file to fetch."),
-      },
-      outputSchema: {
-        content: z.string().describe("UTF-8 text content fetched from the manifest URL."),
-      },
+      inputSchema: fromJsonSchema<{ url: string }>({
+        type: "object",
+        properties: {
+          url: {
+            type: "string",
+            description: "URL of the manifest file to fetch.",
+          },
+        },
+        required: ["url"],
+      }),
+      outputSchema: fromJsonSchema<{ content: string }>({
+        type: "object",
+        properties: {
+          content: {
+            type: "string",
+            description: "UTF-8 text content fetched from the manifest URL.",
+          },
+        },
+        required: ["content"],
+      }),
     },
     async ({ url }) => {
       const content = await fetchManifestText(url);
