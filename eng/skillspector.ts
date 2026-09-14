@@ -79,6 +79,7 @@ interface ScanResult {
   score: string;
   severity: string;
   recommendation: string;
+  shaFailureReason?: string;
   sarif: object | null;
 }
 
@@ -309,8 +310,8 @@ function buildLists(tmpBase: string, manifestFiles: readonly string[]) {
 // Step 2: Clone repos
 // ============================================================
 
-async function cloneRepos(targets: CloneTarget[]): Promise<Set<string>> {
-  const failed = new Set<string>();
+async function cloneRepos(targets: CloneTarget[]): Promise<Map<string, string>> {
+  const failed = new Map<string, string>();
 
   console.log(`[INFO] Cloning ${targets.length} repos...`);
 
@@ -342,7 +343,7 @@ async function cloneRepos(targets: CloneTarget[]): Promise<Set<string>> {
           ? "Timeout"
           : result.stderr.trim() || `Exit Code ${result.exitCode}`;
         console.error(`  [FAILED] ${t.repo}@${t.ref} - Reason: ${errorDetail}`);
-        failed.add(`${t.repo}@${t.ref}`);
+        failed.set(`${t.repo}@${t.ref}`, errorDetail);
       }
 
       return t;
@@ -368,7 +369,7 @@ async function cloneRepos(targets: CloneTarget[]): Promise<Set<string>> {
 async function scanSkills(
   skills: SkillEntry[],
   cloneTargets: CloneTarget[],
-  failedClones: Set<string>,
+  failedClones: Map<string, string>,
 ): Promise<ScanResult[]> {
   const total = skills.length;
   const results: ScanResult[] = Array.from({ length: total });
@@ -389,17 +390,20 @@ async function scanSkills(
       let score = "-";
       let severity = "-";
       let recommendation = "-";
+      let shaFailureReason: string | undefined;
       let sarif: object | null = null;
 
       const key = `${skill.repo}@${skill.ref}`;
 
       if (failedClones.has(key)) {
         status = "CLONE_FAILED";
+        shaFailureReason = failedClones.get(key);
       } else {
         const scanDir = join(dirMap.get(key)!, skill.skillPath);
 
         if (!existsSync(scanDir)) {
           status = "FAILED";
+          shaFailureReason = `Path not found: ${skill.skillPath}`;
           console.error(`  [FAILED] Path not found: ${skill.skillPath}`);
         }
 
@@ -411,11 +415,16 @@ async function scanSkills(
           const r = await runCmd(cmd, TIMEOUT_MS);
           if (r.timedOut) {
             status = "TIMEOUT";
+            shaFailureReason = "Timeout";
           } else if (r.stdout) {
             ({ score, severity, recommendation } = parseScanJson(r.stdout));
-            if (score === "-") status = "FAILED";
+            if (score === "-") {
+              status = "FAILED";
+              shaFailureReason = r.stderr.trim() || "Failed to parse scan output";
+            }
           } else {
             status = "FAILED";
+            shaFailureReason = r.stderr.trim() || "No output from scan";
           }
         }
 
@@ -427,6 +436,7 @@ async function scanSkills(
           const r = await runCmd(cmd, TIMEOUT_MS);
           if (r.timedOut) {
             status = "TIMEOUT";
+            shaFailureReason = "Timeout";
           } else if (r.stdout) {
             try { sarif = JSON.parse(r.stdout); } catch { /* ignore */ }
           }
@@ -434,7 +444,7 @@ async function scanSkills(
       }
 
       const result: ScanResult = {
-        index, skill, status, score, severity, recommendation, sarif,
+        index, skill, status, score, severity, recommendation, shaFailureReason, sarif,
       };
       results[index] = result;
       return result;
@@ -743,7 +753,8 @@ function writeReport(results: ScanResult[]) {
       lines.push("|------|-------|------|------------------------------|");
 
       for (const r of reportable) {
-        lines.push(`| ${formatRiskCell(r)} | ${r.skill.name} | ${scanLabel(r)} | - |`);
+        const reason = (r.shaFailureReason || "-").replaceAll("|", "\\|").replaceAll("\n", " ");
+        lines.push(`| ${formatRiskCell(r)} | ${r.skill.name} | ${scanLabel(r)} | ${reason} |`);
       }
 
       lines.push("");
