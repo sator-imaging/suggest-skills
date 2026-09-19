@@ -171,6 +171,14 @@ describe("skillspector report formatting", () => {
       ].join("\n"),
     );
   });
+
+  test("ScanResult supports shaFailureReason field", () => {
+    const failedResult = makeScanResult({
+      status: "CLONE_FAILED",
+      shaFailureReason: "fatal: Remote branch not found",
+    });
+    expect(failedResult.shaFailureReason).toBe("fatal: Remote branch not found");
+  });
 });
 
 describe("skillspector manifest targets", () => {
