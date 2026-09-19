@@ -178,15 +178,22 @@ name: "alpha
 });
 
 describe("shortenCommitSha", () => {
-  test("truncates 40-character commit sha to 7-character short commit hash", () => {
-    expect(shortenCommitSha("99e0716e866429ec7546093e097857351ac20552")).toBe("99e0716");
+  test("resolves unconflicted short sha of at least 7 characters using git rev-parse", () => {
+    const shortSha = shortenCommitSha("HEAD");
+    expect(shortSha.length).toBeGreaterThanOrEqual(7);
+  });
+
+  test("resolves valid commit sha to short hash", () => {
+    const shortSha = shortenCommitSha("99e0716e866429ec7546093e097857351ac20552");
+    expect(shortSha).toBe("99e0716");
   });
 
   test("supports custom length parameter", () => {
     expect(shortenCommitSha("99e0716e866429ec7546093e097857351ac20552", 10)).toBe("99e0716e86");
   });
 
-  test("handles short inputs or empty strings gracefully", () => {
+  test("handles short inputs, missing refs, or empty strings gracefully", () => {
+    expect(shortenCommitSha("non_existent_sha_12345")).toBe("non_exi");
     expect(shortenCommitSha("12345")).toBe("12345");
     expect(shortenCommitSha("")).toBe("");
   });
