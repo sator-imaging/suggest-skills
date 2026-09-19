@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   extractMarkdownFrontMatter,
   parseMarkdownFrontMatterFields,
+  shortenCommitSha,
 } from "../src/utils.js";
 
 describe("extractMarkdownFrontMatter", () => {
@@ -173,5 +174,20 @@ name: "alpha
       parseError: expect.stringContaining("YAML Parse error"),
       source: 'name: "alpha',
     });
+  });
+});
+
+describe("shortenCommitSha", () => {
+  test("truncates 40-character commit sha to 7-character short commit hash", () => {
+    expect(shortenCommitSha("99e0716e866429ec7546093e097857351ac20552")).toBe("99e0716");
+  });
+
+  test("supports custom length parameter", () => {
+    expect(shortenCommitSha("99e0716e866429ec7546093e097857351ac20552", 10)).toBe("99e0716e86");
+  });
+
+  test("handles short inputs or empty strings gracefully", () => {
+    expect(shortenCommitSha("12345")).toBe("12345");
+    expect(shortenCommitSha("")).toBe("");
   });
 });

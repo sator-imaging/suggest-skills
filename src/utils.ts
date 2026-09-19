@@ -152,6 +152,17 @@ export function parseUrl(value: string): URL | undefined {
   }
 }
 
+/**
+ * Truncate or format a commit SHA to a 7-character short commit hash,
+ * equivalent to `git rev-parse --short=7` (or `git rev-parse --short`).
+ */
+export function shortenCommitSha(sha: string, length = 7): string {
+  if (typeof sha !== "string") {
+    return "";
+  }
+  return sha.slice(0, length);
+}
+
 export function logInfo(message: string): void {
   process.stdout.write(`${message}\n`);
 }
