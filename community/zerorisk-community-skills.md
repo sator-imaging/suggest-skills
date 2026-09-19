@@ -348,7 +348,7 @@
 
 | Name | Description | Bundled Assets | Security Risk |
 | -----|-------------|----------------|---|
-| [receiving-code-review](https://github.com/obra/superpowers/tree/b36e0829c6d0140e93cfef2ca599b1b07d4a7797/skills/receiving-code-review) | Use when receiving code review feedback, before implementing suggestions, especially if feedback seems unclear or technically questionable - requires technical rigor and verification, not performative agreement or blind implementation | None | 0 (SAFE) |
+| [receiving-code-review](https://github.com/obra/superpowers/tree/5bf4e78011075bcfc0dc295f0724994cd123ee71/skills/receiving-code-review) | Use when receiving code review feedback, before implementing suggestions, especially if feedback seems unclear or technically questionable - requires technical rigor and verification, not performative agreement or blind implementation | None | 0 (SAFE) |
 
 # runceel.ai-dev-template..github.skills
 
