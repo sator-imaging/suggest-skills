@@ -152,6 +152,40 @@ export function parseUrl(value: string): URL | undefined {
   }
 }
 
+/**
+ * Resolves a reliable, unconflicted short commit hash for a given git reference or commit SHA.
+ * Uses `git rev-parse --short=7` (or `--short=${length}`) to ensure at least 7 characters
+ * and automatic length expansion if required by Git's object database to remain unique.
+ */
+export function shortenCommitSha(sha: string, length = 7, cwd?: string): string {
+  if (typeof sha !== "string" || sha.trim() === "") {
+    return "";
+  }
+
+  const trimmed = sha.trim();
+
+  try {
+    const options = {
+      stdout: "pipe" as const,
+      stderr: "pipe" as const,
+      ...(cwd !== undefined ? { cwd } : {}),
+    };
+
+    const proc = Bun.spawnSync(["git", "rev-parse", `--short=${length}`, trimmed], options);
+
+    if (proc.exitCode === 0) {
+      const output = proc.stdout.toString().trim();
+      if (output.length >= length) {
+        return output;
+      }
+    }
+  } catch {
+    // Ignore git process execution error and fallback
+  }
+
+  return trimmed.length >= length ? trimmed.slice(0, length) : trimmed;
+}
+
 export function logInfo(message: string): void {
   process.stdout.write(`${message}\n`);
 }
