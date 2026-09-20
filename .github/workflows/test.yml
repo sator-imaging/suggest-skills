@@ -23,5 +23,12 @@ jobs:
       - run: npm i
       - run: npm test
       - run: npm run build
-
-      - run: npm pack --dry-run 2>> $GITHUB_STEP_SUMMARY
+      - run: |
+          {
+            echo
+            echo '## `npm pack --dry-run`'
+            echo
+            echo '```'
+            npm pack --dry-run
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY" 2>&1
