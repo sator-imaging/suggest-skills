@@ -1,12 +1,12 @@
 name: Test
 
 on:
-  #push:
-  #  branches: [ main ]
-  #  paths-ignore: [ '.github/**', 'community/**', 'official/**' ]
-  #pull_request:
-  #  branches: [ main ]
-  #  paths-ignore: [ '.github/**', 'community/**', 'official/**' ]
+  push:
+    branches: [ main ]
+    paths-ignore: [ '.github/**', 'community/**', 'official/**' ]
+  pull_request:
+    branches: [ main ]
+    paths-ignore: [ '.github/**', 'community/**', 'official/**' ]
   workflow_dispatch:
 
 jobs:
