@@ -444,7 +444,14 @@ async function scanSkills(
       }
 
       const result: ScanResult = {
-        index, skill, status, score, severity, recommendation, shaFailureReason, sarif,
+        index,
+        skill,
+        status,
+        score,
+        severity,
+        recommendation,
+        sarif,
+        ...(shaFailureReason === undefined ? {} : { shaFailureReason }),
       };
       results[index] = result;
       return result;
