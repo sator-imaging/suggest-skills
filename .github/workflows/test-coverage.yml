@@ -5,8 +5,6 @@ on:
     branches: [ main ]
     paths-ignore: [ '.github/**', 'community/**', 'official/**' ]
   pull_request:
-    branches: [ main ]
-    paths-ignore: [ '.github/**', 'community/**', 'official/**' ]
   workflow_dispatch:
 
 jobs:
