@@ -541,7 +541,20 @@ async function fetchTextResponse(
   sourceIdentifier: string,
 ): Promise<{ response: Response; text: string }> {
   const normalizedUrl = normalizeGithubRawUrl(url) ?? url;
-  const response = await fetch(normalizedUrl);
+  const headers: Record<string, string> = {};
+  const githubPat = process.env["GITHUB_PAT"];
+
+  if (githubPat) {
+    const parsed = parseUrl(normalizedUrl);
+    if (parsed?.hostname === "raw.githubusercontent.com" || parsed?.hostname === "github.com") {
+      headers["authorization"] = `Bearer ${githubPat}`;
+    }
+  }
+
+  const response = await fetch(
+    normalizedUrl,
+    Object.keys(headers).length > 0 ? { headers } : undefined,
+  );
 
   if (!response.ok) {
     throw new Error(
