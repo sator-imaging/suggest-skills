@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
+    "@octokit/rest": "^22.0.1",
     "cac": "^7.0.0",
     "ts-fibers": "^1.0.2"
   },

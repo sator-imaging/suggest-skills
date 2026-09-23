@@ -79,7 +79,7 @@ interface ScanResult {
   score: string;
   severity: string;
   recommendation: string;
-  shaFailureReason?: string;
+  shaFailureReason?: string | undefined;
   sarif: object | null;
 }
 
