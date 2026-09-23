@@ -23,10 +23,14 @@ export type DownloadedFile = {
 const GITHUB_HOSTNAME = "github.com";
 const DOWNLOAD_CONCURRENCY = 4;
 
+function getGithubToken(): string | undefined {
+  return process.env["GITHUB_PAT"] || process.env["GH_TOKEN"] || process.env["GITHUB_TOKEN"];
+}
+
 function getOctokit(): Octokit {
-  const githubPat = process.env["GITHUB_PAT"];
+  const token = getGithubToken();
   return new Octokit({
-    auth: githubPat || undefined,
+    auth: token || undefined,
     userAgent: "suggest-skills-mcp",
     request: {
       fetch: (url: string | URL | Request, opts?: RequestInit) => {
@@ -542,12 +546,12 @@ async function fetchTextResponse(
 ): Promise<{ response: Response; text: string }> {
   const normalizedUrl = normalizeGithubRawUrl(url) ?? url;
   const headers: Record<string, string> = {};
-  const githubPat = process.env["GITHUB_PAT"];
+  const token = getGithubToken();
 
-  if (githubPat) {
+  if (token) {
     const parsed = parseUrl(normalizedUrl);
     if (parsed?.hostname === "raw.githubusercontent.com" || parsed?.hostname === "github.com") {
-      headers["authorization"] = `Bearer ${githubPat}`;
+      headers["authorization"] = `Bearer ${token}`;
     }
   }
 
