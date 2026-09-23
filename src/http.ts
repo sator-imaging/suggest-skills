@@ -4,6 +4,11 @@ import type { SuggestSkillsConfig } from "./config.js";
 import { createServer } from "./core.js";
 import { logError } from "./utils.js";
 
+/**
+ * Creates a stateless HTTP app serving MCP requests over WebStandardStreamableHTTPServerTransport.
+ * Per the MCP specification and C# SDK stateless model, each request receives a fresh
+ * transport and server context without session tracking or Mcp-Session-Id headers.
+ */
 export function createHttpApp(config: SuggestSkillsConfig, port?: number): Server<undefined> {
   return Bun.serve({
     port: port ?? 0,
@@ -13,9 +18,8 @@ export function createHttpApp(config: SuggestSkillsConfig, port?: number): Serve
         return Response.json({ status: "ok" });
       }
       if (url.pathname === "/mcp") {
-        const transport = new WebStandardStreamableHTTPServerTransport({
-          sessionIdGenerator: undefined,
-        });
+        // Stateless mode: omit sessionIdGenerator so no session tracking or Mcp-Session-Id headers are used
+        const transport = new WebStandardStreamableHTTPServerTransport({});
         const server = createServer(config);
         await server.connect(transport);
         return transport.handleRequest(req);
