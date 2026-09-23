@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import type { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
+import type { JSONRPCMessageSchema } from "@modelcontextprotocol/core";
+import type { z } from "zod";
+
+type JSONRPCMessage = z.infer<typeof JSONRPCMessageSchema>;
 import { parseCli } from "../src/config.js";
 import { createHttpApp } from "../src/http.js";
 import { logInfo } from "../src/utils.js";

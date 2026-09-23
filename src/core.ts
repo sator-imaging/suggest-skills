@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import * as z from "zod/v4";
 import type { SuggestSkillsConfig } from "./config.js";
 import { buildSuggestionResponse } from "./suggest.js";
