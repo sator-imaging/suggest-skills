@@ -506,4 +506,38 @@ describe("streamable HTTP MCP server", () => {
       server.stop();
     }
   });
+
+  test("handles subsequent tool requests statelessly without session header", async () => {
+    const runtimeMode = parseCli(["node", "index.js"], {
+      SUGGEST_SKILLS_MANIFEST_URLS: JSON.stringify([DEFAULT_SOURCE_URL]),
+    });
+    const server = createHttpApp(runtimeMode.config, 0);
+
+    try {
+      const baseUrl = `http://localhost:${server.port}`;
+
+      const toolsListResponse = await fetch(`${baseUrl}/mcp`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          accept: "application/json, text/event-stream",
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 2,
+          method: "tools/list",
+          params: {},
+        }),
+      });
+
+      expect(toolsListResponse.status).toBe(200);
+      expect(toolsListResponse.headers.get("mcp-session-id")).toBeNull();
+      const bodyText = await toolsListResponse.text();
+      expect(bodyText).toContain('"suggest_skills"');
+      expect(bodyText).toContain('"download_skill"');
+      expect(bodyText).toContain('"fetch_manifest"');
+    } finally {
+      server.stop();
+    }
+  });
 });

@@ -13,7 +13,9 @@ export function createHttpApp(config: SuggestSkillsConfig, port?: number): Serve
         return Response.json({ status: "ok" });
       }
       if (url.pathname === "/mcp") {
-        const transport = new WebStandardStreamableHTTPServerTransport({});
+        const transport = new WebStandardStreamableHTTPServerTransport({
+          sessionIdGenerator: undefined,
+        });
         const server = createServer(config);
         await server.connect(transport);
         return transport.handleRequest(req);
