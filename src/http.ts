@@ -1,4 +1,4 @@
-import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
+import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/server";
 import type { Server } from "bun";
 import type { SuggestSkillsConfig } from "./config.js";
 import { createServer } from "./core.js";
