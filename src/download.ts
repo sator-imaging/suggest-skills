@@ -3,6 +3,7 @@ import { Fibers } from "ts-fibers";
 import type { GithubDirectoryLocation } from "./utils.js";
 import {
   normalizeGithubRawUrl,
+  parseGithubBlobUrl,
   parseGithubDirectoryUrl,
   parseUrl,
 } from "./utils.js";
@@ -61,30 +62,84 @@ export function clearManifestCache(): void {
 
 export async function downloadGithubFolder(url: string): Promise<DownloadedFile[]> {
   const location = await resolveGithubFolderUrl(url);
-  const entries = await listGithubDirectoryRecursive(location);
-  const fileEntries = entries.filter((e) => (e.type === "file" || e.type === "symlink") && e.download_url);
-  const results = Array.from<DownloadedFile | undefined>({ length: fileEntries.length });
+  return downloadDirectoryHelper(location, location.path, location.path, new Set());
+}
+
+async function downloadDirectoryHelper(
+  location: GithubDirectoryLocation,
+  dirPath: string,
+  rootPath: string,
+  ancestry: Set<string>,
+): Promise<DownloadedFile[]> {
+  if (ancestry.has(dirPath)) {
+    throw new Error(`Detected recursive GitHub symlink cycle at "${dirPath}".`);
+  }
+
+  const nextAncestry = new Set(ancestry);
+  nextAncestry.add(dirPath);
+
+  const entries = await listGithubDirectoryRecursive({ ...location, path: dirPath });
+  const fileEntries = entries.filter((e) => e.type !== "dir");
+  const results = Array.from<Array<DownloadedFile> | undefined>({ length: fileEntries.length });
 
   const fibers = Fibers.forEach(
     DOWNLOAD_CONCURRENCY,
     fileEntries.map((entry, index) => ({ entry, index })),
     async ({ entry, index }) => {
-      const content = await fetchTextContent(entry.download_url!, `File "${entry.path}"`);
-      return {
-        index,
-        file: {
-          path: toRelativePath(entry.path, location.path),
-          content,
-        },
-      };
+      if (entry.type === "symlink" && entry.download_url) {
+        const targetOrContent = await fetchTextContent(entry.download_url, `File "${entry.path}"`);
+        const resolvedTargetPath = resolveRepoRelativeSymlinkPath(entry.path, targetOrContent.trim());
+
+        if (resolvedTargetPath) {
+          const symlinkFiles = await downloadDirectoryHelper(
+            location,
+            resolvedTargetPath,
+            rootPath,
+            new Set(nextAncestry),
+          );
+          const virtualBasePath = toRelativePath(entry.path, rootPath);
+          return {
+            index,
+            files: symlinkFiles.map((sf) => ({
+              path: sf.path ? `${virtualBasePath}/${sf.path}` : virtualBasePath,
+              content: sf.content,
+            })),
+          };
+        }
+
+        return {
+          index,
+          files: [
+            {
+              path: toRelativePath(entry.path, rootPath),
+              content: targetOrContent,
+            },
+          ],
+        };
+      }
+
+      if (entry.type === "file" && entry.download_url) {
+        const content = await fetchTextContent(entry.download_url, `File "${entry.path}"`);
+        return {
+          index,
+          files: [
+            {
+              path: toRelativePath(entry.path, rootPath),
+              content,
+            },
+          ],
+        };
+      }
+
+      return { index, files: [] };
     },
   );
 
   for await (const result of fibers) {
-    results[result.index] = result.file;
+    results[result.index] = result.files;
   }
 
-  return results.filter((f): f is DownloadedFile => f !== undefined);
+  return results.flatMap((files) => files ?? []);
 }
 
 export async function fetchManifestText(url: string): Promise<string> {
@@ -101,6 +156,27 @@ export async function fetchManifestText(url: string): Promise<string> {
 }
 
 export async function fetchTextContent(url: string, label: string): Promise<string> {
+  const repoLocation = parseGithubBlobUrl(url);
+
+  if (repoLocation) {
+    try {
+      const octokit = getOctokit();
+      const response = await octokit.rest.repos.getContent({
+        owner: repoLocation.owner,
+        repo: repoLocation.repo,
+        path: repoLocation.path,
+        ref: repoLocation.ref,
+        mediaType: { format: "raw" },
+      });
+
+      if (typeof response.data === "string") {
+        return response.data;
+      }
+    } catch {
+      // Fallback to fetchTextResponse below if Octokit raw fetch fails
+    }
+  }
+
   const response = await fetchTextResponse(url, label, url);
   return response.text;
 }
@@ -266,10 +342,12 @@ export async function listGithubDirectoryRecursive(
       }
 
       if (entry.type === "blob") {
+        const isSymlink = entry.mode === "120000";
         entries.push({
           path: resolvedPath,
           download_url: buildGithubRawUrl(location.owner, location.repo, location.ref, resolvedPath),
-          type: "file",
+          type: isSymlink ? "symlink" : "file",
+          sha: entry.sha,
         });
       }
     }
@@ -422,6 +500,35 @@ function toRelativePath(path: string, rootPath: string): string {
 function dirname(path: string): string {
   const parts = path.split("/").filter(Boolean);
   return parts.slice(0, -1).join("/");
+}
+
+export function resolveRepoRelativeSymlinkPath(path: string, target: string | undefined): string | undefined {
+  if (!target || target.startsWith("/") || target.includes("://")) {
+    return undefined;
+  }
+
+  const parts = `${dirname(path)}/${target}`.split("/");
+  const normalizedParts: string[] = [];
+
+  for (const part of parts) {
+    if (!part || part === ".") {
+      continue;
+    }
+
+    if (part === "..") {
+      const parent = normalizedParts.pop();
+
+      if (parent === undefined) {
+        return undefined;
+      }
+
+      continue;
+    }
+
+    normalizedParts.push(part);
+  }
+
+  return normalizedParts.join("/");
 }
 
 

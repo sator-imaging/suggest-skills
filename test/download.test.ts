@@ -847,7 +847,9 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
 
   if (
     url ===
-    "https://raw.githubusercontent.com/octo/demo/main/docs/README.skills.md"
+    "https://raw.githubusercontent.com/octo/demo/main/docs/README.skills.md" ||
+    url ===
+    "https://api.github.com/repos/octo/demo/contents/docs/README.skills.md?ref=main"
   ) {
     return new Response("# manifest\n", {
       headers: {
