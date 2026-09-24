@@ -45,6 +45,36 @@ export function normalizeGithubRawUrl(sourceUrl: string): string | undefined {
   return `https://${GITHUB_RAW_HOSTNAME}/${owner}/${repo}/${ref}/${filePath.join("/")}`;
 }
 
+export function parseGithubBlobUrl(sourceUrl: string): GithubDirectoryLocation | undefined {
+  const parsedUrl = parseUrl(sourceUrl);
+
+  if (!parsedUrl) {
+    return undefined;
+  }
+
+  if (parsedUrl.hostname === GITHUB_HOSTNAME) {
+    const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+    const [owner, rawRepo, urlType, ref, ...filePath] = pathParts;
+    const repo = normalizeGithubRepo(rawRepo);
+
+    if (owner && repo && (urlType === "blob" || urlType === "raw") && ref && filePath.length > 0) {
+      return { owner, repo, ref, path: filePath.join("/") };
+    }
+  }
+
+  if (parsedUrl.hostname === GITHUB_RAW_HOSTNAME) {
+    const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+    const [owner, rawRepo, ref, ...filePath] = pathParts;
+    const repo = normalizeGithubRepo(rawRepo);
+
+    if (owner && repo && ref && filePath.length > 0) {
+      return { owner, repo, ref, path: filePath.join("/") };
+    }
+  }
+
+  return undefined;
+}
+
 export function parseGithubDirectoryUrl(sourceUrl: string): GithubDirectoryLocation | undefined {
   const parsedUrl = parseUrl(sourceUrl);
 
