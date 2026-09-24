@@ -21,7 +21,7 @@ export type DownloadedFile = {
 };
 
 const GITHUB_HOSTNAME = "github.com";
-const DOWNLOAD_CONCURRENCY = 4;
+const DOWNLOAD_CONCURRENCY = 1;
 
 function getGithubToken(): string | undefined {
   return process.env["GITHUB_PAT"] || process.env["GH_TOKEN"] || process.env["GITHUB_TOKEN"];
