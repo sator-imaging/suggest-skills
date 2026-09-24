@@ -3,7 +3,6 @@ import { Fibers } from "ts-fibers";
 import type { GithubDirectoryLocation } from "./utils.js";
 import {
   normalizeGithubRawUrl,
-  parseGithubBlobUrl,
   parseGithubDirectoryUrl,
   parseUrl,
 } from "./utils.js";
@@ -156,27 +155,6 @@ export async function fetchManifestText(url: string): Promise<string> {
 }
 
 export async function fetchTextContent(url: string, label: string): Promise<string> {
-  const repoLocation = parseGithubBlobUrl(url);
-
-  if (repoLocation) {
-    try {
-      const octokit = getOctokit();
-      const response = await octokit.rest.repos.getContent({
-        owner: repoLocation.owner,
-        repo: repoLocation.repo,
-        path: repoLocation.path,
-        ref: repoLocation.ref,
-        mediaType: { format: "raw" },
-      });
-
-      if (typeof response.data === "string") {
-        return response.data;
-      }
-    } catch {
-      // Fallback to fetchTextResponse below if Octokit raw fetch fails
-    }
-  }
-
   const response = await fetchTextResponse(url, label, url);
   return response.text;
 }
