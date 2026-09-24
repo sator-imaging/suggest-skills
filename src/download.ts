@@ -21,7 +21,7 @@ export type DownloadedFile = {
 };
 
 const GITHUB_HOSTNAME = "github.com";
-const DOWNLOAD_CONCURRENCY = 4;
+const DOWNLOAD_CONCURRENCY = 1;
 
 function getGithubToken(): string | undefined {
   return process.env["GITHUB_PAT"] || process.env["GH_TOKEN"] || process.env["GITHUB_TOKEN"];
@@ -61,7 +61,100 @@ export function clearManifestCache(): void {
 
 export async function downloadGithubFolder(url: string): Promise<DownloadedFile[]> {
   const location = await resolveGithubFolderUrl(url);
-  return downloadDirectory(location, location.path);
+  return downloadDirectoryHelper(location, location.path, location.path, new Set());
+}
+
+async function downloadDirectoryHelper(
+  location: GithubDirectoryLocation,
+  dirPath: string,
+  rootPath: string,
+  ancestry: Set<string>,
+): Promise<DownloadedFile[]> {
+  if (ancestry.has(dirPath)) {
+    throw new Error(`Detected recursive GitHub symlink cycle at "${dirPath}".`);
+  }
+
+  const nextAncestry = new Set(ancestry);
+  nextAncestry.add(dirPath);
+
+  const entries = await listGithubDirectoryRecursive({ ...location, path: dirPath });
+  const fileEntries = entries.filter((e) => e.type !== "dir");
+  const results = Array.from<Array<DownloadedFile> | undefined>({ length: fileEntries.length });
+
+  const fibers = Fibers.forEach(
+    DOWNLOAD_CONCURRENCY,
+    fileEntries.map((entry, index) => ({ entry, index })),
+    async ({ entry, index }) => {
+      if (entry.type === "symlink" && entry.download_url) {
+        const targetOrContent = await fetchTextContent(entry.download_url, `File "${entry.path}"`);
+        const resolvedTargetPath = resolveRepoRelativeSymlinkPath(entry.path, targetOrContent.trim());
+
+        if (resolvedTargetPath) {
+          try {
+            const symlinkFiles = await downloadDirectoryHelper(
+              location,
+              resolvedTargetPath,
+              resolvedTargetPath,
+              new Set(nextAncestry),
+            );
+            const virtualBasePath = toRelativePath(entry.path, rootPath);
+            return {
+              index,
+              files: symlinkFiles.map((sf) => ({
+                path: sf.path ? `${virtualBasePath}/${sf.path}` : virtualBasePath,
+                content: sf.content,
+              })),
+            };
+          } catch {
+            const fileContent = await fetchTextContent(
+              buildGithubRawUrl(location.owner, location.repo, location.ref, resolvedTargetPath),
+              `File "${entry.path}"`,
+            );
+            return {
+              index,
+              files: [
+                {
+                  path: toRelativePath(entry.path, rootPath),
+                  content: fileContent,
+                },
+              ],
+            };
+          }
+        }
+
+        return {
+          index,
+          files: [
+            {
+              path: toRelativePath(entry.path, rootPath),
+              content: targetOrContent,
+            },
+          ],
+        };
+      }
+
+      if (entry.type === "file" && entry.download_url) {
+        const content = await fetchTextContent(entry.download_url, `File "${entry.path}"`);
+        return {
+          index,
+          files: [
+            {
+              path: toRelativePath(entry.path, rootPath),
+              content,
+            },
+          ],
+        };
+      }
+
+      return { index, files: [] };
+    },
+  );
+
+  for await (const result of fibers) {
+    results[result.index] = result.files;
+  }
+
+  return results.flatMap((files) => files ?? []);
 }
 
 export async function fetchManifestText(url: string): Promise<string> {
@@ -173,83 +266,6 @@ async function resolveGithubDirectoryLocation(
   }
 }
 
-async function downloadDirectory(
-  location: GithubDirectoryLocation,
-  rootPath: string,
-  virtualPath = location.path,
-  ancestry = new Set<string>(),
-): Promise<DownloadedFile[]> {
-  if (ancestry.has(location.path)) {
-    throw new Error(`Detected recursive GitHub symlink cycle at "${location.path}".`);
-  }
-
-  const nextAncestry = new Set(ancestry);
-  nextAncestry.add(location.path);
-  const entries = await listGithubDirectory(location);
-  const results = Array.from<Array<DownloadedFile> | undefined>({ length: entries.length });
-  const fibers = Fibers.forEach(
-    DOWNLOAD_CONCURRENCY,
-    entries.map((entry, index) => ({ entry, index })),
-    async ({ entry, index }) => ({
-      index,
-      files: await downloadDirectoryEntry(entry, location, rootPath, virtualPath, nextAncestry),
-    }),
-  );
-
-  for await (const result of fibers) {
-    results[result.index] = result.files;
-  }
-
-  return results.flatMap((files) => files ?? []);
-}
-
-async function downloadDirectoryEntry(
-  entry: GithubContentEntry,
-  location: GithubDirectoryLocation,
-  rootPath: string,
-  virtualPath: string,
-  ancestry: ReadonlySet<string>,
-): Promise<DownloadedFile[]> {
-  const virtualEntryPath = remapEntryPath(entry.path, location.path, virtualPath);
-
-  if (entry.type === "dir") {
-    return downloadDirectory(
-      {
-        ...location,
-        path: entry.path,
-      },
-      rootPath,
-      virtualEntryPath,
-      new Set(ancestry),
-    );
-  }
-
-  if (entry.type === "symlink") {
-    if (entry.download_url) {
-      return [await downloadFileEntry(entry.download_url, virtualEntryPath, rootPath)];
-    }
-
-    const resolvedTargetPath = resolveRepoRelativeSymlinkPath(entry.path, entry.target);
-
-    if (resolvedTargetPath) {
-      return downloadDirectory(
-        {
-          ...location,
-          path: resolvedTargetPath,
-        },
-        rootPath,
-        virtualEntryPath,
-        new Set(ancestry),
-      );
-    }
-  }
-
-  if (entry.type !== "file") {
-    throw new Error(`Unsupported GitHub entry type "${entry.type}" at "${entry.path}".`);
-  }
-
-  return [await downloadFileEntry(entry.download_url, virtualEntryPath, rootPath)];
-}
 
 export async function listGithubDirectory(
   location: GithubDirectoryLocation,
@@ -320,10 +336,12 @@ export async function listGithubDirectoryRecursive(
       }
 
       if (entry.type === "blob") {
+        const isSymlink = entry.mode === "120000";
         entries.push({
           path: resolvedPath,
           download_url: buildGithubRawUrl(location.owner, location.repo, location.ref, resolvedPath),
-          type: "file",
+          type: isSymlink ? "symlink" : "file",
+          sha: entry.sha,
         });
       }
     }
@@ -463,23 +481,6 @@ function buildGithubRawUrl(owner: string, repo: string, ref: string, path: strin
   return `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/${path}`;
 }
 
-async function downloadFileEntry(
-  downloadUrl: string | null,
-  path: string,
-  rootPath: string,
-): Promise<DownloadedFile> {
-  if (!downloadUrl) {
-    throw new Error(`Missing download URL for "${path}".`);
-  }
-
-  const content = await fetchTextContent(downloadUrl, `File "${path}"`);
-
-  return {
-    path: toRelativePath(path, rootPath),
-    content,
-  };
-}
-
 function toRelativePath(path: string, rootPath: string): string {
   const prefix = `${rootPath}/`;
 
@@ -495,21 +496,7 @@ function dirname(path: string): string {
   return parts.slice(0, -1).join("/");
 }
 
-function remapEntryPath(path: string, basePath: string, virtualBasePath: string): string {
-  const relativePath = toRelativePath(path, basePath);
-
-  if (!virtualBasePath) {
-    return relativePath;
-  }
-
-  if (!relativePath) {
-    return virtualBasePath;
-  }
-
-  return `${virtualBasePath}/${relativePath}`;
-}
-
-function resolveRepoRelativeSymlinkPath(path: string, target: string | undefined): string | undefined {
+export function resolveRepoRelativeSymlinkPath(path: string, target: string | undefined): string | undefined {
   if (!target || target.startsWith("/") || target.includes("://")) {
     return undefined;
   }
