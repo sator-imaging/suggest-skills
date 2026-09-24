@@ -90,20 +90,36 @@ async function downloadDirectoryHelper(
         const resolvedTargetPath = resolveRepoRelativeSymlinkPath(entry.path, targetOrContent.trim());
 
         if (resolvedTargetPath) {
-          const symlinkFiles = await downloadDirectoryHelper(
-            location,
-            resolvedTargetPath,
-            rootPath,
-            new Set(nextAncestry),
-          );
-          const virtualBasePath = toRelativePath(entry.path, rootPath);
-          return {
-            index,
-            files: symlinkFiles.map((sf) => ({
-              path: sf.path ? `${virtualBasePath}/${sf.path}` : virtualBasePath,
-              content: sf.content,
-            })),
-          };
+          try {
+            const symlinkFiles = await downloadDirectoryHelper(
+              location,
+              resolvedTargetPath,
+              resolvedTargetPath,
+              new Set(nextAncestry),
+            );
+            const virtualBasePath = toRelativePath(entry.path, rootPath);
+            return {
+              index,
+              files: symlinkFiles.map((sf) => ({
+                path: sf.path ? `${virtualBasePath}/${sf.path}` : virtualBasePath,
+                content: sf.content,
+              })),
+            };
+          } catch {
+            const fileContent = await fetchTextContent(
+              buildGithubRawUrl(location.owner, location.repo, location.ref, resolvedTargetPath),
+              `File "${entry.path}"`,
+            );
+            return {
+              index,
+              files: [
+                {
+                  path: toRelativePath(entry.path, rootPath),
+                  content: fileContent,
+                },
+              ],
+            };
+          }
         }
 
         return {

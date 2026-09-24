@@ -94,7 +94,7 @@ describe("downloadGithubFolder", () => {
     ]);
   });
 
-  test("downloads sibling files concurrently while preserving result order", async () => {
+  test("downloads sibling files sequentially while preserving result order", async () => {
     let resolveFirstFile: ((response: Response) => void) | undefined;
     let resolveFirstFileStarted: (() => void) | undefined;
     let secondFileStarted = false;
@@ -176,7 +176,7 @@ describe("downloadGithubFolder", () => {
     );
 
     await firstFileStarted;
-    expect(secondFileStarted).toBe(true);
+    expect(secondFileStarted).toBe(false);
 
     resolveFirstFile?.(new Response("first-body\n"));
 
