@@ -409,23 +409,6 @@ function buildGithubRawUrl(owner: string, repo: string, ref: string, path: strin
   return `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/${path}`;
 }
 
-async function downloadFileEntry(
-  downloadUrl: string | null,
-  path: string,
-  rootPath: string,
-): Promise<DownloadedFile> {
-  if (!downloadUrl) {
-    throw new Error(`Missing download URL for "${path}".`);
-  }
-
-  const content = await fetchTextContent(downloadUrl, `File "${path}"`);
-
-  return {
-    path: toRelativePath(path, rootPath),
-    content,
-  };
-}
-
 function toRelativePath(path: string, rootPath: string): string {
   const prefix = `${rootPath}/`;
 
@@ -439,49 +422,6 @@ function toRelativePath(path: string, rootPath: string): string {
 function dirname(path: string): string {
   const parts = path.split("/").filter(Boolean);
   return parts.slice(0, -1).join("/");
-}
-
-function remapEntryPath(path: string, basePath: string, virtualBasePath: string): string {
-  const relativePath = toRelativePath(path, basePath);
-
-  if (!virtualBasePath) {
-    return relativePath;
-  }
-
-  if (!relativePath) {
-    return virtualBasePath;
-  }
-
-  return `${virtualBasePath}/${relativePath}`;
-}
-
-function resolveRepoRelativeSymlinkPath(path: string, target: string | undefined): string | undefined {
-  if (!target || target.startsWith("/") || target.includes("://")) {
-    return undefined;
-  }
-
-  const parts = `${dirname(path)}/${target}`.split("/");
-  const normalizedParts: string[] = [];
-
-  for (const part of parts) {
-    if (!part || part === ".") {
-      continue;
-    }
-
-    if (part === "..") {
-      const parent = normalizedParts.pop();
-
-      if (parent === undefined) {
-        return undefined;
-      }
-
-      continue;
-    }
-
-    normalizedParts.push(part);
-  }
-
-  return normalizedParts.join("/");
 }
 
 
