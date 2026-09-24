@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, dirname as nodeDirname } from "node:path";
+import { Fibers } from "ts-fibers";
 import {
   downloadGithubFolder,
   fetchTextContent,
@@ -93,10 +94,21 @@ export async function runDownloadCommand(url: string, options: { recursive?: boo
     return true;
   });
 
-  for (const folderPath of finalFolderCandidates) {
-    const folderUrl = `https://github.com/${location.owner}/${location.repo}/tree/${location.ref}/${folderPath}`;
-    logInfo(`Downloading folder: ${folderPath || "(root)"}`);
-    const files = await downloadGithubFolder(folderUrl);
+  const folderList = Array.from(finalFolderCandidates);
+  const DOWNLOAD_CONCURRENCY = 4;
+
+  const folderFibers = Fibers.forEach(
+    DOWNLOAD_CONCURRENCY,
+    folderList,
+    async (folderPath) => {
+      const folderUrl = `https://github.com/${location.owner}/${location.repo}/tree/${location.ref}/${folderPath}`;
+      logInfo(`Downloading folder: ${folderPath || "(root)"}`);
+      const files = await downloadGithubFolder(folderUrl);
+      return { folderPath, files };
+    },
+  );
+
+  for await (const { folderPath, files } of folderFibers) {
     for (const file of files) {
       const fullRepoPath = folderPath ? `${folderPath}/${file.path}` : file.path;
       await saveFile(hostname, location, fullRepoPath, file.content);

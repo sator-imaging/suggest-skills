@@ -126,6 +126,32 @@ describe("downloadGithubFolder", () => {
 
       if (
         url ===
+        "https://api.github.com/repos/octo/demo/contents/skills?ref=main"
+      ) {
+        return Response.json([
+          {
+            type: "dir",
+            path: "skills/concurrent-skill",
+            sha: "concurrent-skill-tree",
+          },
+        ]);
+      }
+
+      if (
+        url ===
+        "https://api.github.com/repos/octo/demo/git/trees/concurrent-skill-tree?recursive=1"
+      ) {
+        return Response.json({
+          truncated: false,
+          tree: [
+            { path: "first.txt", type: "blob" },
+            { path: "second.txt", type: "blob" },
+          ],
+        });
+      }
+
+      if (
+        url ===
         "https://raw.githubusercontent.com/octo/demo/main/skills/concurrent-skill/first.txt"
       ) {
         resolveFirstFileStarted?.();
@@ -328,6 +354,127 @@ describe("fetchManifestText", () => {
 
 async function fetchMock(input: string | URL | Request): Promise<Response> {
   const url = String(input);
+
+  if (
+    url ===
+    "https://api.github.com/repos/octo/demo/contents/skills?ref=main"
+  ) {
+    return Response.json([
+      { type: "dir", path: "skills/test-skill", sha: "test-skill-tree" },
+      { type: "dir", path: "skills/binary-skill", sha: "binary-skill-tree" },
+      { type: "dir", path: "skills/utf16-skill", sha: "utf16-skill-tree" },
+      { type: "dir", path: "skills/octet-stream-skill", sha: "octet-stream-skill-tree" },
+      { type: "dir", path: "skills/file-symlink-skill", sha: "file-symlink-skill-tree" },
+      { type: "dir", path: "skills/deep-skill", sha: "deep-skill-tree" },
+      { type: "dir", path: "skills/directory-symlink-skill", sha: "directory-symlink-skill-tree" },
+    ]);
+  }
+
+  if (
+    url ===
+    "https://api.github.com/repos/octo/demo/contents/skills?ref=feature%2Fskills"
+  ) {
+    return Response.json([
+      { type: "dir", path: "skills/test-skill", sha: "branch-skill-tree" },
+    ]);
+  }
+
+  if (
+    url ===
+    "https://api.github.com/repos/octo/demo/git/trees/test-skill-tree?recursive=1"
+  ) {
+    return Response.json({
+      truncated: false,
+      tree: [
+        { path: "SKILL.md", type: "blob" },
+        { path: "assets", type: "tree" },
+        { path: "assets/template.txt", type: "blob" },
+      ],
+    });
+  }
+
+  if (
+    url ===
+    "https://api.github.com/repos/octo/demo/git/trees/branch-skill-tree?recursive=1"
+  ) {
+    return Response.json({
+      truncated: false,
+      tree: [{ path: "SKILL.md", type: "blob" }],
+    });
+  }
+
+  if (
+    url ===
+    "https://api.github.com/repos/octo/demo/git/trees/binary-skill-tree?recursive=1"
+  ) {
+    return Response.json({
+      truncated: false,
+      tree: [{ path: "icon.png", type: "blob" }],
+    });
+  }
+
+  if (
+    url ===
+    "https://api.github.com/repos/octo/demo/git/trees/utf16-skill-tree?recursive=1"
+  ) {
+    return Response.json({
+      truncated: false,
+      tree: [{ path: "SKILL.md", type: "blob" }],
+    });
+  }
+
+  if (
+    url ===
+    "https://api.github.com/repos/octo/demo/git/trees/octet-stream-skill-tree?recursive=1"
+  ) {
+    return Response.json({
+      truncated: false,
+      tree: [{ path: "SKILL.md", type: "blob" }],
+    });
+  }
+
+  if (
+    url ===
+    "https://api.github.com/repos/octo/demo/git/trees/file-symlink-skill-tree?recursive=1"
+  ) {
+    return Response.json({
+      truncated: false,
+      tree: [
+        { path: "SKILL.md", type: "blob" },
+        { path: "assets/linked-template.txt", type: "blob" },
+      ],
+    });
+  }
+
+  if (
+    url ===
+    "https://api.github.com/repos/octo/demo/git/trees/deep-skill-tree?recursive=1"
+  ) {
+    return Response.json({
+      truncated: false,
+      tree: [
+        { path: "SKILL.md", type: "blob" },
+        { path: "docs", type: "tree" },
+        { path: "docs/guide", type: "tree" },
+        { path: "docs/guide/advanced", type: "tree" },
+        { path: "docs/guide/advanced/steps.md", type: "blob" },
+      ],
+    });
+  }
+
+  if (
+    url ===
+    "https://api.github.com/repos/octo/demo/git/trees/directory-symlink-skill-tree?recursive=1"
+  ) {
+    return Response.json({
+      truncated: false,
+      tree: [
+        { path: "SKILL.md", type: "blob" },
+        { path: "assets/palette.json", type: "blob" },
+        { path: "assets/templates/card.txt", type: "blob" },
+      ],
+    });
+  }
 
   if (
     url ===
@@ -595,6 +742,27 @@ async function fetchMock(input: string | URL | Request): Promise<Response> {
     "https://raw.githubusercontent.com/octo/demo/main/skills/file-symlink-skill/SKILL.md"
   ) {
     return new Response("---\nname: file-symlink-skill\n---\n");
+  }
+
+  if (
+    url ===
+    "https://raw.githubusercontent.com/octo/demo/main/skills/file-symlink-skill/assets/linked-template.txt"
+  ) {
+    return new Response("linked-template-body\n");
+  }
+
+  if (
+    url ===
+    "https://raw.githubusercontent.com/octo/demo/main/skills/directory-symlink-skill/assets/palette.json"
+  ) {
+    return new Response("{\n  \"accent\": \"blue\"\n}\n");
+  }
+
+  if (
+    url ===
+    "https://raw.githubusercontent.com/octo/demo/main/skills/directory-symlink-skill/assets/templates/card.txt"
+  ) {
+    return new Response("card-template\n");
   }
 
   if (

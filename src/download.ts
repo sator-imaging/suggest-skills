@@ -61,7 +61,30 @@ export function clearManifestCache(): void {
 
 export async function downloadGithubFolder(url: string): Promise<DownloadedFile[]> {
   const location = await resolveGithubFolderUrl(url);
-  return downloadDirectory(location, location.path);
+  const entries = await listGithubDirectoryRecursive(location);
+  const fileEntries = entries.filter((e) => (e.type === "file" || e.type === "symlink") && e.download_url);
+  const results = Array.from<DownloadedFile | undefined>({ length: fileEntries.length });
+
+  const fibers = Fibers.forEach(
+    DOWNLOAD_CONCURRENCY,
+    fileEntries.map((entry, index) => ({ entry, index })),
+    async ({ entry, index }) => {
+      const content = await fetchTextContent(entry.download_url!, `File "${entry.path}"`);
+      return {
+        index,
+        file: {
+          path: toRelativePath(entry.path, location.path),
+          content,
+        },
+      };
+    },
+  );
+
+  for await (const result of fibers) {
+    results[result.index] = result.file;
+  }
+
+  return results.filter((f): f is DownloadedFile => f !== undefined);
 }
 
 export async function fetchManifestText(url: string): Promise<string> {
@@ -173,83 +196,6 @@ async function resolveGithubDirectoryLocation(
   }
 }
 
-async function downloadDirectory(
-  location: GithubDirectoryLocation,
-  rootPath: string,
-  virtualPath = location.path,
-  ancestry = new Set<string>(),
-): Promise<DownloadedFile[]> {
-  if (ancestry.has(location.path)) {
-    throw new Error(`Detected recursive GitHub symlink cycle at "${location.path}".`);
-  }
-
-  const nextAncestry = new Set(ancestry);
-  nextAncestry.add(location.path);
-  const entries = await listGithubDirectory(location);
-  const results = Array.from<Array<DownloadedFile> | undefined>({ length: entries.length });
-  const fibers = Fibers.forEach(
-    DOWNLOAD_CONCURRENCY,
-    entries.map((entry, index) => ({ entry, index })),
-    async ({ entry, index }) => ({
-      index,
-      files: await downloadDirectoryEntry(entry, location, rootPath, virtualPath, nextAncestry),
-    }),
-  );
-
-  for await (const result of fibers) {
-    results[result.index] = result.files;
-  }
-
-  return results.flatMap((files) => files ?? []);
-}
-
-async function downloadDirectoryEntry(
-  entry: GithubContentEntry,
-  location: GithubDirectoryLocation,
-  rootPath: string,
-  virtualPath: string,
-  ancestry: ReadonlySet<string>,
-): Promise<DownloadedFile[]> {
-  const virtualEntryPath = remapEntryPath(entry.path, location.path, virtualPath);
-
-  if (entry.type === "dir") {
-    return downloadDirectory(
-      {
-        ...location,
-        path: entry.path,
-      },
-      rootPath,
-      virtualEntryPath,
-      new Set(ancestry),
-    );
-  }
-
-  if (entry.type === "symlink") {
-    if (entry.download_url) {
-      return [await downloadFileEntry(entry.download_url, virtualEntryPath, rootPath)];
-    }
-
-    const resolvedTargetPath = resolveRepoRelativeSymlinkPath(entry.path, entry.target);
-
-    if (resolvedTargetPath) {
-      return downloadDirectory(
-        {
-          ...location,
-          path: resolvedTargetPath,
-        },
-        rootPath,
-        virtualEntryPath,
-        new Set(ancestry),
-      );
-    }
-  }
-
-  if (entry.type !== "file") {
-    throw new Error(`Unsupported GitHub entry type "${entry.type}" at "${entry.path}".`);
-  }
-
-  return [await downloadFileEntry(entry.download_url, virtualEntryPath, rootPath)];
-}
 
 export async function listGithubDirectory(
   location: GithubDirectoryLocation,
