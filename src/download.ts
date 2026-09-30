@@ -1,4 +1,5 @@
 import { Octokit } from "@octokit/rest";
+import { gunzipSync } from "node:zlib";
 import { Fibers } from "ts-fibers";
 import type { GithubDirectoryLocation } from "./utils.js";
 import {
@@ -61,7 +62,117 @@ export function clearManifestCache(): void {
 
 export async function downloadGithubFolder(url: string): Promise<DownloadedFile[]> {
   const location = await resolveGithubFolderUrl(url);
+
+  const tarballMap = await downloadTarballFiles(location);
+  if (tarballMap && tarballMap.size > 0) {
+    const rootPath = location.path;
+    const prefix = rootPath ? `${rootPath}/` : "";
+    const results: DownloadedFile[] = [];
+
+    for (const [filePath, bytes] of tarballMap.entries()) {
+      let relativePath: string | null = null;
+      if (!rootPath) {
+        relativePath = filePath;
+      } else if (filePath === rootPath) {
+        relativePath = "";
+      } else if (filePath.startsWith(prefix)) {
+        relativePath = filePath.slice(prefix.length);
+      }
+
+      if (relativePath !== null && relativePath !== "") {
+        if (looksBinary(bytes)) {
+          throw new Error(
+            `File "${filePath}" appears to be binary and cannot be returned as text.`,
+          );
+        }
+        const content = new TextDecoder("utf-8").decode(bytes);
+        results.push({
+          path: relativePath,
+          content,
+        });
+      }
+    }
+
+    if (results.length > 0) {
+      return results;
+    }
+  }
+
   return downloadDirectory(location, location.path);
+}
+
+export async function downloadTarballFiles(
+  location: GithubDirectoryLocation,
+): Promise<Map<string, Uint8Array> | null> {
+  try {
+    const octokit = getOctokit();
+    const response = await octokit.rest.repos.downloadTarballArchive({
+      owner: location.owner,
+      repo: location.repo,
+      ref: location.ref,
+    });
+
+    if (!response.data) {
+      return null;
+    }
+
+    const gzBuffer = Buffer.from(response.data as ArrayBuffer);
+    const tarBuffer = gunzipSync(gzBuffer);
+    return parseTarBuffer(tarBuffer);
+  } catch {
+    return null;
+  }
+}
+
+function parseTarBuffer(buf: Buffer): Map<string, Uint8Array> {
+  const files = new Map<string, Uint8Array>();
+  let offset = 0;
+  let nextLongName: string | undefined;
+
+  while (offset + 512 <= buf.length) {
+    const header = buf.subarray(offset, offset + 512);
+    if (header.every((b) => b === 0)) {
+      break;
+    }
+
+    let name = header.toString("utf8", 0, 100).replace(/\0.*$/, "");
+    const magic = header.toString("utf8", 257, 263);
+    if (magic.startsWith("ustar")) {
+      const prefix = header.toString("utf8", 345, 500).replace(/\0.*$/, "");
+      if (prefix) {
+        name = `${prefix}/${name}`;
+      }
+    }
+
+    const sizeStr = header.toString("utf8", 124, 136).trim().replace(/\0.*$/, "");
+    const size = parseInt(sizeStr, 8) || 0;
+    const typeflag = String.fromCharCode(header[156] || 48);
+
+    offset += 512;
+
+    if (typeflag === "L") {
+      nextLongName = buf.subarray(offset, offset + size).toString("utf8").replace(/\0.*$/, "").trim();
+    } else if (typeflag === "0" || typeflag === "\0") {
+      if (nextLongName) {
+        name = nextLongName;
+        nextLongName = undefined;
+      }
+
+      const slashIndex = name.indexOf("/");
+      const repoRelativePath = slashIndex >= 0 ? name.slice(slashIndex + 1) : name;
+
+      if (repoRelativePath) {
+        const fileData = buf.subarray(offset, offset + size);
+        files.set(repoRelativePath, new Uint8Array(fileData));
+      }
+    } else {
+      nextLongName = undefined;
+    }
+
+    offset += Math.ceil(size / 512) * 512;
+  }
+
+  return files;
 }
 
 export async function fetchManifestText(url: string): Promise<string> {
@@ -356,6 +467,7 @@ export async function fetchCommitInfo(location: GithubDirectoryLocation): Promis
         repo: location.repo,
         sha: location.ref,
         path: location.path,
+        per_page: 1,
       });
       firstCommit = response.data[0];
     } else {
@@ -395,6 +507,7 @@ export async function fetchCommitSha(location: GithubDirectoryLocation): Promise
         repo: location.repo,
         sha: location.ref,
         path: location.path,
+        per_page: 1,
       });
       sha = response.data[0]?.sha;
     } else {

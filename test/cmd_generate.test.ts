@@ -325,7 +325,7 @@ describe("generateOutputs", () => {
         "https://api.github.com/repos/octo/demo/contents?ref=main",
         "https://api.github.com/repos/octo/demo/git/trees/catalog-main-tree?recursive=1",
       ]);
-      expect(calls.slice(3).sort()).toEqual([
+      expect(calls.slice(3).filter((c) => !c.includes("/tarball/")).sort()).toEqual([
         "https://raw.githubusercontent.com/octo/demo/main/catalog/group/alpha/DESIGN.md",
         "https://raw.githubusercontent.com/octo/demo/main/catalog/group/alpha/SKILL.md",
         "https://raw.githubusercontent.com/octo/demo/main/catalog/group/beta/DESIGN.md",
