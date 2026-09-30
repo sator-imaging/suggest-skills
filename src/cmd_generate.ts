@@ -7,6 +7,7 @@ import { Fibers } from "ts-fibers";
 import type { GithubDirectoryLocation } from "./utils.js";
 import { logInfo, logWarning, parseMarkdownFrontMatterFields, parseUrl } from "./utils.js";
 import {
+  downloadTarballFiles,
   fetchCommitSha,
   fetchCommitInfo,
   fetchTextContent,
@@ -127,12 +128,15 @@ export async function generateOutputs(
       .map((entry) => entry.path)
       .sort((left, right) => left.localeCompare(right));
 
-  const agentEntries = await summarizeAgentFiles(rootLocation, agentFiles, options.delayMillis);
+  const tarballMap = await downloadTarballFiles(rootLocation);
+
+  const agentEntries = await summarizeAgentFiles(rootLocation, agentFiles, options.delayMillis, tarballMap);
   const summaries = await summarizeDirectories(
     rootLocation,
     candidateDirectories,
     analysis.summariesByDirectory,
     options.delayMillis,
+    tarballMap,
   );
 
   const manifestEntries = summaries
@@ -265,6 +269,7 @@ async function summarizeAgentFiles(
   rootLocation: GithubDirectoryLocation,
   agentFiles: GithubContentEntry[],
   delayMillis = 0,
+  tarballMap?: Map<string, Uint8Array> | null,
 ): Promise<GeneratedEntry[]> {
   const results = Array.from<GeneratedEntry | undefined>({ length: agentFiles.length });
   const fibers = Fibers.forEach(
@@ -278,7 +283,7 @@ async function summarizeAgentFiles(
     })),
     async ({ index, summary }) => {
       const result = {
-        entry: await summarizeAgentFile(summary),
+        entry: await summarizeAgentFile(summary, tarballMap),
         index,
       };
       if (delayMillis > 0) {
@@ -300,6 +305,7 @@ async function summarizeDirectories(
   candidateDirectories: string[],
   summariesByDirectory: ReadonlyMap<string, DirectorySummary>,
   delayMillis = 0,
+  tarballMap?: Map<string, Uint8Array> | null,
 ): Promise<Array<{ design?: GeneratedEntry; manifest?: GeneratedEntry }>> {
   const results = Array.from<{ design?: GeneratedEntry; manifest?: GeneratedEntry } | undefined>({
     length: candidateDirectories.length,
@@ -310,7 +316,7 @@ async function summarizeDirectories(
     async ({ index, path }) => {
       const result = {
         index,
-        summary: await summarizeDirectory(rootLocation, path, summariesByDirectory),
+        summary: await summarizeDirectory(rootLocation, path, summariesByDirectory, tarballMap),
       };
       if (delayMillis > 0) {
         await Fibers.delay(delayMillis);
@@ -375,13 +381,20 @@ function resolveGenerateRootLocation(url: string): GithubDirectoryLocation | und
 
 async function summarizeAgentFile(
   summary: AgentFileSummary,
+  tarballMap?: Map<string, Uint8Array> | null,
 ): Promise<GeneratedEntry | undefined> {
   if (!summary.path.endsWith(".md")) {
     return undefined;
   }
 
   logInfo(`Fetching: ${summary.path}`);
-  const fileText = await fetchTextContent(summary.url, `Agent file "${summary.path}"`);
+  let fileText: string;
+  const tarBytes = tarballMap?.get(summary.path);
+  if (tarBytes) {
+    fileText = new TextDecoder("utf-8").decode(tarBytes);
+  } else {
+    fileText = await fetchTextContent(summary.url, `Agent file "${summary.path}"`);
+  }
   const frontMatter = parseMarkdownFrontMatterFields(fileText);
 
   if (frontMatter.parseError) {
@@ -421,6 +434,7 @@ async function summarizeDirectory(
   rootLocation: GithubDirectoryLocation,
   directoryPath: string,
   summariesByDirectory: ReadonlyMap<string, DirectorySummary>,
+  tarballMap?: Map<string, Uint8Array> | null,
 ): Promise<{ design?: GeneratedEntry; manifest?: GeneratedEntry }> {
   logInfo(`Fetching: ${directoryPath}`);
   const summary = summariesByDirectory.get(directoryPath) ?? EMPTY_DIRECTORY_SUMMARY;
@@ -433,7 +447,7 @@ async function summarizeDirectory(
     rootLocation,
     sourcePath: directoryPath,
     summary,
-  });
+  }, tarballMap);
   let design = await buildEntry({
     descriptionFallback: "None",
     fileLabel: "Design",
@@ -442,7 +456,7 @@ async function summarizeDirectory(
     rootLocation,
     sourcePath: directoryPath,
     summary,
-  });
+  }, tarballMap);
 
   const designWasSkipped = design !== undefined && design.description === "None" && design.assets.length === 0;
   if (designWasSkipped) {
@@ -487,12 +501,19 @@ async function buildEntry({
   rootLocation: GithubDirectoryLocation;
   sourcePath: string;
   summary: DirectorySummary;
-}): Promise<GeneratedEntry | undefined> {
+}, tarballMap?: Map<string, Uint8Array> | null): Promise<GeneratedEntry | undefined> {
   if (!fileUrl) {
     return undefined;
   }
 
-  const fileText = await fetchTextContent(fileUrl, `${fileLabel} file "${sourcePath}/${fileName}"`);
+  const fullPath = sourcePath ? `${sourcePath}/${fileName}` : fileName;
+  let fileText: string;
+  const tarBytes = tarballMap?.get(fullPath);
+  if (tarBytes) {
+    fileText = new TextDecoder("utf-8").decode(tarBytes);
+  } else {
+    fileText = await fetchTextContent(fileUrl, `${fileLabel} file "${sourcePath}/${fileName}"`);
+  }
   const frontMatter = parseMarkdownFrontMatterFields(fileText);
 
   if (frontMatter.parseError) {

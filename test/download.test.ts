@@ -214,7 +214,7 @@ describe("fetchCommitSha", () => {
     globalThis.fetch = mock(async (input: string | URL | Request) => {
       const url = String(input);
       calls.push(url);
-      if (url === "https://api.github.com/repos/octo/demo/commits?sha=main&path=skills%2Ftest-skill") {
+      if (url === "https://api.github.com/repos/octo/demo/commits?sha=main&path=skills%2Ftest-skill&per_page=1") {
         return Response.json([{ sha: "abcd1234abcd1234abcd1234abcd1234abcd1234" }]);
       }
       throw new Error(`Unexpected fetch in fetchCommitSha test: ${url}`);
@@ -230,7 +230,7 @@ describe("fetchCommitSha", () => {
 
       expect(sha).toBe("abcd1234abcd1234abcd1234abcd1234abcd1234");
       expect(calls).toEqual([
-        "https://api.github.com/repos/octo/demo/commits?sha=main&path=skills%2Ftest-skill",
+        "https://api.github.com/repos/octo/demo/commits?sha=main&path=skills%2Ftest-skill&per_page=1",
       ]);
     } finally {
       globalThis.fetch = originalFetch;
