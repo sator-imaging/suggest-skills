@@ -1,3 +1,7 @@
+import child_process from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { Octokit } from "@octokit/rest";
 import { gunzipSync } from "node:zlib";
 import { Fibers } from "ts-fibers";
@@ -290,6 +294,126 @@ async function downloadDirectory(
   virtualPath = location.path,
   ancestry = new Set<string>(),
 ): Promise<DownloadedFile[]> {
+  try {
+    return await downloadDirectoryViaArchive(location, rootPath);
+  } catch {
+    return downloadDirectoryByEntries(location, rootPath, virtualPath, ancestry);
+  }
+}
+
+async function downloadDirectoryViaArchive(
+  location: GithubDirectoryLocation,
+  rootPath: string,
+): Promise<DownloadedFile[]> {
+  const octokit = getOctokit();
+  const response = await octokit.rest.repos.downloadTarballArchive({
+    owner: location.owner,
+    repo: location.repo,
+    ref: location.ref,
+  });
+
+  const buffer = Buffer.from(response.data as ArrayBuffer);
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "gh-tar-"));
+
+  try {
+    child_process.execSync("tar -xz -f -", { input: buffer, cwd: tmpDir });
+    const extractedEntries = fs.readdirSync(tmpDir);
+    const rootDirName = extractedEntries[0];
+    if (!rootDirName) {
+      throw new Error("Empty tarball archive.");
+    }
+
+    const extractedRoot = path.join(tmpDir, rootDirName);
+    const targetDir = location.path ? path.join(extractedRoot, location.path) : extractedRoot;
+
+    if (!fs.existsSync(targetDir)) {
+      throw new Error(`Path "${location.path}" not found in tarball archive.`);
+    }
+
+    return walkLocalDirectory(targetDir, location.path, rootPath, new Set(), extractedRoot);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+}
+
+function walkLocalDirectory(
+  currentLocalPath: string,
+  currentVirtualPath: string,
+  rootPath: string,
+  visitedRealPaths: Set<string>,
+  extractedRoot: string,
+): DownloadedFile[] {
+  const realPath = fs.realpathSync(currentLocalPath);
+  const canonicalRoot = fs.realpathSync(extractedRoot);
+
+  if (!realPath.startsWith(canonicalRoot)) {
+    throw new Error(`Symlink at "${currentVirtualPath}" points outside the target archive directory.`);
+  }
+
+  if (visitedRealPaths.has(realPath)) {
+    throw new Error(`Detected recursive GitHub symlink cycle at "${currentVirtualPath}".`);
+  }
+
+  const nextVisited = new Set(visitedRealPaths);
+  nextVisited.add(realPath);
+
+  const entries = fs.readdirSync(currentLocalPath, { withFileTypes: true });
+  const results: DownloadedFile[] = [];
+
+  for (const entry of entries) {
+    const entryLocalPath = path.join(currentLocalPath, entry.name);
+    const entryVirtualPath = currentVirtualPath ? `${currentVirtualPath}/${entry.name}` : entry.name;
+
+    const realEntryPath = fs.realpathSync(entryLocalPath);
+    if (!realEntryPath.startsWith(canonicalRoot)) {
+      throw new Error(`Symlink at "${entryVirtualPath}" points outside the target archive directory.`);
+    }
+
+    const lstat = fs.lstatSync(entryLocalPath);
+
+    if (lstat.isDirectory() || (lstat.isSymbolicLink() && fs.statSync(entryLocalPath).isDirectory())) {
+      const subFiles = walkLocalDirectory(entryLocalPath, entryVirtualPath, rootPath, nextVisited, extractedRoot);
+      results.push(...subFiles);
+    } else if (lstat.isFile() || (lstat.isSymbolicLink() && fs.statSync(entryLocalPath).isFile())) {
+      const content = readLocalFileAsText(entryLocalPath, entryVirtualPath);
+      results.push({
+        path: toRelativePath(entryVirtualPath, rootPath),
+        content,
+      });
+    }
+  }
+
+  return results;
+}
+
+function readLocalFileAsText(filePath: string, virtualPath: string): string {
+  const bytes = fs.readFileSync(filePath);
+  const textEncoding = detectTextEncoding(null, virtualPath);
+
+  if (looksBinary(bytes) && !textEncoding) {
+    throw new Error(`File "${virtualPath}" appears to be binary and cannot be returned as text.`);
+  }
+
+  if (textEncoding) {
+    return decodeTextBytes(bytes, textEncoding);
+  }
+
+  if (bytes.length >= 2 && bytes[0] === 255 && bytes[1] === 254) {
+    return decodeTextBytes(bytes, "utf-16le");
+  }
+  if (bytes.length >= 2 && bytes[0] === 254 && bytes[1] === 255) {
+    return decodeTextBytes(bytes, "utf-16be");
+  }
+
+  return new TextDecoder("utf-8").decode(bytes);
+}
+
+async function downloadDirectoryByEntries(
+  location: GithubDirectoryLocation,
+  rootPath: string,
+  virtualPath = location.path,
+  ancestry = new Set<string>(),
+): Promise<DownloadedFile[]> {
   if (ancestry.has(location.path)) {
     throw new Error(`Detected recursive GitHub symlink cycle at "${location.path}".`);
   }
@@ -324,7 +448,7 @@ async function downloadDirectoryEntry(
   const virtualEntryPath = remapEntryPath(entry.path, location.path, virtualPath);
 
   if (entry.type === "dir") {
-    return downloadDirectory(
+    return downloadDirectoryByEntries(
       {
         ...location,
         path: entry.path,
@@ -343,7 +467,7 @@ async function downloadDirectoryEntry(
     const resolvedTargetPath = resolveRepoRelativeSymlinkPath(entry.path, entry.target);
 
     if (resolvedTargetPath) {
-      return downloadDirectory(
+      return downloadDirectoryByEntries(
         {
           ...location,
           path: resolvedTargetPath,
