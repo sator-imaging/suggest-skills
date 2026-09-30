@@ -1,8 +1,6 @@
-import child_process from "node:child_process";
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
+import zlib from "node:zlib";
 import { Octokit } from "@octokit/rest";
+import * as tar from "tar";
 import { Fibers } from "ts-fibers";
 import type { GithubDirectoryLocation } from "./utils.js";
 import {
@@ -190,6 +188,42 @@ async function downloadDirectory(
   }
 }
 
+type TarEntry = {
+  type: "dir" | "file" | "symlink";
+  linkpath: string;
+  data: Uint8Array;
+};
+
+async function parseTarArchive(tarBuffer: Uint8Array): Promise<Map<string, TarEntry>> {
+  const entries = new Map<string, TarEntry>();
+  const parser = new tar.Parser();
+
+  parser.on("entry", (entry: tar.ReadEntry) => {
+    const chunks: Uint8Array[] = [];
+    entry.on("data", (chunk: Uint8Array) => chunks.push(chunk));
+    entry.on("end", () => {
+      const normalizedPath = entry.path.replace(/\/+$/u, "");
+      if (normalizedPath && normalizedPath !== "pax_global_header") {
+        entries.set(normalizedPath, {
+          type: entry.type === "Directory" ? "dir" : entry.type === "SymbolicLink" ? "symlink" : "file",
+          linkpath: entry.linkpath || "",
+          data: Buffer.concat(chunks),
+        });
+      }
+    });
+    entry.resume();
+  });
+
+  await new Promise<void>((resolve, reject) => {
+    parser.on("end", resolve);
+    parser.on("error", reject);
+    parser.write(Buffer.from(tarBuffer));
+    parser.end();
+  });
+
+  return entries;
+}
+
 async function downloadDirectoryViaArchive(
   location: GithubDirectoryLocation,
   rootPath: string,
@@ -201,82 +235,87 @@ async function downloadDirectoryViaArchive(
     ref: location.ref,
   });
 
-  const buffer = Buffer.from(response.data as ArrayBuffer);
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "gh-tar-"));
+  const gzBuffer = Buffer.from(response.data as ArrayBuffer);
+  const tarBuffer = zlib.gunzipSync(gzBuffer);
+  const entriesMap = await parseTarArchive(tarBuffer);
 
-  try {
-    child_process.execSync("tar -xz -f -", { input: buffer, cwd: tmpDir });
-    const extractedEntries = fs.readdirSync(tmpDir);
-    const rootDirName = extractedEntries[0];
-    if (!rootDirName) {
-      throw new Error("Empty tarball archive.");
+  let rootPrefix = "";
+  for (const key of entriesMap.keys()) {
+    const firstPart = key.split("/")[0];
+    if (firstPart) {
+      rootPrefix = firstPart;
+      break;
     }
-
-    const extractedRoot = path.join(tmpDir, rootDirName);
-    const targetDir = location.path ? path.join(extractedRoot, location.path) : extractedRoot;
-
-    if (!fs.existsSync(targetDir)) {
-      throw new Error(`Path "${location.path}" not found in tarball archive.`);
-    }
-
-    return walkLocalDirectory(targetDir, location.path, rootPath, new Set(), extractedRoot);
-  } finally {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-  }
-}
-
-function walkLocalDirectory(
-  currentLocalPath: string,
-  currentVirtualPath: string,
-  rootPath: string,
-  visitedRealPaths: Set<string>,
-  extractedRoot: string,
-): DownloadedFile[] {
-  const realPath = fs.realpathSync(currentLocalPath);
-  const canonicalRoot = fs.realpathSync(extractedRoot);
-
-  if (!realPath.startsWith(canonicalRoot)) {
-    throw new Error(`Symlink at "${currentVirtualPath}" points outside the target archive directory.`);
   }
 
-  if (visitedRealPaths.has(realPath)) {
-    throw new Error(`Detected recursive GitHub symlink cycle at "${currentVirtualPath}".`);
+  if (!rootPrefix) {
+    throw new Error("Empty tarball archive.");
   }
 
-  const nextVisited = new Set(visitedRealPaths);
-  nextVisited.add(realPath);
+  const repoTargetPath = location.path
+    ? `${rootPrefix}/${location.path}`
+    : rootPrefix;
 
-  const entries = fs.readdirSync(currentLocalPath, { withFileTypes: true });
+  const prefixWithSlash = `${repoTargetPath}/`;
   const results: DownloadedFile[] = [];
 
-  for (const entry of entries) {
-    const entryLocalPath = path.join(currentLocalPath, entry.name);
-    const entryVirtualPath = currentVirtualPath ? `${currentVirtualPath}/${entry.name}` : entry.name;
-
-    const realEntryPath = fs.realpathSync(entryLocalPath);
-    if (!realEntryPath.startsWith(canonicalRoot)) {
-      throw new Error(`Symlink at "${entryVirtualPath}" points outside the target archive directory.`);
+  for (const [key, entry] of entriesMap.entries()) {
+    if (key !== repoTargetPath && !key.startsWith(prefixWithSlash)) {
+      continue;
     }
 
-    const lstat = fs.lstatSync(entryLocalPath);
+    const relativeSubPath = key === repoTargetPath ? "" : key.slice(prefixWithSlash.length);
+    const itemVirtualPath = relativeSubPath
+      ? `${location.path}/${relativeSubPath}`.replace(/^\/+/u, "")
+      : location.path;
 
-    if (lstat.isDirectory() || (lstat.isSymbolicLink() && fs.statSync(entryLocalPath).isDirectory())) {
-      const subFiles = walkLocalDirectory(entryLocalPath, entryVirtualPath, rootPath, nextVisited, extractedRoot);
-      results.push(...subFiles);
-    } else if (lstat.isFile() || (lstat.isSymbolicLink() && fs.statSync(entryLocalPath).isFile())) {
-      const content = readLocalFileAsText(entryLocalPath, entryVirtualPath);
+    if (entry.type === "file") {
+      const content = decodeTarDataAsText(entry.data, itemVirtualPath);
       results.push({
-        path: toRelativePath(entryVirtualPath, rootPath),
+        path: toRelativePath(itemVirtualPath, rootPath),
         content,
       });
+    } else if (entry.type === "symlink") {
+      const resolvedPath = resolveRepoRelativeSymlinkPath(key, entry.linkpath);
+      if (resolvedPath) {
+        const fullResolved = `${rootPrefix}/${resolvedPath}`;
+        if (!fullResolved.startsWith(`${rootPrefix}/`) && fullResolved !== rootPrefix) {
+          throw new Error(`Symlink at "${itemVirtualPath}" points outside the target repository archive.`);
+        }
+
+        const targetEntry = entriesMap.get(fullResolved);
+        if (targetEntry?.type === "file") {
+          const content = decodeTarDataAsText(targetEntry.data, itemVirtualPath);
+          results.push({
+            path: toRelativePath(itemVirtualPath, rootPath),
+            content,
+          });
+        } else if (targetEntry?.type === "dir" || !targetEntry) {
+          const targetPrefixWithSlash = `${fullResolved}/`;
+          for (const [targetKey, subEntry] of entriesMap.entries()) {
+            if (targetKey.startsWith(targetPrefixWithSlash) && subEntry.type === "file") {
+              const subRelative = targetKey.slice(targetPrefixWithSlash.length);
+              const subVirtualPath = `${itemVirtualPath}/${subRelative}`;
+              const content = decodeTarDataAsText(subEntry.data, subVirtualPath);
+              results.push({
+                path: toRelativePath(subVirtualPath, rootPath),
+                content,
+              });
+            }
+          }
+        }
+      }
     }
+  }
+
+  if (results.length === 0) {
+    throw new Error(`Path "${location.path}" not found in tarball archive.`);
   }
 
   return results;
 }
 
-function readLocalFileAsText(filePath: string, virtualPath: string): string {
-  const bytes = fs.readFileSync(filePath);
+function decodeTarDataAsText(bytes: Uint8Array, virtualPath: string): string {
   const textEncoding = detectTextEncoding(null, virtualPath);
 
   if (looksBinary(bytes) && !textEncoding) {
