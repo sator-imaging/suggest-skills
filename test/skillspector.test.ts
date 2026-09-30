@@ -128,7 +128,8 @@ describe("skillspector scan json parsing", () => {
       recommendation: "SAFE",
     });
 
-    expect(riskCellValue(zero)).toBe("0 (SAFE)");
+    expect(riskCellValue(zero)).toBe("0");
+    expect(riskCellValue({ ...zero, recommendation: "CAUTION" })).toBe("0");
     expect(riskCellValue({ ...zero, recommendation: "-" })).toBe("0");
   });
 });

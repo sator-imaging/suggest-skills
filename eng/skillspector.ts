@@ -488,9 +488,7 @@ export function riskCellValue(result: ScanResult | undefined): string {
   const hasRecommendation = rec !== "" && rec !== "-";
 
   if (num === "0") {
-    return hasRecommendation
-      ? `${num} (${rec})`
-      : num;
+    return "0";
   }
 
   const scoreLabel = hasSeverity
