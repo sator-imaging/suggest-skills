@@ -3,6 +3,7 @@ import {
   appendSeparatorCell,
   appendTableCell,
   formatStats,
+  getRiskLevel,
   manifestHasSecurityRisk,
   parseScanJson,
   parseSkillsFromManifest,
@@ -62,6 +63,14 @@ describe("skillspector manifest table helpers", () => {
   test("manifestHasSecurityRisk detects an existing column on the header row", () => {
     expect(manifestHasSecurityRisk("| Name | Description | Bundled Assets | Security Risk |")).toBe(true);
     expect(manifestHasSecurityRisk("| Name | Description | Bundled Assets |")).toBe(false);
+  });
+});
+
+describe("skillspector risk level mapping", () => {
+  test("getRiskLevel maps score 0 to recommendation SAFE per SkillSpector specification", () => {
+    expect(getRiskLevel(0, "LOW")).toEqual({ severity: "LOW", recommendation: "SAFE" });
+    expect(getRiskLevel(26)).toEqual({ severity: "MEDIUM", recommendation: "CAUTION" });
+    expect(getRiskLevel(100)).toEqual({ severity: "CRITICAL", recommendation: "DO NOT INSTALL" });
   });
 });
 
@@ -128,8 +137,7 @@ describe("skillspector scan json parsing", () => {
       recommendation: "SAFE",
     });
 
-    expect(riskCellValue(zero)).toBe("0");
-    expect(riskCellValue({ ...zero, recommendation: "CAUTION" })).toBe("0");
+    expect(riskCellValue(zero)).toBe("0 (SAFE)");
     expect(riskCellValue({ ...zero, recommendation: "-" })).toBe("0");
   });
 });

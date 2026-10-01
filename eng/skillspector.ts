@@ -144,6 +144,21 @@ function scoreNumber(score: string): string {
   return m?.[1] ?? "";
 }
 
+/** Map numeric risk score to standard SkillSpector severity level and recommendation per https://github.com/nvidia/skillspector#severity-levels */
+export function getRiskLevel(scoreNum: number, rawSeverity?: string): { severity: string; recommendation: string } {
+  if (scoreNum === 0) {
+    return {
+      severity: rawSeverity && rawSeverity !== "-" ? rawSeverity : "LOW",
+      recommendation: "SAFE",
+    };
+  }
+  const severity = rawSeverity && rawSeverity !== "-" ? rawSeverity : (
+    scoreNum > 80 ? "CRITICAL" : scoreNum > 50 ? "HIGH" : scoreNum > 20 ? "MEDIUM" : "LOW"
+  );
+  const recommendation = scoreNum > 50 ? "DO NOT INSTALL" : "CAUTION";
+  return { severity, recommendation };
+}
+
 /** Parse risk fields from SkillSpector JSON scan output. */
 export function parseScanJson(stdout: string): Pick<ScanResult, "score" | "severity" | "recommendation"> {
   try {
@@ -154,10 +169,12 @@ export function parseScanJson(stdout: string): Pick<ScanResult, "score" | "sever
     }
 
     const scoreNum = risk.score;
-    const score = Number.isFinite(scoreNum) ? `${scoreNum}/100` : "-";
-    const severity = risk.severity?.trim() || "-";
-    const rawRec = risk.recommendation?.trim();
-    const recommendation = rawRec ? rawRec.replace(/_/g, " ") : "-";
+    if (!Number.isFinite(scoreNum)) {
+      return { score: "-", severity: "-", recommendation: "-" };
+    }
+
+    const score = `${scoreNum}/100`;
+    const { severity, recommendation } = getRiskLevel(scoreNum, risk.severity?.trim());
     return { score, severity, recommendation };
   } catch {
     return { score: "-", severity: "-", recommendation: "-" };
@@ -488,7 +505,9 @@ export function riskCellValue(result: ScanResult | undefined): string {
   const hasRecommendation = rec !== "" && rec !== "-";
 
   if (num === "0") {
-    return "0";
+    return hasRecommendation
+      ? `${num} (${rec})`
+      : num;
   }
 
   const scoreLabel = hasSeverity
