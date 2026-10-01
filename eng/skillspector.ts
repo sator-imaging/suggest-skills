@@ -169,7 +169,7 @@ export function parseScanJson(stdout: string): Pick<ScanResult, "score" | "sever
     }
 
     const scoreNum = risk.score;
-    if (!Number.isFinite(scoreNum)) {
+    if (typeof scoreNum !== "number" || !Number.isFinite(scoreNum)) {
       return { score: "-", severity: "-", recommendation: "-" };
     }
 
