@@ -261,19 +261,19 @@
 
 | Name | Description | Bundled Assets | Security Risk |
 | -----|-------------|----------------|---|
-| [apple-notes](https://github.com/NousResearch/hermes-agent/tree/5eea87882aebdeded8204b083b36acb17f7247f8/skills/apple/apple-notes) | Manage Apple Notes via memo CLI: create, search, edit. | None | 0 (SAFE) |
-| [apple-reminders](https://github.com/NousResearch/hermes-agent/tree/5eea87882aebdeded8204b083b36acb17f7247f8/skills/apple/apple-reminders) | Apple Reminders via remindctl: add, list, complete. | None | 0 (SAFE) |
-| [findmy](https://github.com/NousResearch/hermes-agent/tree/5eea87882aebdeded8204b083b36acb17f7247f8/skills/apple/findmy) | Track Apple devices/AirTags via FindMy.app on macOS. | None | 0 (SAFE) |
-| [imessage](https://github.com/NousResearch/hermes-agent/tree/5eea87882aebdeded8204b083b36acb17f7247f8/skills/apple/imessage) | Send and receive iMessages/SMS via the imsg CLI on macOS. | None | 0 (SAFE) |
-| [songwriting-and-ai-music](https://github.com/NousResearch/hermes-agent/tree/5eea87882aebdeded8204b083b36acb17f7247f8/skills/creative/songwriting-and-ai-music) | Songwriting craft and Suno AI music prompts. | None | 0 (SAFE) |
-| [sdlc-review](https://github.com/NousResearch/hermes-agent/tree/5eea87882aebdeded8204b083b36acb17f7247f8/skills/devops/sdlc-review) | Review Kanban handoffs and route verified outcomes. | None | 0 (SAFE) |
-| [email-inbox-triage](https://github.com/NousResearch/hermes-agent/tree/5eea87882aebdeded8204b083b36acb17f7247f8/skills/email/email-inbox-triage) | Triage an inbox: prioritize threads, draft replies safely. | None | 0 (SAFE) |
-| [songsee](https://github.com/NousResearch/hermes-agent/tree/5eea87882aebdeded8204b083b36acb17f7247f8/skills/media/songsee) | Audio spectrograms/features (mel, chroma, MFCC) via CLI. | None | 0 (SAFE) |
-| [obsidian](https://github.com/NousResearch/hermes-agent/tree/5eea87882aebdeded8204b083b36acb17f7247f8/skills/note-taking/obsidian) | Read, search, create, and edit notes in the Obsidian vault. | None | 0 (SAFE) |
-| [document-to-action-items](https://github.com/NousResearch/hermes-agent/tree/5eea87882aebdeded8204b083b36acb17f7247f8/skills/productivity/document-to-action-items) | Extract cited obligations, deadlines, tasks from documents. | None | 0 (SAFE) |
-| [meeting-action-items](https://github.com/NousResearch/hermes-agent/tree/5eea87882aebdeded8204b083b36acb17f7247f8/skills/productivity/meeting-action-items) | Turn meeting notes into cited decisions, owners, tickets. | None | 0 (SAFE) |
-| [teams-meeting-pipeline](https://github.com/NousResearch/hermes-agent/tree/5eea87882aebdeded8204b083b36acb17f7247f8/skills/productivity/teams-meeting-pipeline) | Teams meeting summaries, job replay, Graph subscriptions. | None | 0 (SAFE) |
-| [codebase-inspection](https://github.com/NousResearch/hermes-agent/tree/5eea87882aebdeded8204b083b36acb17f7247f8/skills/software-development/codebase-inspection) | Inspect codebases w/ pygount: LOC, languages, ratios. | None | 0 (SAFE) |
+| [apple-notes](https://github.com/NousResearch/hermes-agent/tree/a3149156ecc4bee636330b94753426f0e89c42ea/skills/apple/apple-notes) | Manage Apple Notes via memo CLI: create, search, edit. | None | 0 (SAFE) |
+| [apple-reminders](https://github.com/NousResearch/hermes-agent/tree/a3149156ecc4bee636330b94753426f0e89c42ea/skills/apple/apple-reminders) | Apple Reminders via remindctl: add, list, complete. | None | 0 (SAFE) |
+| [findmy](https://github.com/NousResearch/hermes-agent/tree/a3149156ecc4bee636330b94753426f0e89c42ea/skills/apple/findmy) | Track Apple devices/AirTags via FindMy.app on macOS. | None | 0 (SAFE) |
+| [imessage](https://github.com/NousResearch/hermes-agent/tree/a3149156ecc4bee636330b94753426f0e89c42ea/skills/apple/imessage) | Send and receive iMessages/SMS via the imsg CLI on macOS. | None | 0 (SAFE) |
+| [songwriting-and-ai-music](https://github.com/NousResearch/hermes-agent/tree/a3149156ecc4bee636330b94753426f0e89c42ea/skills/creative/songwriting-and-ai-music) | Songwriting craft and Suno AI music prompts. | None | 0 (SAFE) |
+| [sdlc-review](https://github.com/NousResearch/hermes-agent/tree/a3149156ecc4bee636330b94753426f0e89c42ea/skills/devops/sdlc-review) | Review Kanban handoffs and route verified outcomes. | None | 0 (SAFE) |
+| [email-inbox-triage](https://github.com/NousResearch/hermes-agent/tree/a3149156ecc4bee636330b94753426f0e89c42ea/skills/email/email-inbox-triage) | Triage an inbox: prioritize threads, draft replies safely. | None | 0 (SAFE) |
+| [songsee](https://github.com/NousResearch/hermes-agent/tree/a3149156ecc4bee636330b94753426f0e89c42ea/skills/media/songsee) | Audio spectrograms/features (mel, chroma, MFCC) via CLI. | None | 0 (SAFE) |
+| [obsidian](https://github.com/NousResearch/hermes-agent/tree/a3149156ecc4bee636330b94753426f0e89c42ea/skills/note-taking/obsidian) | Read, search, create, and edit notes in the Obsidian vault. | None | 0 (SAFE) |
+| [document-to-action-items](https://github.com/NousResearch/hermes-agent/tree/a3149156ecc4bee636330b94753426f0e89c42ea/skills/productivity/document-to-action-items) | Extract cited obligations, deadlines, tasks from documents. | None | 0 (SAFE) |
+| [meeting-action-items](https://github.com/NousResearch/hermes-agent/tree/a3149156ecc4bee636330b94753426f0e89c42ea/skills/productivity/meeting-action-items) | Turn meeting notes into cited decisions, owners, tickets. | None | 0 (SAFE) |
+| [teams-meeting-pipeline](https://github.com/NousResearch/hermes-agent/tree/a3149156ecc4bee636330b94753426f0e89c42ea/skills/productivity/teams-meeting-pipeline) | Teams meeting summaries, job replay, Graph subscriptions. | None | 0 (SAFE) |
+| [codebase-inspection](https://github.com/NousResearch/hermes-agent/tree/a3149156ecc4bee636330b94753426f0e89c42ea/skills/software-development/codebase-inspection) | Inspect codebases w/ pygount: LOC, languages, ratios. | None | 0 (SAFE) |
 
 # addyosmani.agent-skills
 
@@ -285,13 +285,12 @@
 
 | Name | Description | Bundled Assets | Security Risk |
 | -----|-------------|----------------|---|
-| [frontend-ui-engineering](https://github.com/addyosmani/agent-skills/tree/01cc88474c67c98331953ce5a286df516b517445/skills/frontend-ui-engineering) | Builds production-quality, accessible, responsive user-facing UIs. Use when building or modifying interfaces and pages, creating components, implementing layouts, meeting WCAG accessibility requirements, managing state, or when the output needs to look and feel production-quality rather than AI-generated. | None | 0 (SAFE) |
+| [frontend-ui-engineering](https://github.com/addyosmani/agent-skills/tree/28f435ea69a78531ec00779c7f3b78c64ce95896/skills/frontend-ui-engineering) | Builds production-quality, accessible, responsive user-facing UIs. Use when building or modifying interfaces and pages, creating components, implementing layouts, meeting WCAG accessibility requirements, managing state, or when the output needs to look and feel production-quality rather than AI-generated. | None | 0 (SAFE) |
 
 # garrytan.gstack.skills
 
 | Name | Description | Bundled Assets | Security Risk |
 | -----|-------------|----------------|---|
-| [deslop-shared-libs](https://github.com/garrytan/gstack/tree/96764e80a641e28141ec8297223768029f5bf483/deslop-shared-libs) | Find worthwhile shared-code extractions in recent work. (gstack) | `SKILL.md.tmpl` | 0 (SAFE) |
 
 # mattpocock.skills
 
@@ -361,20 +360,20 @@
 
 | Name | Description | Bundled Assets | Security Risk |
 | -----|-------------|----------------|---|
-| [frontend-design](https://github.com/steipete/agent-scripts/tree/d15557c94fa1b92870d6901dbf07615eadf6dd34/skills/frontend-design) | Frontend UI: pages, apps, components, polished non-generic design. | `LICENSE.txt` | 0 (SAFE) |
-| [github-author-context](https://github.com/steipete/agent-scripts/tree/d15557c94fa1b92870d6901dbf07615eadf6dd34/skills/github-author-context) | GitHub contributor context: identity, activity, trust, company/team signal. | `agents/openai.yaml` | 0 (SAFE) |
-| [github-cache-hygiene](https://github.com/steipete/agent-scripts/tree/d15557c94fa1b92870d6901dbf07615eadf6dd34/skills/github-cache-hygiene) | GitHub quota/cache hygiene: Gitcrawl archives, Octopool-backed gh, freshness, limits. | `agents/openai.yaml` | 0 (SAFE) |
-| [instruments-profiling](https://github.com/steipete/agent-scripts/tree/d15557c94fa1b92870d6901dbf07615eadf6dd34/skills/instruments-profiling) | Instruments/xctrace profiling: macOS/iOS traces, binaries, args, exports. | None | 0 (SAFE) |
-| [mac-maintenance](https://github.com/steipete/agent-scripts/tree/d15557c94fa1b92870d6901dbf07615eadf6dd34/skills/mac-maintenance) | Mac upkeep: brew update/upgrade, pull clean repos, empty Trash. | None | 0 (SAFE) |
-| [markdown-converter](https://github.com/steipete/agent-scripts/tree/d15557c94fa1b92870d6901dbf07615eadf6dd34/skills/markdown-converter) | Markdown conversion: PDF, Office, HTML, data, OCR, audio, ZIP, YouTube. | None | 0 (SAFE) |
-| [notcrawl](https://github.com/steipete/agent-scripts/tree/d15557c94fa1b92870d6901dbf07615eadf6dd34/skills/notcrawl) | Notion archive: desktop/API sync, Markdown export, page search, read-only SQL. | None | 0 (SAFE) |
-| [reminders](https://github.com/steipete/agent-scripts/tree/d15557c94fa1b92870d6901dbf07615eadf6dd34/skills/reminders) | Apple Reminders via rem CLI: add, list, search, update, complete, delete. | None | 0 (SAFE) |
-| [sonos](https://github.com/steipete/agent-scripts/tree/d15557c94fa1b92870d6901dbf07615eadf6dd34/skills/sonos) | Sonos control: search, queue, playlists, rooms/groups, volume, YouTube. | `agents/openai.yaml` | 0 (SAFE) |
-| [swift-concurrency-expert](https://github.com/steipete/agent-scripts/tree/d15557c94fa1b92870d6901dbf07615eadf6dd34/skills/swift-concurrency-expert) | Swift concurrency review/fix: compiler errors, Sendable, isolation, remediation. | `references/swift-6-2-concurrency.md`, `references/swiftui-concurrency-tour-wwdc.md` | 0 (SAFE) |
-| [swiftui-performance-audit](https://github.com/steipete/agent-scripts/tree/d15557c94fa1b92870d6901dbf07615eadf6dd34/skills/swiftui-performance-audit) | SwiftUI performance: render, scroll, CPU/memory, updates, layout, Instruments. | `references` (4 files) | 0 (SAFE) |
-| [swiftui-view-refactor](https://github.com/steipete/agent-scripts/tree/d15557c94fa1b92870d6901dbf07615eadf6dd34/skills/swiftui-view-refactor) | SwiftUI view refactor/review: layout, DI, Observation, view models. | `references/mv-patterns.md` | 0 (SAFE) |
-| [telecrawl](https://github.com/steipete/agent-scripts/tree/d15557c94fa1b92870d6901dbf07615eadf6dd34/skills/telecrawl) | Telegram archive: chats, messages, contacts, folders, search; import from Telegram Desktop/macOS. | None | 0 (SAFE) |
-| [things-todo](https://github.com/steipete/agent-scripts/tree/d15557c94fa1b92870d6901dbf07615eadf6dd34/skills/things-todo) | Things 3 via things CLI: add, list, search, update, delete, verify. | None | 0 (SAFE) |
+| [frontend-design](https://github.com/steipete/agent-scripts/tree/8403a2a64bd5d4e04054c7ea1e9bceaf09a02cba/skills/frontend-design) | Frontend UI: pages, apps, components, polished non-generic design. | `LICENSE.txt` | 0 (SAFE) |
+| [github-author-context](https://github.com/steipete/agent-scripts/tree/8403a2a64bd5d4e04054c7ea1e9bceaf09a02cba/skills/github-author-context) | GitHub contributor context: identity, activity, trust, company/team signal. | `agents/openai.yaml` | 0 (SAFE) |
+| [github-cache-hygiene](https://github.com/steipete/agent-scripts/tree/8403a2a64bd5d4e04054c7ea1e9bceaf09a02cba/skills/github-cache-hygiene) | GitHub quota/cache hygiene: Gitcrawl archives, Octopool-backed gh, freshness, limits. | `agents/openai.yaml` | 0 (SAFE) |
+| [instruments-profiling](https://github.com/steipete/agent-scripts/tree/8403a2a64bd5d4e04054c7ea1e9bceaf09a02cba/skills/instruments-profiling) | Instruments/xctrace profiling: macOS/iOS traces, binaries, args, exports. | None | 0 (SAFE) |
+| [mac-maintenance](https://github.com/steipete/agent-scripts/tree/8403a2a64bd5d4e04054c7ea1e9bceaf09a02cba/skills/mac-maintenance) | Mac upkeep: brew update/upgrade, pull clean repos, empty Trash. | None | 0 (SAFE) |
+| [markdown-converter](https://github.com/steipete/agent-scripts/tree/8403a2a64bd5d4e04054c7ea1e9bceaf09a02cba/skills/markdown-converter) | Markdown conversion: PDF, Office, HTML, data, OCR, audio, ZIP, YouTube. | None | 0 (SAFE) |
+| [notcrawl](https://github.com/steipete/agent-scripts/tree/8403a2a64bd5d4e04054c7ea1e9bceaf09a02cba/skills/notcrawl) | Notion archive: desktop/API sync, Markdown export, page search, read-only SQL. | None | 0 (SAFE) |
+| [reminders](https://github.com/steipete/agent-scripts/tree/8403a2a64bd5d4e04054c7ea1e9bceaf09a02cba/skills/reminders) | Apple Reminders via rem CLI: add, list, search, update, complete, delete. | None | 0 (SAFE) |
+| [sonos](https://github.com/steipete/agent-scripts/tree/8403a2a64bd5d4e04054c7ea1e9bceaf09a02cba/skills/sonos) | Sonos control: search, queue, playlists, rooms/groups, volume, YouTube. | `agents/openai.yaml` | 0 (SAFE) |
+| [swift-concurrency-expert](https://github.com/steipete/agent-scripts/tree/8403a2a64bd5d4e04054c7ea1e9bceaf09a02cba/skills/swift-concurrency-expert) | Swift concurrency review/fix: compiler errors, Sendable, isolation, remediation. | `references/swift-6-2-concurrency.md`, `references/swiftui-concurrency-tour-wwdc.md` | 0 (SAFE) |
+| [swiftui-performance-audit](https://github.com/steipete/agent-scripts/tree/8403a2a64bd5d4e04054c7ea1e9bceaf09a02cba/skills/swiftui-performance-audit) | SwiftUI performance: render, scroll, CPU/memory, updates, layout, Instruments. | `references` (4 files) | 0 (SAFE) |
+| [swiftui-view-refactor](https://github.com/steipete/agent-scripts/tree/8403a2a64bd5d4e04054c7ea1e9bceaf09a02cba/skills/swiftui-view-refactor) | SwiftUI view refactor/review: layout, DI, Observation, view models. | `references/mv-patterns.md` | 0 (SAFE) |
+| [telecrawl](https://github.com/steipete/agent-scripts/tree/8403a2a64bd5d4e04054c7ea1e9bceaf09a02cba/skills/telecrawl) | Telegram archive: chats, messages, contacts, folders, search; import from Telegram Desktop/macOS. | None | 0 (SAFE) |
+| [things-todo](https://github.com/steipete/agent-scripts/tree/8403a2a64bd5d4e04054c7ea1e9bceaf09a02cba/skills/things-todo) | Things 3 via things CLI: add, list, search, update, delete, verify. | None | 0 (SAFE) |
 
 # warpdotdev.oz-skills..agents.skills
 
