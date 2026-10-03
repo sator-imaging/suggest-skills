@@ -238,8 +238,8 @@
 
 | Name | Description |
 | -----|-------------|
-| [gstack](https://github.com/garrytan/gstack/blob/96764e80a641e28141ec8297223768029f5bf483/DESIGN.md) | None |
-| [gstack](https://github.com/garrytan/gstack/blob/96764e80a641e28141ec8297223768029f5bf483/SKILL.md) | Router for the gstack skill suite. (gstack) |
+| [gstack](https://github.com/garrytan/gstack/blob/f30b7b788a210d217ea3125bf3001b29cbc2a463/DESIGN.md) | None |
+| [gstack](https://github.com/garrytan/gstack/blob/f30b7b788a210d217ea3125bf3001b29cbc2a463/SKILL.md) | Router for the gstack skill suite. (gstack) |
 
 # runceel.ai-dev-template..github.agents
 
