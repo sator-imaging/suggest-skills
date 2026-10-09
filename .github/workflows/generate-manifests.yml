@@ -103,6 +103,7 @@ jobs:
           - Unity-Technologies/unity-agent-plugin/tree/main/skills
           - nowsprinting/unity-coding-skills
           - cursor/plugins
+          - cloudflare/security-audit-skill
     env:
       # DO NOT forget add '/' at the end
       OFFICIAL_URL_PREFIXES: |
@@ -141,6 +142,7 @@ jobs:
         phuryn/pm-skills
         cursor/plugins
         nowsprinting/unity-coding-skills
+        cloudflare/security-audit-skill
       GENERATED_DIR: generate/${{ strategy.job-index }}
       BRANCH: ${{ needs.prepare.outputs.branch }}
 
