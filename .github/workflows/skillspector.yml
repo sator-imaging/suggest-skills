@@ -21,7 +21,7 @@ env:
 jobs:
 
   skillspector:
-    timeout-minutes: 60
+    timeout-minutes: 120
 
     strategy:
       fail-fast: false
