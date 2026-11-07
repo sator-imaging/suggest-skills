@@ -38,11 +38,11 @@ jobs:
 
 
   generate:
-    name: "${{ matrix.url }}"
+    timeout-minutes: 90
     needs:
       - prepare
-    timeout-minutes: 90
 
+    name: "${{ matrix.url }}"
     strategy:
       max-parallel: 1   # To avoid GitHub API rate limit
       fail-fast: true
@@ -275,10 +275,10 @@ jobs:
 
 
   scan:
+    timeout-minutes: 90
     needs: 
       - prepare  # For needs.outputs
       - generate
-    timeout-minutes: 90
     uses: ./.github/workflows/skillspector.yml
     with:
       branch: ${{ needs.prepare.outputs.branch }}
