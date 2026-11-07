@@ -104,6 +104,7 @@ jobs:
           - nowsprinting/unity-coding-skills
           - cursor/plugins
           - cloudflare/security-audit-skill
+          - EgorBo/BlazingFastDotnet
     env:
       # DO NOT forget add '/' at the end
       OFFICIAL_URL_PREFIXES: |
@@ -277,6 +278,7 @@ jobs:
     needs: 
       - prepare  # For needs.outputs
       - generate
+    timeout-minutes: 90
     uses: ./.github/workflows/skillspector.yml
     with:
       branch: ${{ needs.prepare.outputs.branch }}
