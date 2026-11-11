@@ -132,10 +132,22 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ inputs.branch }}
+      - uses: oven-sh/setup-bun@v2
 
       - run: |
-          gh pr create \
+          git fetch origin main
+
+          bun eng/diff-skills.ts \
+            --base origin/main \
+            --head "${{ inputs.branch }}" \
+            --markdown "skills-diff.md" \
+            --summary
+
+          pr_url=$(gh pr create \
             --base main \
             --head "${{ inputs.branch }}" \
-            --fill \
-            || echo "::warning title=PR already exists::Skipped"
+            --fill) || pr_url=$(gh pr list --head "${{ inputs.branch }}" --json url --jq '.[0].url')
+
+          if [ -n "$pr_url" ]; then
+            gh pr comment "$pr_url" --body-file "skills-diff.md" || true
+          fi
