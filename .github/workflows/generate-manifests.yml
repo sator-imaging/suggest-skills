@@ -453,10 +453,21 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ needs.prepare.outputs.branch }}
+      - uses: oven-sh/setup-bun@v2
 
       - run: |
-          gh pr create \
+          git fetch origin main
+
+          bun eng/diff-skills.ts \
+            --base origin/main \
+            --head "${{ needs.prepare.outputs.branch }}" \
+            --markdown "skills-diff.md" \
+            --summary
+
+          pr_url=$(gh pr create \
             --base main \
             --head "${{ needs.prepare.outputs.branch }}" \
             --title "[bot] ${{ github.workflow }}" \
-            --fill
+            --fill)
+
+          gh pr comment "$pr_url" --body-file "skills-diff.md" || true
