@@ -1,11 +1,21 @@
 import { describe, expect, test } from "bun:test";
 import {
+  isCollectedSkillsManifest,
   parseSkillsFromContent,
   formatSkillDiffReport,
   type SkillDiffResult,
 } from "../eng/diff-skills";
 
 describe("diff-skills", () => {
+  test("identifies generated collected skill manifests", () => {
+    expect(isCollectedSkillsManifest("community/safe-community-skills.md")).toBe(true);
+    expect(isCollectedSkillsManifest("official/zerorisk-official-skills.md")).toBe(true);
+    expect(isCollectedSkillsManifest("community/community-skills.md")).toBe(true);
+    expect(isCollectedSkillsManifest("official/official-skills.md")).toBe(true);
+    expect(isCollectedSkillsManifest("community/custom-collection-skills.md")).toBe(true);
+    expect(isCollectedSkillsManifest("community/skills/octo.skills.md")).toBe(false);
+  });
+
   test("parseSkillsFromContent parses skills correctly", () => {
     const sampleManifest = `
 | Name | Description | Bundled Assets | Security Risk |
