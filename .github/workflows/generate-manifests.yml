@@ -105,6 +105,7 @@ jobs:
           - cursor/plugins
           - cloudflare/security-audit-skill
           - EgorBo/BlazingFastDotnet
+          - CyberAgentGameEntertainment/UnityPerformanceTuningTips2026/tree/main/skills
     env:
       # DO NOT forget add '/' at the end
       OFFICIAL_URL_PREFIXES: |
