@@ -36,6 +36,11 @@ export interface SkillDiffResult {
 const REPO_ROOT = resolve(import.meta.dir, "..");
 const SKILL_ROW_PATTERN = /\|\s*\[([^\]]+)\]\((https:\/\/github\.com\/([^/]+\/[^/]+)\/tree\/([^/)]+)\/?([^)]*))\)\s*\|\s*([^|]*)\s*\|/g;
 
+// Collected aggregate manifests repeat source entries and must not create Add/Remove events.
+export function isCollectedSkillsManifest(manifest: string): boolean {
+  return /^(?:community|official)\/[^/]+-skills\.md$/.test(manifest);
+}
+
 /**
  * Parses skill entries from markdown manifest content.
  */
@@ -94,7 +99,10 @@ export function findSkillManifests(): string[] {
   const glob = new Glob("{community,official}/skills/*.md");
   const files: string[] = [];
   for (const match of glob.scanSync({ cwd: REPO_ROOT })) {
-    files.push(match.replace(/\\/g, "/"));
+    const manifest = match.replace(/\\/g, "/");
+    if (!isCollectedSkillsManifest(manifest)) {
+      files.push(manifest);
+    }
   }
   return files.sort();
 }
@@ -111,6 +119,8 @@ export function computeSkillDiff(
   const headSkills = new Map<string, SkillEntry>();
 
   for (const manifest of manifests) {
+    if (isCollectedSkillsManifest(manifest)) continue;
+
     const baseContent = getGitFileContent(baseRef, manifest);
     if (baseContent) {
       const parsed = parseSkillsFromContent(baseContent, manifest);
