@@ -452,7 +452,7 @@
 
 | Name | Description | Bundled Assets | Security Risk |
 | -----|-------------|----------------|---|
-| [deslop-shared-libs](https://github.com/garrytan/gstack/tree/fc5c285035b58ce0552d25cf7cb71749795b6d30/deslop-shared-libs) | Find worthwhile shared-code extractions in recent work. Use for: find code worth sharing. (gstack) | `SKILL.md.tmpl` | 0 (SAFE) |
+| [deslop-shared-libs](https://github.com/garrytan/gstack/tree/33b1a965bacb9ae28ac9281a1a70cbd987e54c01/deslop-shared-libs) | Find worthwhile shared-code extractions in recent work. Use for: find code worth sharing. (gstack) | `SKILL.md.tmpl` | 0 (SAFE) |
 
 # mattpocock.skills
 
