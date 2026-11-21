@@ -1,3 +1,3 @@
-| Name | Description | Bundled Assets | Security Risk |
-| -----|-------------|----------------|---|
-| [unity-perf-review](https://github.com/CyberAgentGameEntertainment/UnityPerformanceTuningTips2026/tree/7401f12c6381cb3b464e0cc1c38772d5373277fa/skills/unity-perf-review) | Unity プロジェクトのコード・アセット・設定をパフォーマンス観点でレビューする。 C# スクリプト、シェーダー、.meta / Prefab / ProjectSettings、ビルドスクリプトを UnityPerformanceTuningBible 由来の 163 ルール（GC アロケーション、描画、アニメーション、 PSO ウォームアップ、LTO、ライフタイム管理等）と照合し、Critical / Warning / Info の 指摘リストを出力する。Unity のパフォーマンスレビュー、チューニング、最適化調査、 フレームスパイクやメモリリークの静的調査を依頼されたときに使う。 | `README.md`, `references` (18 files), `scripts` (3 files) | **50 MEDIUM** (CAUTION) |
+| Name | Description | Bundled Assets |
+| -----|-------------|----------------|
+| [unity-perf-review](https://github.com/CyberAgentGameEntertainment/UnityPerformanceTuningTips2026/tree/7401f12c6381cb3b464e0cc1c38772d5373277fa/skills/unity-perf-review) | Unity プロジェクトのコード・アセット・設定をパフォーマンス観点でレビューする。 C# スクリプト、シェーダー、.meta / Prefab / ProjectSettings、ビルドスクリプトを UnityPerformanceTuningBible 由来の 163 ルール（GC アロケーション、描画、アニメーション、 PSO ウォームアップ、LTO、ライフタイム管理等）と照合し、Critical / Warning / Info の 指摘リストを出力する。Unity のパフォーマンスレビュー、チューニング、最適化調査、 フレームスパイクやメモリリークの静的調査を依頼されたときに使う。 | `README.md`, `references` (18 files), `scripts` (3 files) |
