@@ -10,9 +10,6 @@
 | [AEM Front-End Specialist](https://github.com/github/awesome-copilot/blob/897f6b54b917358feef7ad553721c19031a9d50d/agents/aem-frontend-specialist.agent.md) | Expert assistant for developing AEM components using HTL, Tailwind CSS, and Figma-to-code workflows with design system integration |
 | [Agent Governance Reviewer](https://github.com/github/awesome-copilot/blob/897f6b54b917358feef7ad553721c19031a9d50d/agents/agent-governance-reviewer.agent.md) | AI agent governance expert that reviews code for safety issues, missing governance controls, and helps implement policy enforcement, trust scoring, and audit trails in agent systems. |
 | [ai-readiness-reporter](https://github.com/github/awesome-copilot/blob/897f6b54b917358feef7ad553721c19031a9d50d/agents/ai-readiness-reporter.agent.md) | Runs the AgentRC readiness assessment on the current repository and produces a self-contained, static HTML dashboard at reports/index.html. Explains every readiness pillar, the maturity level, and an actionable remediation plan, framed by AgentRC measure → generate → maintain loop. Use when asked to assess, audit, score, report on, or visualise the AI readiness of a repo. |
-| [ai-team-dev](https://github.com/github/awesome-copilot/blob/897f6b54b917358feef7ad553721c19031a9d50d/agents/ai-team-dev.agent.md) | AI development team (Nova, Sage, Milo). Use when implementing features, fixing bugs, writing tests, improving user experience, or preparing a pull request across the project's actual stack. |
-| [ai-team-producer](https://github.com/github/awesome-copilot/blob/897f6b54b917358feef7ad553721c19031a9d50d/agents/ai-team-producer.agent.md) | AI team producer (Remy). Use when planning work, clarifying scope, coordinating Dev and optional QA, triaging issues, maintaining project context, or preparing and merging pull requests. Never writes application code. |
-| [ai-team-qa](https://github.com/github/awesome-copilot/blob/897f6b54b917358feef7ad553721c19031a9d50d/agents/ai-team-qa.agent.md) | Optional AI QA engineer (Ivy). Use when testing behavior, running automated or exploratory checks, filing reproducible bugs, verifying fixes, or providing release confidence for changes that warrant dedicated QA. |
 | [Amplitude Experiment Implementation](https://github.com/github/awesome-copilot/blob/897f6b54b917358feef7ad553721c19031a9d50d/agents/amplitude-experiment-implementation.agent.md) | This custom agent uses Amplitude's MCP tools to deploy new experiments inside of Amplitude, enabling seamless variant testing capabilities and rollout of product features. |
 | [API Architect](https://github.com/github/awesome-copilot/blob/897f6b54b917358feef7ad553721c19031a9d50d/agents/api-architect.agent.md) | Your role is that of an API architect. Help mentor the engineer by providing guidance, support, and working code. |
 | [apify-integration-expert](https://github.com/github/awesome-copilot/blob/897f6b54b917358feef7ad553721c19031a9d50d/agents/apify-integration-expert.agent.md) | Expert agent for integrating Apify Actors into codebases. Handles Actor selection, workflow design, implementation across JavaScript/TypeScript and Python, testing, and production-ready deployment. |
@@ -236,7 +233,7 @@
 
 | Name | Description |
 | -----|-------------|
-| [blazing-fast-dotnet](https://github.com/EgorBo/BlazingFastDotnet/blob/9e31a42c2bef8e82d8c7f66c69676bd66eae50ff/SKILL.md) | High-performance .NET guidance for writing and tuning C# apps and benchmarks (BenchmarkDotNet, ASP.NET, challenges). Use when asked to make .NET code faster, reduce allocations or GC overhead, fix lock contention or thread pool starvation, inspect JIT codegen, profile apps, or tune runtime/NativeAOT settings. |
+| [blazing-fast-dotnet](https://github.com/EgorBo/BlazingFastDotnet/blob/d8719df176eb1c0c283d0c2cd8eb3f121fba9735/SKILL.md) | High-performance .NET guidance for writing and tuning C# apps and benchmarks (BenchmarkDotNet, ASP.NET, challenges). Use when asked to make .NET code faster, reduce allocations or GC overhead, fix lock contention or thread pool starvation, inspect JIT codegen, profile apps, or tune runtime/NativeAOT settings. |
 
 # addyosmani.agent-skills.agents
 
@@ -252,8 +249,8 @@
 
 | Name | Description |
 | -----|-------------|
-| [gstack](https://github.com/garrytan/gstack/blob/1a95eae33075b66679708989ceb744662f593766/DESIGN.md) | None |
-| [gstack](https://github.com/garrytan/gstack/blob/1a95eae33075b66679708989ceb744662f593766/SKILL.md) | Picks the gstack skill that fits a request: planning, review, QA, shipping, docs, security or design. Use for: gstack, which gstack skill, route this with gstack. (gstack) |
+| [gstack](https://github.com/garrytan/gstack/blob/719b1f59f03e8490abc2c7f727128c96c3ed4fe6/DESIGN.md) | None |
+| [gstack](https://github.com/garrytan/gstack/blob/719b1f59f03e8490abc2c7f727128c96c3ed4fe6/SKILL.md) | Picks the gstack skill that fits a request: planning, review, QA, shipping, docs, security or design. Use for: gstack, which gstack skill, route this with gstack. (gstack) |
 
 # runceel.ai-dev-template..github.agents
 
