@@ -183,7 +183,7 @@ function escapeTableCell(text: string): string {
  */
 function formatSkillTable(skills: readonly SkillEntry[]): string {
   if (skills.length === 0) {
-    return "_None_\n";
+    return "_None_";
   }
 
   const lines = [
@@ -198,7 +198,7 @@ function formatSkillTable(skills: readonly SkillEntry[]): string {
     lines.push(`| ${skillLink} | ${repoLink} | ${desc} |`);
   }
 
-  return lines.join("\n") + "\n";
+  return lines.join("\n");
 }
 
 /**
@@ -219,12 +219,14 @@ export function formatSkillDiffReport(diff: SkillDiffResult): string {
   lines.push(`<details><summary><b>Added Skills (${addedCount})</b></summary>`);
   lines.push("");
   lines.push(formatSkillTable(diff.added));
+  lines.push("");
   lines.push("</details>");
   lines.push("");
 
   lines.push(`<details><summary><b>Removed Skills (${removedCount})</b></summary>`);
   lines.push("");
   lines.push(formatSkillTable(diff.removed));
+  lines.push("");
   lines.push("</details>");
   lines.push("");
 
