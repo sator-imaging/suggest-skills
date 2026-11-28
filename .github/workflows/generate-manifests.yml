@@ -465,10 +465,8 @@ jobs:
             --markdown "skills-diff.md" \
             --summary
 
-          pr_url=$(gh pr create \
+          gh pr create \
             --base main \
             --head "${{ needs.prepare.outputs.branch }}" \
             --title "[bot] ${{ github.workflow }}" \
-            --fill)
-
-          gh pr comment "$pr_url" --body-file "skills-diff.md" || true
+            --body-file "skills-diff.md"

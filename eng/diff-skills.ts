@@ -216,17 +216,19 @@ export function formatSkillDiffReport(diff: SkillDiffResult): string {
     "",
   ];
 
-  lines.push(`<details><summary><b>Added Skills (${addedCount})</b></summary>`);
+  //lines.push(`<details><summary><b>Added Skills (${addedCount})</b></summary>`);
   lines.push("");
   lines.push(formatSkillTable(diff.added));
-  lines.push("</details>");
   lines.push("");
+  //lines.push("</details>");
+  //lines.push("");
 
-  lines.push(`<details><summary><b>Removed Skills (${removedCount})</b></summary>`);
+  //lines.push(`<details><summary><b>Removed Skills (${removedCount})</b></summary>`);
   lines.push("");
   lines.push(formatSkillTable(diff.removed));
-  lines.push("</details>");
   lines.push("");
+  //lines.push("</details>");
+  //lines.push("");
 
   return lines.join("\n");
 }
